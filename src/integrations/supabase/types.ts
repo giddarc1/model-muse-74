@@ -721,6 +721,38 @@ export type Database = {
           },
         ]
       }
+      model_versions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          model_id: string
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          model_id: string
+          snapshot: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          model_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_versions_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       models: {
         Row: {
           created_at: string | null
