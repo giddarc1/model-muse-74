@@ -360,10 +360,3 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     } : m),
   })),
 }));
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
-      updated_at: new Date().toISOString(),
-    } : m),
-  })),
-}));
