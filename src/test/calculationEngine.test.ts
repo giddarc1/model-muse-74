@@ -108,8 +108,8 @@ describe('RMT Calculation Engine — Hub Manufacturing Cell', () => {
       id: 'test-move-labor', modelId: model.id, name: 'Move Labor', description: '',
       familyId: null, status: 'needs_recalc',
       changes: [
-        { id: '1', dataType: 'Labor', entityId: machinst.id, entityName: 'MACHINST', field: 'count', fieldLabel: 'Count', basecaseValue: 12, whatIfValue: 13 },
-        { id: '2', dataType: 'Labor', entityId: repair.id, entityName: 'REPAIR', field: 'count', fieldLabel: 'Count', basecaseValue: 3, whatIfValue: 2 },
+        { id: '1', dataType: 'Labor', entityId: machinst.id, entityName: 'MACHINST', field: 'count', fieldLabel: 'Count', basecaseValue: machinst.count, whatIfValue: machinst.count + 1 },
+        { id: '2', dataType: 'Labor', entityId: repair.id, entityName: 'REPAIR', field: 'count', fieldLabel: 'Count', basecaseValue: repair.count, whatIfValue: Math.max(1, repair.count - 1) },
       ],
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
