@@ -418,8 +418,17 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   updateProduct: (modelId, productId, data) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.map((p) => p.id === productId ? { ...p, ...data } : p), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
+  // Cascading: remove operations, routing, and IBOM entries for this product
   deleteProduct: (modelId, productId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.filter((p) => p.id !== productId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      products: m.products.filter((p) => p.id !== productId),
+      operations: m.operations.filter((o) => o.product_id !== productId),
+      routing: m.routing.filter((r) => r.product_id !== productId),
+      ibom: m.ibom.filter((e) => e.parent_product_id !== productId && e.component_product_id !== productId),
+      updated_at: new Date().toISOString(),
+      run_status: 'needs_recalc' as const,
+    } : m),
   })),
 
   addOperation: (modelId, op) => set((s) => ({
@@ -428,8 +437,21 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   updateOperation: (modelId, opId, data) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
+  // Cascading: remove routing entries that reference this operation's op_name
   deleteOperation: (modelId, opId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.filter((o) => o.id !== opId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    models: s.models.map((m) => {
+      if (m.id !== modelId) return m;
+      const op = m.operations.find((o) => o.id === opId);
+      const opName = op?.op_name || '';
+      const productId = op?.product_id || '';
+      return {
+        ...m,
+        operations: m.operations.filter((o) => o.id !== opId),
+        routing: m.routing.filter((r) => !(r.product_id === productId && (r.from_op_name === opName || r.to_op_name === opName))),
+        updated_at: new Date().toISOString(),
+        run_status: 'needs_recalc' as const,
+      };
+    }),
   })),
 
   addRouting: (modelId, entry) => set((s) => ({
