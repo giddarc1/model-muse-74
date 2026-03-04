@@ -145,6 +145,7 @@ const uid = () => crypto.randomUUID();
 function createDemoModel(): Model {
   const laborIds = { PREP: uid(), MACHINST: uid(), INSPECTR: uid(), REPAIR: uid() };
   const equipIds = { BENCH: uid(), VT_LATHE: uid(), DEBURR: uid(), INSPECT: uid(), REWORK: uid(), MILL: uid(), DRILL: uid() };
+  const prodIds = { HUB1: uid(), HUB2: uid(), HUB3: uid(), HUB4: uid(), SLEEVE: uid(), MOUNT: uid(), BRACKET: uid(), BOLT: uid() };
 
   return {
     id: uid(),
@@ -188,17 +189,34 @@ function createDemoModel(): Model {
       { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Drill presses' },
     ],
     products: [
-      { id: uid(), name: 'HUB1', demand: 50, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 1' },
-      { id: uid(), name: 'HUB2', demand: 40, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 2' },
-      { id: uid(), name: 'HUB3', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 3' },
-      { id: uid(), name: 'HUB4', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 4' },
-      { id: uid(), name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Sleeve component' },
-      { id: uid(), name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Mount assembly' },
-      { id: uid(), name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
-      { id: uid(), name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
+      { id: prodIds.HUB1, name: 'HUB1', demand: 50, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 1' },
+      { id: prodIds.HUB2, name: 'HUB2', demand: 40, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 2' },
+      { id: prodIds.HUB3, name: 'HUB3', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 3' },
+      { id: prodIds.HUB4, name: 'HUB4', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 4' },
+      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Sleeve component' },
+      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Mount assembly' },
+      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
+      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
     ],
     operations: [],
     routing: [],
+    ibom: [
+      // HUB1 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB2 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB3 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB4 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // MOUNT → BRACKET (2) + BOLT (2)
+      { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BRACKET, units_per_assy: 2 },
+      { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BOLT, units_per_assy: 2 },
+    ],
   };
 }
 
