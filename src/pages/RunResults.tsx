@@ -199,6 +199,65 @@ export default function RunResults() {
 
   if (!model) return null;
 
+  const handleRun = async () => {
+    if (runMode === 'verify') {
+      const msgs = verifyData(model);
+      setVerifyMessages(msgs);
+      if (msgs.errors.length === 0 && msgs.warnings.length === 0) {
+        toast.success('Data verification complete — no issues found');
+      } else {
+        toast.warning(`Found ${msgs.errors.length} error(s) and ${msgs.warnings.length} warning(s)`);
+      }
+      return;
+    }
+
+    const validationErrors: string[] = [];
+    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be greater than 0');
+    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be greater than 0');
+    model.products.forEach(p => {
+      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
+      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
+    });
+    model.equipment.forEach(e => {
+      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
+    });
+    model.labor.forEach(l => {
+      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
+    });
+    if (validationErrors.length > 0) {
+      setVerifyMessages({ errors: validationErrors, warnings: [] });
+      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`);
+      return;
+    }
+
+    setIsRunning(true);
+    setTimeout(async () => {
+      const calcResults = calculate(model, activeScenario);
+      setResults(resultKey, calcResults);
+      setRunStatus(model.id, 'current');
+      if (activeScenario) markCalculated(activeScenario.id);
+      setIsRunning(false);
+      setVerifyMessages(null);
+
+      const { scenarioDb } = await import('@/lib/scenarioDb');
+      if (activeScenario) {
+        scenarioDb.saveResults(activeScenario.id, calcResults);
+      } else {
+        scenarioDb.saveBasecaseResults(model.id, calcResults);
+      }
+      const { db } = await import('@/lib/supabaseData');
+      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
+
+      if (calcResults.errors.length > 0) {
+        toast.error(calcResults.errors[0]);
+      } else if (calcResults.overLimitResources.length > 0) {
+        toast.warning(`${calcResults.overLimitResources.length} resource(s) exceed utilization limit`);
+      } else {
+        toast.success(runMode === 'full' ? 'Full calculation complete — all production targets achievable' : 'Utilization calculation complete');
+      }
+    }, 100);
+  };
+
   return (
     <div className="p-6 animate-fade-in">
       <h1 className="text-xl font-bold mb-1">Run & Results</h1>
