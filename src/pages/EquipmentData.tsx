@@ -89,7 +89,7 @@ export default function EquipmentData() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.count} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.count} disabled={eq.equip_type === 'delay'} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.mttf} onChange={(e) => handleCellChange(eq.id, 'mttf', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.mttr} onChange={(e) => handleCellChange(eq.id, 'mttr', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.overtime_pct} onChange={(e) => handleCellChange(eq.id, 'overtime_pct', +e.target.value)} /></TableCell>
