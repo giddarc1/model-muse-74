@@ -32,7 +32,12 @@ export default function EquipmentData() {
   };
 
   const handleCellChange = (id: string, field: keyof EquipmentGroup, value: any) => {
-    updateEquipment(model.id, id, { [field]: value });
+    // Auto-set count when switching to delay type
+    if (field === 'equip_type' && value === 'delay') {
+      updateEquipment(model.id, id, { [field]: value, count: -1 });
+    } else {
+      updateEquipment(model.id, id, { [field]: value });
+    }
   };
 
   const laborName = (id: string) => model.labor.find((l) => l.id === id)?.name || '—';
