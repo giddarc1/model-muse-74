@@ -197,7 +197,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         setup_factor: e.setup_factor, run_factor: e.run_factor, var_factor: e.var_factor,
         comments: e.comments || null,
       }))
-    ));
+    ).select());
   }
 
   if (model.products.length) {
