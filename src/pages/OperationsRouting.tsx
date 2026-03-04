@@ -36,25 +36,21 @@ export default function OperationsRouting() {
   const [routeToOp, setRouteToOp] = useState('');
   const [routePct, setRoutePct] = useState(100);
 
-  if (!model) return null;
-
-  const selectedProduct = model.products.find((p) => p.id === selectedProductId);
+  const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
   const productOps = useMemo(
-    () => model.operations.filter((o) => o.product_id === selectedProductId).sort((a, b) => a.op_number - b.op_number),
-    [model.operations, selectedProductId]
+    () => (model?.operations ?? []).filter((o) => o.product_id === selectedProductId).sort((a, b) => a.op_number - b.op_number),
+    [model?.operations, selectedProductId]
   );
   const productRouting = useMemo(
-    () => model.routing.filter((r) => r.product_id === selectedProductId),
-    [model.routing, selectedProductId]
+    () => (model?.routing ?? []).filter((r) => r.product_id === selectedProductId),
+    [model?.routing, selectedProductId]
   );
 
-  // All valid op names for routing targets (user ops + system)
   const allOpNames = useMemo(() => {
     const userOps = productOps.map((o) => o.op_name);
     return ['DOCK', ...userOps, 'STOCK', 'SCRAP'];
   }, [productOps]);
 
-  // Routing validation: check each from_op sums to 100%
   const routingWarnings = useMemo(() => {
     const warnings: string[] = [];
     const fromOps = new Set(productRouting.map((r) => r.from_op_name));
@@ -66,6 +62,8 @@ export default function OperationsRouting() {
     });
     return warnings;
   }, [productRouting]);
+
+  if (!model) return null;
 
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
