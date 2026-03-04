@@ -174,7 +174,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
   });
 
   // Insert child data in parallel
-  const inserts: Promise<any>[] = [];
+  const inserts: any[] = [];
 
   if (model.labor.length) {
     inserts.push(supabase.from('model_labor').insert(
