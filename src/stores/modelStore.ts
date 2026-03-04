@@ -64,6 +64,13 @@ export interface RoutingEntry {
   pct_routed: number;
 }
 
+export interface IBOMEntry {
+  id: string;
+  parent_product_id: string;
+  component_product_id: string;
+  units_per_assy: number;
+}
+
 export interface GeneralData {
   model_title: string;
   ops_time_unit: 'MIN' | 'HR' | 'SEC';
