@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useModelStore } from '@/stores/modelStore';
+import { useResultsStore } from '@/stores/resultsStore';
 import { supabase } from '@/integrations/supabase/client';
 import { db } from '@/lib/supabaseData';
 import { Input } from '@/components/ui/input';
@@ -10,10 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface ParamNames {
   gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
@@ -42,6 +48,7 @@ export default function ModelSettings() {
   const renameModel = useModelStore(s => s.renameModel);
   const archiveModel = useModelStore(s => s.archiveModel);
   const deleteModel = useModelStore(s => s.deleteModel);
+  const navigate = useNavigate();
 
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
@@ -52,7 +59,8 @@ export default function ModelSettings() {
   const [versions, setVersions] = useState<Version[]>([]);
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [showRestore, setShowRestore] = useState<string | null>(null);
+  const [restoreVersionId, setRestoreVersionId] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     if (!model) return;
@@ -132,6 +140,9 @@ export default function ModelSettings() {
   };
 
   const handleSaveCheckpoint = async () => {
+    // Load param_names for snapshot
+    const { data: pn } = await supabase.from('model_param_names').select('*').eq('model_id', model.id).single();
+
     const snapshot = {
       general: model.general,
       labor: model.labor,
@@ -140,6 +151,7 @@ export default function ModelSettings() {
       operations: model.operations,
       routing: model.routing,
       ibom: model.ibom,
+      param_names: pn || null,
     };
     await supabase.from('model_versions' as any).insert({
       model_id: model.id,
@@ -148,6 +160,168 @@ export default function ModelSettings() {
     });
     toast.success('Checkpoint saved');
     loadVersions();
+  };
+
+  const handleRestore = async (versionId: string) => {
+    setIsRestoring(true);
+    try {
+      const { data } = await supabase
+        .from('model_versions')
+        .select('snapshot, created_at')
+        .eq('id', versionId)
+        .single();
+
+      if (!data?.snapshot) {
+        toast.error('Failed to load version snapshot');
+        setIsRestoring(false);
+        setRestoreVersionId(null);
+        return;
+      }
+
+      const snap = data.snapshot as any;
+      const modelId = model.id;
+
+      // Delete all existing child data
+      await Promise.all([
+        supabase.from('model_operations').delete().eq('model_id', modelId),
+        supabase.from('model_routing').delete().eq('model_id', modelId),
+        supabase.from('model_ibom').delete().eq('model_id', modelId),
+      ]);
+
+      // Delete remaining (after operations since routing refs operations)
+      await Promise.all([
+        supabase.from('model_labor').delete().eq('model_id', modelId),
+        supabase.from('model_equipment').delete().eq('model_id', modelId),
+        supabase.from('model_products').delete().eq('model_id', modelId),
+      ]);
+
+      // Update general data
+      if (snap.general) {
+        await supabase.from('model_general').upsert({
+          model_id: modelId,
+          model_title: snap.general.model_title || '',
+          ops_time_unit: snap.general.ops_time_unit || 'MIN',
+          mct_time_unit: snap.general.mct_time_unit || 'DAY',
+          prod_period_unit: snap.general.prod_period_unit || 'YEAR',
+          conv1: snap.general.conv1 ?? 480,
+          conv2: snap.general.conv2 ?? 210,
+          util_limit: snap.general.util_limit ?? 95,
+          var_equip: snap.general.var_equip ?? 30,
+          var_labor: snap.general.var_labor ?? 30,
+          var_prod: snap.general.var_prod ?? 30,
+          author: snap.general.author || '',
+          comments: snap.general.comments || '',
+        }, { onConflict: 'model_id' });
+      }
+
+      // Insert labor
+      if (snap.labor?.length) {
+        await supabase.from('model_labor').insert(
+          snap.labor.map((l: any) => ({
+            id: l.id, model_id: modelId, name: l.name, count: l.count,
+            overtime_pct: l.overtime_pct, unavail_pct: l.unavail_pct,
+            dept_code: l.dept_code || '', setup_factor: l.setup_factor ?? 1,
+            run_factor: l.run_factor ?? 1, var_factor: l.var_factor ?? 1,
+            comments: l.comments || '',
+          }))
+        );
+      }
+
+      // Insert equipment
+      if (snap.equipment?.length) {
+        await supabase.from('model_equipment').insert(
+          snap.equipment.map((e: any) => ({
+            id: e.id, model_id: modelId, name: e.name, equip_type: e.equip_type || 'standard',
+            count: e.count, mttf: e.mttf ?? 0, mttr: e.mttr ?? 0,
+            overtime_pct: e.overtime_pct ?? 0, labor_group_id: e.labor_group_id || null,
+            dept_code: e.dept_code || '', setup_factor: e.setup_factor ?? 1,
+            run_factor: e.run_factor ?? 1, var_factor: e.var_factor ?? 1,
+            comments: e.comments || '',
+          }))
+        );
+      }
+
+      // Insert products
+      if (snap.products?.length) {
+        await supabase.from('model_products').insert(
+          snap.products.map((p: any) => ({
+            id: p.id, model_id: modelId, name: p.name, demand: p.demand ?? 0,
+            lot_size: p.lot_size ?? 1, tbatch_size: p.tbatch_size ?? -1,
+            demand_factor: p.demand_factor ?? 1, lot_factor: p.lot_factor ?? 1,
+            var_factor: p.var_factor ?? 1, make_to_stock: p.make_to_stock ?? false,
+            gather_tbatches: p.gather_tbatches ?? true, comments: p.comments || '',
+          }))
+        );
+      }
+
+      // Insert operations
+      if (snap.operations?.length) {
+        await supabase.from('model_operations').insert(
+          snap.operations.map((o: any) => ({
+            id: o.id, model_id: modelId, product_id: o.product_id,
+            op_name: o.op_name, op_number: o.op_number ?? 10,
+            equip_id: o.equip_id || null, pct_assigned: o.pct_assigned ?? 100,
+            equip_setup_lot: o.equip_setup_lot ?? 0, equip_run_piece: o.equip_run_piece ?? 0,
+            labor_setup_lot: o.labor_setup_lot ?? 0, labor_run_piece: o.labor_run_piece ?? 0,
+          }))
+        );
+      }
+
+      // Insert routing
+      if (snap.routing?.length) {
+        // Need to map from_op_name back to from_op_id
+        const opNameToId: Record<string, string> = {};
+        (snap.operations || []).forEach((o: any) => {
+          // key by product_id + op_name
+          opNameToId[o.product_id + ':' + o.op_name] = o.id;
+        });
+
+        await supabase.from('model_routing').insert(
+          snap.routing.map((r: any) => ({
+            id: r.id, model_id: modelId, product_id: r.product_id,
+            from_op_id: opNameToId[r.product_id + ':' + r.from_op_name] || r.from_op_id || '',
+            to_op_name: r.to_op_name, pct_routed: r.pct_routed,
+          }))
+        );
+      }
+
+      // Insert IBOM
+      if (snap.ibom?.length) {
+        await supabase.from('model_ibom').insert(
+          snap.ibom.map((b: any) => ({
+            id: b.id, model_id: modelId, parent_product_id: b.parent_product_id,
+            component_product_id: b.component_product_id, units_per_assy: b.units_per_assy ?? 1,
+          }))
+        );
+      }
+
+      // Restore param names
+      if (snap.param_names) {
+        const { model_id, ...pnData } = snap.param_names;
+        await supabase.from('model_param_names').upsert({
+          model_id: modelId, ...pnData,
+        }, { onConflict: 'model_id' });
+      }
+
+      // Update model status
+      await db.updateModel(modelId, { run_status: 'needs_recalc', updated_at: new Date().toISOString() });
+
+      // Clear stale results
+      useResultsStore.getState().clearAllForModel();
+
+      // Force reload model data from Supabase
+      await useModelStore.getState().loadModels(true);
+      useModelStore.getState().setActiveModel(modelId);
+
+      toast.success(`Model restored to checkpoint from ${new Date(data.created_at).toLocaleString()}`);
+      navigate(`/models/${modelId}/general`);
+    } catch (err) {
+      console.error('Restore error:', err);
+      toast.error('Failed to restore checkpoint');
+    } finally {
+      setIsRestoring(false);
+      setRestoreVersionId(null);
+    }
   };
 
   const handleExport = () => {
@@ -179,18 +353,6 @@ export default function ModelSettings() {
     setShowDelete(false);
     toast.success('Model deleted');
     window.location.href = '/library';
-  };
-
-  const handleRestore = async (versionId: string) => {
-    const { data } = await supabase
-      .from('model_versions')
-      .select('snapshot')
-      .eq('id', versionId)
-      .single();
-    if (!data?.snapshot) { toast.error('Failed to load version'); return; }
-    // This is a simplified restore — in production you'd replace all DB data
-    toast.success('Version restore requires page reload');
-    setShowRestore(null);
   };
 
   const paramField = (key: keyof ParamNames, label: string) => (
@@ -367,7 +529,7 @@ export default function ModelSettings() {
                           </span>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => setShowRestore(v.id)}>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => setRestoreVersionId(v.id)}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Restore
                       </Button>
                     </div>
@@ -416,6 +578,7 @@ export default function ModelSettings() {
         </TabsContent>
       </Tabs>
 
+      {/* Delete confirmation dialog */}
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent>
           <DialogHeader>
@@ -428,31 +591,40 @@ export default function ModelSettings() {
             value={deleteConfirm}
             onChange={e => setDeleteConfirm(e.target.value)}
             placeholder={model.name}
-            autoFocus
           />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowDelete(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowDelete(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirm !== model.name}>
-              Delete Permanently
+              Delete Forever
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!showRestore} onOpenChange={open => { if (!open) setShowRestore(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Restore Version</DialogTitle>
-            <DialogDescription>
-              This will replace all current model data with the saved checkpoint. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowRestore(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => handleRestore(showRestore!)}>Restore</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Restore confirmation dialog */}
+      <AlertDialog open={!!restoreVersionId} onOpenChange={(open) => !open && setRestoreVersionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Checkpoint</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will replace all current model data with the checkpoint from{' '}
+              <strong>{restoreVersionId && versions.find(v => v.id === restoreVersionId)
+                ? new Date(versions.find(v => v.id === restoreVersionId)!.created_at).toLocaleString()
+                : '...'}</strong>.
+              This cannot be undone. Are you sure?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRestoring}
+              onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
+            >
+              {isRestoring ? 'Restoring...' : 'Restore'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

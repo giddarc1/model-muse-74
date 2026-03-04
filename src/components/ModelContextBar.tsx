@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play, Save, Download, CircleDot, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function ModelContextBar() {
   const model = useModelStore((s) => s.getActiveModel());
@@ -19,6 +21,19 @@ export function ModelContextBar() {
   };
 
   const status = statusConfig[model.run_status];
+
+  const handleSaveCheckpoint = async () => {
+    const { data: pn } = await supabase.from('model_param_names').select('*').eq('model_id', model.id).single();
+    const snapshot = {
+      general: model.general, labor: model.labor, equipment: model.equipment,
+      products: model.products, operations: model.operations, routing: model.routing,
+      ibom: model.ibom, param_names: pn || null,
+    };
+    await supabase.from('model_versions' as any).insert({
+      model_id: model.id, label: 'Manual Checkpoint', snapshot,
+    });
+    toast.success('Checkpoint saved');
+  };
 
   return (
     <div className="h-11 bg-context-bar text-context-bar-foreground flex items-center px-4 gap-3 border-b border-sidebar-border shrink-0">
@@ -51,8 +66,8 @@ export function ModelContextBar() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-1.5">
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent">
-          <Save className="h-3.5 w-3.5 mr-1" /> Save
+        <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent" onClick={handleSaveCheckpoint}>
+          <Save className="h-3.5 w-3.5 mr-1" /> Checkpoint
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent">
           <Download className="h-3.5 w-3.5 mr-1" /> Export
