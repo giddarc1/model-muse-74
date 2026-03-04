@@ -1,11 +1,13 @@
 import { useModelStore } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Save, Download, CircleDot } from 'lucide-react';
+import { ArrowLeft, Play, Save, Download, CircleDot, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export function ModelContextBar() {
   const model = useModelStore((s) => s.getActiveModel());
+  const activeScenario = useScenarioStore((s) => s.getActiveScenario());
   const navigate = useNavigate();
 
   if (!model) return null;
@@ -30,10 +32,17 @@ export function ModelContextBar() {
 
       <div className="h-4 w-px bg-sidebar-border" />
 
-      <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono">
-        <CircleDot className="h-2.5 w-2.5 mr-1" />
-        Basecase
-      </Badge>
+      {activeScenario ? (
+        <Badge variant="outline" className="border-warning/40 text-warning text-xs font-mono">
+          <FlaskConical className="h-2.5 w-2.5 mr-1" />
+          Editing: {activeScenario.name}
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono">
+          <CircleDot className="h-2.5 w-2.5 mr-1" />
+          Editing: Basecase
+        </Badge>
+      )}
 
       <Badge className={`text-xs ${status.className}`}>
         {status.label}
