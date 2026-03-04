@@ -18,6 +18,119 @@ import {
 
 type RunMode = 'full' | 'verify' | 'util_only';
 
+// ── Scenario color palettes for grouped charts ──
+const SCENARIO_PALETTES = [
+  { setup: 'hsl(217, 91%, 75%)', run: 'hsl(217, 91%, 55%)', repair: 'hsl(217, 70%, 40%)', waitLabor: 'hsl(217, 60%, 30%)', unavail: 'hsl(217, 30%, 50%)', lotWait: 'hsl(217, 91%, 80%)', queue: 'hsl(217, 70%, 45%)', single: 'hsl(217, 91%, 60%)' },
+  { setup: 'hsl(160, 60%, 70%)', run: 'hsl(160, 60%, 45%)', repair: 'hsl(160, 50%, 35%)', waitLabor: 'hsl(160, 40%, 25%)', unavail: 'hsl(160, 25%, 45%)', lotWait: 'hsl(160, 60%, 75%)', queue: 'hsl(160, 50%, 40%)', single: 'hsl(160, 60%, 45%)' },
+  { setup: 'hsl(30, 90%, 75%)', run: 'hsl(30, 90%, 55%)', repair: 'hsl(30, 70%, 40%)', waitLabor: 'hsl(30, 60%, 30%)', unavail: 'hsl(30, 30%, 50%)', lotWait: 'hsl(30, 90%, 80%)', queue: 'hsl(30, 70%, 45%)', single: 'hsl(30, 90%, 55%)' },
+  { setup: 'hsl(280, 60%, 75%)', run: 'hsl(280, 60%, 55%)', repair: 'hsl(280, 50%, 40%)', waitLabor: 'hsl(280, 40%, 30%)', unavail: 'hsl(280, 25%, 45%)', lotWait: 'hsl(280, 60%, 80%)', queue: 'hsl(280, 50%, 45%)', single: 'hsl(280, 60%, 55%)' },
+  { setup: 'hsl(0, 70%, 75%)', run: 'hsl(0, 70%, 55%)', repair: 'hsl(0, 55%, 40%)', waitLabor: 'hsl(0, 45%, 30%)', unavail: 'hsl(0, 25%, 45%)', lotWait: 'hsl(0, 70%, 80%)', queue: 'hsl(0, 55%, 45%)', single: 'hsl(0, 70%, 55%)' },
+];
+
+// Single-scenario colors (legacy)
+const chartColors = {
+  setup: 'hsl(217, 91%, 60%)', run: 'hsl(142, 71%, 45%)',
+  repair: 'hsl(0, 72%, 51%)', waitLabor: 'hsl(38, 92%, 50%)',
+  unavail: 'hsl(220, 9%, 46%)', lotWait: 'hsl(270, 50%, 60%)', queue: 'hsl(0, 72%, 51%)',
+};
+
+type ScenarioEntry = { id: string; name: string; results: CalcResults };
+
+function buildGroupedEquipData(scenarios: ScenarioEntry[]) {
+  if (scenarios.length === 0) return { data: [], bars: [] };
+  const names = scenarios[0].results.equipment.map(e => e.name);
+  const data = names.map(name => {
+    const row: Record<string, any> = { name };
+    scenarios.forEach((s, i) => {
+      const eq = s.results.equipment.find(e => e.name === name);
+      const prefix = `s${i}_`;
+      row[prefix + 'setup'] = eq?.setupUtil || 0;
+      row[prefix + 'run'] = eq?.runUtil || 0;
+      row[prefix + 'repair'] = eq?.repairUtil || 0;
+      row[prefix + 'waitLabor'] = eq?.waitLaborUtil || 0;
+    });
+    return row;
+  });
+  const bars = scenarios.map((s, i) => ({
+    prefix: `s${i}_`,
+    stackId: `s${i}`,
+    name: s.name,
+    palette: SCENARIO_PALETTES[i % SCENARIO_PALETTES.length],
+  }));
+  return { data, bars };
+}
+
+function buildGroupedLaborData(scenarios: ScenarioEntry[]) {
+  if (scenarios.length === 0) return { data: [], bars: [] };
+  const names = scenarios[0].results.labor.map(l => l.name);
+  const data = names.map(name => {
+    const row: Record<string, any> = { name };
+    scenarios.forEach((s, i) => {
+      const l = s.results.labor.find(l => l.name === name);
+      const prefix = `s${i}_`;
+      row[prefix + 'setup'] = l?.setupUtil || 0;
+      row[prefix + 'run'] = l?.runUtil || 0;
+      row[prefix + 'unavail'] = l?.unavailPct || 0;
+    });
+    return row;
+  });
+  const bars = scenarios.map((s, i) => ({
+    prefix: `s${i}_`,
+    stackId: `s${i}`,
+    name: s.name,
+    palette: SCENARIO_PALETTES[i % SCENARIO_PALETTES.length],
+  }));
+  return { data, bars };
+}
+
+function buildGroupedProductMCTData(scenarios: ScenarioEntry[]) {
+  if (scenarios.length === 0) return { data: [], bars: [] };
+  const names = scenarios[0].results.products.map(p => p.name);
+  const data = names.map(name => {
+    const row: Record<string, any> = { name };
+    scenarios.forEach((s, i) => {
+      const p = s.results.products.find(p => p.name === name);
+      const prefix = `s${i}_`;
+      row[prefix + 'lotWait'] = p?.mctLotWait || 0;
+      row[prefix + 'queue'] = p?.mctQueue || 0;
+      row[prefix + 'waitLabor'] = p?.mctWaitLabor || 0;
+      row[prefix + 'setup'] = p?.mctSetup || 0;
+      row[prefix + 'run'] = p?.mctRun || 0;
+    });
+    return row;
+  });
+  const bars = scenarios.map((s, i) => ({
+    prefix: `s${i}_`,
+    stackId: `s${i}`,
+    name: s.name,
+    palette: SCENARIO_PALETTES[i % SCENARIO_PALETTES.length],
+  }));
+  return { data, bars };
+}
+
+function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
+  if (scenarios.length === 0) return { data: [], bars: [] };
+  const names = scenarios[0].results.products.map(p => p.name);
+  const data = names.map(name => {
+    const row: Record<string, any> = { name };
+    scenarios.forEach((s, i) => {
+      const p = s.results.products.find(p => p.name === name);
+      row[`s${i}_wip`] = p?.wip || 0;
+    });
+    return row;
+  });
+  const bars = scenarios.map((s, i) => ({
+    prefix: `s${i}_`,
+    stackId: `s${i}`,
+    name: s.name,
+    palette: SCENARIO_PALETTES[i % SCENARIO_PALETTES.length],
+  }));
+  return { data, bars };
+}
+
+const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
+const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
+
 export default function RunResults() {
   const model = useModelStore(s => s.getActiveModel());
   const setRunStatus = useModelStore(s => s.setRunStatus);
@@ -42,7 +155,27 @@ export default function RunResults() {
   const basecaseResults = getResults('basecase');
   const hasRun = !!results;
 
-  // Scenario results for display
+  // Build list of scenarios to display in charts
+  const chartScenarios: ScenarioEntry[] = useMemo(() => {
+    const entries: ScenarioEntry[] = [];
+    // Always include current view (basecase or active scenario)
+    if (basecaseResults) {
+      entries.push({ id: 'basecase', name: 'Basecase', results: basecaseResults });
+    }
+    // Add displayed what-if scenarios
+    displayIds.forEach(id => {
+      const sc = modelScenarios.find(s => s.id === id);
+      const r = getResults(id);
+      if (sc && r && id !== 'basecase') {
+        entries.push({ id, name: sc.name, results: r });
+      }
+    });
+    return entries;
+  }, [basecaseResults, displayIds, modelScenarios, getResults]);
+
+  const isMultiScenario = chartScenarios.length > 1;
+
+  // Scenario results for summary table display
   const displayScenarioResults = displayIds
     .map(id => ({ id, scenario: modelScenarios.find(s => s.id === id), results: getResults(id) }))
     .filter(d => d.scenario && d.results) as { id: string; scenario: typeof modelScenarios[0]; results: CalcResults }[];
@@ -109,12 +242,7 @@ export default function RunResults() {
     }, 100);
   };
 
-  const chartColors = {
-    setup: 'hsl(217, 91%, 60%)', run: 'hsl(142, 71%, 45%)',
-    repair: 'hsl(0, 72%, 51%)', waitLabor: 'hsl(38, 92%, 50%)',
-    unavail: 'hsl(220, 9%, 46%)', lotWait: 'hsl(270, 50%, 60%)', queue: 'hsl(0, 72%, 51%)',
-  };
-
+  // Single-scenario chart data (fallback when only 1 scenario)
   const equipChartData = results?.equipment.map(e => ({
     name: e.name, setup: e.setupUtil, run: e.runUtil, repair: e.repairUtil, waitLabor: e.waitLaborUtil,
   })) || [];
@@ -126,6 +254,12 @@ export default function RunResults() {
   const productChartData = results?.products.map(p => ({
     name: p.name, lotWait: p.mctLotWait, queue: p.mctQueue, waitLabor: p.mctWaitLabor, setup: p.mctSetup, run: p.mctRun,
   })) || [];
+
+  // Grouped chart data
+  const groupedEquip = useMemo(() => isMultiScenario ? buildGroupedEquipData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
+  const groupedLabor = useMemo(() => isMultiScenario ? buildGroupedLaborData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
+  const groupedMCT = useMemo(() => isMultiScenario ? buildGroupedProductMCTData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
+  const groupedWIP = useMemo(() => isMultiScenario ? buildGroupedProductWIPData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
 
   // IBOM Tree data
   const ibomSelectedProduct = ibomProduct || (model.products.find(p => p.demand > 0)?.id || '');
@@ -233,22 +367,49 @@ export default function RunResults() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Equipment Utilization</CardTitle>
-                <CardDescription>Stacked utilization breakdown by equipment group</CardDescription>
+                <CardDescription>
+                  {isMultiScenario
+                    ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
+                    : 'Stacked utilization breakdown by equipment group'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                    <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                    <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                    <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
-                    <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
-                  </BarChart>
+                  {isMultiScenario && groupedEquip ? (
+                    <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                      {groupedEquip.bars.map(b => (
+                        <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                      ))}
+                      {groupedEquip.bars.map(b => (
+                        <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                      ))}
+                      {groupedEquip.bars.map(b => (
+                        <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
+                      ))}
+                      {groupedEquip.bars.map((b, i) => (
+                        <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
+                      ))}
+                    </BarChart>
+                  ) : (
+                    <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                      <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                      <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                      <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
+                      <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -295,21 +456,45 @@ export default function RunResults() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Labor Utilization</CardTitle>
-                <CardDescription>Utilization breakdown by labor group</CardDescription>
+                <CardDescription>
+                  {isMultiScenario
+                    ? `Comparing ${chartScenarios.length} scenarios`
+                    : 'Utilization breakdown by labor group'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                    <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                    <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                    <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
-                  </BarChart>
+                  {isMultiScenario && groupedLabor ? (
+                    <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                      {groupedLabor.bars.map(b => (
+                        <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                      ))}
+                      {groupedLabor.bars.map(b => (
+                        <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                      ))}
+                      {groupedLabor.bars.map(b => (
+                        <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
+                      ))}
+                    </BarChart>
+                  ) : (
+                    <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                      <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                      <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                      <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -352,22 +537,82 @@ export default function RunResults() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Product MCT (Manufacturing Cycle Time)</CardTitle>
-                <CardDescription>MCT breakdown by product in {model.general.mct_time_unit}s</CardDescription>
+                <CardDescription>
+                  {isMultiScenario
+                    ? `Comparing ${chartScenarios.length} scenarios — MCT in ${model.general.mct_time_unit}s`
+                    : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Lot Waiting" />
-                    <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Queue" />
-                    <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
-                    <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                    <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
-                  </BarChart>
+                  {isMultiScenario && groupedMCT ? (
+                    <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      {groupedMCT.bars.map(b => (
+                        <Bar key={b.prefix + 'lotWait'} dataKey={b.prefix + 'lotWait'} stackId={b.stackId} fill={b.palette.lotWait} name={`${b.name} Lot Wait`} />
+                      ))}
+                      {groupedMCT.bars.map(b => (
+                        <Bar key={b.prefix + 'queue'} dataKey={b.prefix + 'queue'} stackId={b.stackId} fill={b.palette.queue} name={`${b.name} Queue`} />
+                      ))}
+                      {groupedMCT.bars.map(b => (
+                        <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} />
+                      ))}
+                      {groupedMCT.bars.map(b => (
+                        <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                      ))}
+                      {groupedMCT.bars.map(b => (
+                        <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} radius={[2, 2, 0, 0]} />
+                      ))}
+                    </BarChart>
+                  ) : (
+                    <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Lot Waiting" />
+                      <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Queue" />
+                      <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
+                      <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                      <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* WIP Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  {isMultiScenario && groupedWIP ? (
+                    <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      {groupedWIP.bars.map((b, i) => (
+                        <Bar key={b.prefix + 'wip'} dataKey={b.prefix + 'wip'} fill={b.palette.single} name={`${b.name} WIP`} radius={[2, 2, 0, 0]} />
+                      ))}
+                    </BarChart>
+                  ) : (
+                    <BarChart data={results?.products.map(p => ({ name: p.name, wip: p.wip })) || []} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Bar dataKey="wip" fill={chartColors.setup} name="WIP" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               </CardContent>
             </Card>
