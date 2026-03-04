@@ -372,7 +372,7 @@ function ScenarioEditorPanel({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <Button size="sm" className="h-8 text-xs">
+        <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
           <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
         </Button>
         <Button size="sm" variant="outline" className="h-8 text-xs">
