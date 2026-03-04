@@ -64,6 +64,13 @@ export interface RoutingEntry {
   pct_routed: number;
 }
 
+export interface IBOMEntry {
+  id: string;
+  parent_product_id: string;
+  component_product_id: string;
+  units_per_assy: number;
+}
+
 export interface GeneralData {
   model_title: string;
   ops_time_unit: 'MIN' | 'HR' | 'SEC';
@@ -97,6 +104,7 @@ export interface Model {
   products: Product[];
   operations: Operation[];
   routing: RoutingEntry[];
+  ibom: IBOMEntry[];
 }
 
 interface ModelStore {
@@ -126,6 +134,10 @@ interface ModelStore {
   updateRouting: (modelId: string, entryId: string, data: Partial<RoutingEntry>) => void;
   deleteRouting: (modelId: string, entryId: string) => void;
   setRouting: (modelId: string, productId: string, entries: RoutingEntry[]) => void;
+  addIBOM: (modelId: string, entry: IBOMEntry) => void;
+  updateIBOM: (modelId: string, entryId: string, data: Partial<IBOMEntry>) => void;
+  deleteIBOM: (modelId: string, entryId: string) => void;
+  setIBOMForParent: (modelId: string, parentId: string, entries: IBOMEntry[]) => void;
 }
 
 const uid = () => crypto.randomUUID();
@@ -133,6 +145,7 @@ const uid = () => crypto.randomUUID();
 function createDemoModel(): Model {
   const laborIds = { PREP: uid(), MACHINST: uid(), INSPECTR: uid(), REPAIR: uid() };
   const equipIds = { BENCH: uid(), VT_LATHE: uid(), DEBURR: uid(), INSPECT: uid(), REWORK: uid(), MILL: uid(), DRILL: uid() };
+  const prodIds = { HUB1: uid(), HUB2: uid(), HUB3: uid(), HUB4: uid(), SLEEVE: uid(), MOUNT: uid(), BRACKET: uid(), BOLT: uid() };
 
   return {
     id: uid(),
@@ -176,17 +189,34 @@ function createDemoModel(): Model {
       { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Drill presses' },
     ],
     products: [
-      { id: uid(), name: 'HUB1', demand: 50, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 1' },
-      { id: uid(), name: 'HUB2', demand: 40, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 2' },
-      { id: uid(), name: 'HUB3', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 3' },
-      { id: uid(), name: 'HUB4', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 4' },
-      { id: uid(), name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Sleeve component' },
-      { id: uid(), name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Mount assembly' },
-      { id: uid(), name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
-      { id: uid(), name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
+      { id: prodIds.HUB1, name: 'HUB1', demand: 50, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 1' },
+      { id: prodIds.HUB2, name: 'HUB2', demand: 40, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 2' },
+      { id: prodIds.HUB3, name: 'HUB3', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 3' },
+      { id: prodIds.HUB4, name: 'HUB4', demand: 30, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 4' },
+      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Sleeve component' },
+      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Mount assembly' },
+      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
+      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
     ],
     operations: [],
     routing: [],
+    ibom: [
+      // HUB1 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB2 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB3 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // HUB4 → MOUNT (4) + SLEEVE (1)
+      { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
+      { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
+      // MOUNT → BRACKET (2) + BOLT (2)
+      { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BRACKET, units_per_assy: 2 },
+      { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BOLT, units_per_assy: 2 },
+    ],
   };
 }
 
@@ -226,7 +256,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
-      labor: [], equipment: [], products: [], operations: [], routing: [],
+      labor: [], equipment: [], products: [], operations: [], routing: [], ibom: [],
     };
     set((s) => ({ models: [model, ...s.models] }));
     return id;
@@ -309,6 +339,23 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     models: s.models.map((m) => m.id === modelId ? {
       ...m,
       routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
+      updated_at: new Date().toISOString(),
+    } : m),
+  })),
+
+  addIBOM: (modelId, entry) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString() } : m),
+  })),
+  updateIBOM: (modelId, entryId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteIBOM: (modelId, entryId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString() } : m),
+  })),
+  setIBOMForParent: (modelId, parentId, entries) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      ibom: [...m.ibom.filter((e) => e.parent_product_id !== parentId), ...entries],
       updated_at: new Date().toISOString(),
     } : m),
   })),
