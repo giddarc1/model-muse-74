@@ -134,6 +134,10 @@ interface ModelStore {
   updateRouting: (modelId: string, entryId: string, data: Partial<RoutingEntry>) => void;
   deleteRouting: (modelId: string, entryId: string) => void;
   setRouting: (modelId: string, productId: string, entries: RoutingEntry[]) => void;
+  addIBOM: (modelId: string, entry: IBOMEntry) => void;
+  updateIBOM: (modelId: string, entryId: string, data: Partial<IBOMEntry>) => void;
+  deleteIBOM: (modelId: string, entryId: string) => void;
+  setIBOMForParent: (modelId: string, parentId: string, entries: IBOMEntry[]) => void;
 }
 
 const uid = () => crypto.randomUUID();
