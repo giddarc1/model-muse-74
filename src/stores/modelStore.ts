@@ -367,6 +367,9 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   },
 
   deleteModel: (id) => set((s) => ({ models: s.models.filter((m) => m.id !== id) })),
+  renameModel: (id, name) => set((s) => ({
+    models: s.models.map((m) => m.id === id ? { ...m, name, general: { ...m.general, model_title: name }, updated_at: new Date().toISOString() } : m),
+  })),
   toggleStar: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_starred: !m.is_starred } : m) })),
   archiveModel: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_archived: !m.is_archived } : m) })),
   setRunStatus: (id, status) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, run_status: status } : m) })),
@@ -381,8 +384,15 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   updateLabor: (modelId, laborId, data) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.map((l) => l.id === laborId ? { ...l, ...data } : l), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
+  // Cascading: clear labor_group_id on equipment referencing this labor
   deleteLabor: (modelId, laborId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.filter((l) => l.id !== laborId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      labor: m.labor.filter((l) => l.id !== laborId),
+      equipment: m.equipment.map((e) => e.labor_group_id === laborId ? { ...e, labor_group_id: '' } : e),
+      updated_at: new Date().toISOString(),
+      run_status: 'needs_recalc' as const,
+    } : m),
   })),
 
   addEquipment: (modelId, eq) => set((s) => ({
@@ -391,8 +401,15 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   updateEquipment: (modelId, eqId, data) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.map((e) => e.id === eqId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
+  // Cascading: clear equip_id on operations referencing this equipment
   deleteEquipment: (modelId, eqId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.filter((e) => e.id !== eqId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      equipment: m.equipment.filter((e) => e.id !== eqId),
+      operations: m.operations.map((o) => o.equip_id === eqId ? { ...o, equip_id: '' } : o),
+      updated_at: new Date().toISOString(),
+      run_status: 'needs_recalc' as const,
+    } : m),
   })),
 
   addProduct: (modelId, product) => set((s) => ({
