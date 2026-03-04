@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   session: Session | null;
@@ -17,14 +18,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const hadSession = useRef(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Detect session expiry
+      if (hadSession.current && !session) {
+        toast.error('Your session has expired — please sign in again', { duration: 6000 });
+      }
+      hadSession.current = !!session;
       setSession(session);
       setLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      hadSession.current = !!session;
       setSession(session);
       setLoading(false);
     });
@@ -40,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) return { error, data: null };
 
-    // Create org + user profile via edge function (uses service role to bypass RLS)
     if (data.user) {
       const { error: fnError } = await supabase.functions.invoke('handle-signup', {
         body: { user_id: data.user.id, email, full_name: fullName },
@@ -56,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    hadSession.current = false;
     await supabase.auth.signOut();
   };
 
