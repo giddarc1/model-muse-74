@@ -10,6 +10,7 @@ import GeneralData from "./pages/GeneralData";
 import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
+import OperationsRouting from "./pages/OperationsRouting";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -31,7 +32,7 @@ const App = () => (
             <Route path="labor" element={<LaborData />} />
             <Route path="equipment" element={<EquipmentData />} />
             <Route path="products" element={<ProductData />} />
-            <Route path="operations" element={<PlaceholderPage />} />
+            <Route path="operations" element={<OperationsRouting />} />
             <Route path="ibom" element={<PlaceholderPage />} />
             <Route path="run" element={<PlaceholderPage />} />
             <Route path="whatif" element={<PlaceholderPage />} />

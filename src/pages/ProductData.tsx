@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Product } from '@/stores/modelStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,21 +7,31 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ProductData() {
   const model = useModelStore((s) => s.getActiveModel());
   const addProduct = useModelStore((s) => s.addProduct);
   const updateProduct = useModelStore((s) => s.updateProduct);
   const deleteProduct = useModelStore((s) => s.deleteProduct);
+  const navigate = useNavigate();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   if (!model) return null;
 
   const handleAdd = () => {
     if (!newName.trim()) return;
+    if (model.products.some((p) => p.name.toLowerCase() === newName.trim().toLowerCase())) {
+      toast.error('A product with this name already exists');
+      return;
+    }
     addProduct(model.id, {
       id: crypto.randomUUID(), name: newName.trim().toUpperCase(), demand: 0, lot_size: 1,
       tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1,
@@ -28,11 +39,28 @@ export default function ProductData() {
     });
     setNewName('');
     setShowAdd(false);
+    toast.success(`Product "${newName.trim().toUpperCase()}" added`);
+  };
+
+  const handleCopy = (p: Product) => {
+    const newP: Product = {
+      ...p,
+      id: crypto.randomUUID(),
+      name: `${p.name}_COPY`,
+    };
+    addProduct(model.id, newP);
+    toast.success(`Product "${newP.name}" created as copy`);
   };
 
   const handleCellChange = (id: string, field: keyof Product, value: any) => {
     updateProduct(model.id, id, { [field]: value });
   };
+
+  const goToOps = (productId: string) => {
+    navigate(`/models/${model.id}/operations?product=${productId}`);
+  };
+
+  const opsCount = (productId: string) => model.operations.filter((o) => o.product_id === productId).length;
 
   return (
     <div className="p-6 animate-fade-in">
@@ -42,6 +70,10 @@ export default function ProductData() {
           <p className="text-sm text-muted-foreground">{model.products.length} products defined</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+          </Button>
           <div className="flex border rounded-md overflow-hidden">
             <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('table')}><List className="h-4 w-4" /></Button>
             <Button variant={viewMode === 'form' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('form')}><LayoutGrid className="h-4 w-4" /></Button>
@@ -61,11 +93,17 @@ export default function ProductData() {
                   <TableHead className="font-mono text-xs">Name</TableHead>
                   <TableHead className="font-mono text-xs">Demand</TableHead>
                   <TableHead className="font-mono text-xs">Lot Size</TableHead>
-                  <TableHead className="font-mono text-xs">TBatch</TableHead>
-                  <TableHead className="font-mono text-xs">Demand Fac</TableHead>
-                  <TableHead className="font-mono text-xs">Lot Fac</TableHead>
+                  {showAdvanced && <>
+                    <TableHead className="font-mono text-xs">TBatch</TableHead>
+                    <TableHead className="font-mono text-xs">Demand Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Lot Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Var Fac</TableHead>
+                    <TableHead className="font-mono text-xs">MTS</TableHead>
+                    <TableHead className="font-mono text-xs">Gather</TableHead>
+                  </>}
+                  <TableHead className="font-mono text-xs">Ops</TableHead>
                   <TableHead className="font-mono text-xs">Comments</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -74,11 +112,26 @@ export default function ProductData() {
                     <TableCell className="font-mono font-medium">{p.name}</TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></TableCell>
-                    <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></TableCell>
-                    <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></TableCell>
-                    <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
+                    {showAdvanced && <>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} /></TableCell>
+                      <TableCell><Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} /></TableCell>
+                    </>}
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
+                        <GitBranch className="h-3 w-3" />{opsCount(p.id)}
+                      </Button>
+                    </TableCell>
                     <TableCell><Input className="h-8 w-32" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></TableCell>
-                    <TableCell><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteProduct(model.id, p.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    <TableCell>
+                      <div className="flex gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(p)} title="Duplicate"><Copy className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct(model.id, p.id)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -92,15 +145,45 @@ export default function ProductData() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{p.name}</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteProduct(model.id, p.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <div className="flex gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(p)}><Copy className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct(model.id, p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs">Demand</Label><Input type="number" className="h-8 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></div>
-                  <div><Label className="text-xs">Lot Size</Label><Input type="number" className="h-8 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></div>
-                </div>
-                <div><Label className="text-xs">Comments</Label><Input className="h-8" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></div>
+              <CardContent>
+                <Tabs defaultValue="basic">
+                  <TabsList className="h-8">
+                    <TabsTrigger value="basic" className="text-xs h-6">Basic</TabsTrigger>
+                    <TabsTrigger value="advanced" className="text-xs h-6">Advanced</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="basic" className="mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-xs">Demand</Label><Input type="number" className="h-8 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></div>
+                      <div><Label className="text-xs">Lot Size</Label><Input type="number" className="h-8 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></div>
+                    </div>
+                    <div><Label className="text-xs">Comments</Label><Input className="h-8" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></div>
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => goToOps(p.id)}>
+                      <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
+                    </Button>
+                  </TabsContent>
+                  <TabsContent value="advanced" className="mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><Label className="text-xs">Transfer Batch</Label><Input type="number" className="h-8 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></div>
+                      <div><Label className="text-xs">Var Factor</Label><Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></div>
+                      <div><Label className="text-xs">Demand Factor</Label><Input type="number" className="h-8 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></div>
+                      <div><Label className="text-xs">Lot Factor</Label><Input type="number" className="h-8 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Make to Stock</Label>
+                      <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Gather Transfer Batches</Label>
+                      <Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           ))}
@@ -110,7 +193,7 @@ export default function ProductData() {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Product</DialogTitle></DialogHeader>
-          <div><Label>Product Name</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., HUB1" autoFocus /></div>
+          <div><Label>Product Name</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., HUB1" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAdd()} /></div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={!newName.trim()}>Add</Button>

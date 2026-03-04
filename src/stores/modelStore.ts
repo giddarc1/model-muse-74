@@ -56,6 +56,14 @@ export interface Operation {
   labor_run_piece: number;
 }
 
+export interface RoutingEntry {
+  id: string;
+  product_id: string;
+  from_op_name: string;
+  to_op_name: string;
+  pct_routed: number;
+}
+
 export interface GeneralData {
   model_title: string;
   ops_time_unit: 'MIN' | 'HR' | 'SEC';
@@ -88,6 +96,7 @@ export interface Model {
   equipment: EquipmentGroup[];
   products: Product[];
   operations: Operation[];
+  routing: RoutingEntry[];
 }
 
 interface ModelStore {
@@ -110,6 +119,13 @@ interface ModelStore {
   addProduct: (modelId: string, product: Product) => void;
   updateProduct: (modelId: string, productId: string, data: Partial<Product>) => void;
   deleteProduct: (modelId: string, productId: string) => void;
+  addOperation: (modelId: string, op: Operation) => void;
+  updateOperation: (modelId: string, opId: string, data: Partial<Operation>) => void;
+  deleteOperation: (modelId: string, opId: string) => void;
+  addRouting: (modelId: string, entry: RoutingEntry) => void;
+  updateRouting: (modelId: string, entryId: string, data: Partial<RoutingEntry>) => void;
+  deleteRouting: (modelId: string, entryId: string) => void;
+  setRouting: (modelId: string, productId: string, entries: RoutingEntry[]) => void;
 }
 
 const uid = () => crypto.randomUUID();
@@ -170,6 +186,7 @@ function createDemoModel(): Model {
       { id: uid(), name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
     ],
     operations: [],
+    routing: [],
   };
 }
 
@@ -209,7 +226,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
-      labor: [], equipment: [], products: [], operations: [],
+      labor: [], equipment: [], products: [], operations: [], routing: [],
     };
     set((s) => ({ models: [model, ...s.models] }));
     return id;
@@ -267,5 +284,32 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   })),
   deleteProduct: (modelId, productId) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.filter((p) => p.id !== productId), updated_at: new Date().toISOString() } : m),
+  })),
+
+  addOperation: (modelId, op) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString() } : m),
+  })),
+  updateOperation: (modelId, opId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteOperation: (modelId, opId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.filter((o) => o.id !== opId), updated_at: new Date().toISOString() } : m),
+  })),
+
+  addRouting: (modelId, entry) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString() } : m),
+  })),
+  updateRouting: (modelId, entryId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteRouting: (modelId, entryId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString() } : m),
+  })),
+  setRouting: (modelId, productId, entries) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
+      updated_at: new Date().toISOString(),
+    } : m),
   })),
 }));
