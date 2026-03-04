@@ -191,8 +191,8 @@ function createDemoModel(): Model {
       comments: 'Based on the Hub Manufacturing Cell example from the MPX manual.',
     },
     labor: [
-      { id: laborIds.PREP, name: 'PREP', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
-      { id: laborIds.MACHINST, name: 'MACHINST', count: 5, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
+      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
+      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
       { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspectors' },
       { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Repair workers' },
     ],
