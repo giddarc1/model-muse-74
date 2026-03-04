@@ -285,80 +285,82 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   setRunStatus: (id, status) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, run_status: status } : m) })),
 
   updateGeneral: (modelId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, general: { ...m.general, ...data }, updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, general: { ...m.general, ...data }, updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
 
   addLabor: (modelId, labor) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: [...m.labor, labor], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, labor: [...m.labor, labor], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateLabor: (modelId, laborId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.map((l) => l.id === laborId ? { ...l, ...data } : l), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.map((l) => l.id === laborId ? { ...l, ...data } : l), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteLabor: (modelId, laborId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.filter((l) => l.id !== laborId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.filter((l) => l.id !== laborId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
 
   addEquipment: (modelId, eq) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: [...m.equipment, eq], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: [...m.equipment, eq], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateEquipment: (modelId, eqId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.map((e) => e.id === eqId ? { ...e, ...data } : e), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.map((e) => e.id === eqId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteEquipment: (modelId, eqId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.filter((e) => e.id !== eqId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.filter((e) => e.id !== eqId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
 
   addProduct: (modelId, product) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: [...m.products, product], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, products: [...m.products, product], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateProduct: (modelId, productId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.map((p) => p.id === productId ? { ...p, ...data } : p), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.map((p) => p.id === productId ? { ...p, ...data } : p), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteProduct: (modelId, productId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.filter((p) => p.id !== productId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.filter((p) => p.id !== productId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
 
   addOperation: (modelId, op) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateOperation: (modelId, opId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteOperation: (modelId, opId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.filter((o) => o.id !== opId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.filter((o) => o.id !== opId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
 
   addRouting: (modelId, entry) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateRouting: (modelId, entryId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteRouting: (modelId, entryId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   setRouting: (modelId, productId, entries) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? {
       ...m,
       routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
       updated_at: new Date().toISOString(),
+      run_status: 'needs_recalc' as const,
     } : m),
   })),
 
   addIBOM: (modelId, entry) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   updateIBOM: (modelId, entryId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   deleteIBOM: (modelId, entryId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString() } : m),
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
   })),
   setIBOMForParent: (modelId, parentId, entries) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? {
       ...m,
       ibom: [...m.ibom.filter((e) => e.parent_product_id !== parentId), ...entries],
       updated_at: new Date().toISOString(),
+      run_status: 'needs_recalc' as const,
     } : m),
   })),
 }));
