@@ -25,7 +25,12 @@ export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
   const model = useModelStore(s => s.models.find(m => m.id === modelId));
 
-  const scenarios = useScenarioStore(s => s.getScenariosForModel(modelId || ''));
+  const scenarios = useScenarioStore(s => s.scenarios.filter(sc => sc.modelId === modelId));
+  const initScenarios = useScenarioStore(s => s.getScenariosForModel);
+
+  useEffect(() => {
+    if (modelId) initScenarios(modelId);
+  }, [modelId, initScenarios]);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.getActiveScenario());
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
