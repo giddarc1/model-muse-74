@@ -34,7 +34,9 @@ export default function WhatIfStudio() {
     setActiveScenario, createScenario, duplicateScenario, renameScenario,
     updateScenarioDescription, deleteScenario, toggleDisplayScenario,
     applyScenarioChange, removeChange, promoteToBasecase, getScenariosForModel,
+    markCalculated,
   } = useScenarioStore();
+  const { setResults } = useResultsStore();
 
   // Lazy-init demo scenarios
   const [initialized, setInitialized] = useState(false);
