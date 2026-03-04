@@ -47,7 +47,7 @@ export default function RunResults() {
     .map(id => ({ id, scenario: modelScenarios.find(s => s.id === id), results: getResults(id) }))
     .filter(d => d.scenario && d.results) as { id: string; scenario: typeof modelScenarios[0]; results: CalcResults }[];
 
-  const handleRun = () => {
+  const handleRun = async () => {
     if (runMode === 'verify') {
       const msgs = verifyData(model);
       setVerifyMessages(msgs);
@@ -59,14 +59,45 @@ export default function RunResults() {
       return;
     }
 
+    // Validation guards
+    const validationErrors: string[] = [];
+    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be greater than 0');
+    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be greater than 0');
+    model.products.forEach(p => {
+      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
+      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
+    });
+    model.equipment.forEach(e => {
+      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
+    });
+    model.labor.forEach(l => {
+      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
+    });
+    if (validationErrors.length > 0) {
+      setVerifyMessages({ errors: validationErrors, warnings: [] });
+      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`);
+      return;
+    }
+
     setIsRunning(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const calcResults = calculate(model, activeScenario);
       setResults(resultKey, calcResults);
       setRunStatus(model.id, 'current');
       if (activeScenario) markCalculated(activeScenario.id);
       setIsRunning(false);
       setVerifyMessages(null);
+
+      // Persist results to Supabase
+      const { scenarioDb } = await import('@/lib/scenarioDb');
+      if (activeScenario) {
+        scenarioDb.saveResults(activeScenario.id, calcResults);
+      } else {
+        scenarioDb.saveBasecaseResults(model.id, calcResults);
+      }
+      // Update last_run_at
+      const { db } = await import('@/lib/supabaseData');
+      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
 
       if (calcResults.errors.length > 0) {
         toast.error(calcResults.errors[0]);

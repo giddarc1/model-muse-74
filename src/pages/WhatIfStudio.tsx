@@ -40,12 +40,13 @@ export default function WhatIfStudio() {
 
   // Lazy-init demo scenarios
   const [initialized, setInitialized] = useState(false);
+  const loadScenariosFromDb = useScenarioStore(s => s.loadScenariosFromDb);
   useEffect(() => {
     if (modelId && !initialized) {
-      getScenariosForModel(modelId);
+      loadScenariosFromDb(modelId);
       setInitialized(true);
     }
-  }, [modelId, initialized, getScenariosForModel]);
+  }, [modelId, initialized, loadScenariosFromDb]);
 
   const scenarios = allScenarios.filter(sc => sc.modelId === modelId);
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
