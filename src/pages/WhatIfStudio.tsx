@@ -230,7 +230,7 @@ export default function WhatIfStudio() {
               </label>
             ))}
           </div>
-          <Button size="sm" variant="outline" className="w-full h-7 text-xs">
+          <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={handleRecalcAll}>
             <RefreshCw className="h-3 w-3 mr-1" /> Recalc All
           </Button>
         </div>
