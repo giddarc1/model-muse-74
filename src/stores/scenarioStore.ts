@@ -325,18 +325,18 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       }
     });
 
-    // Clear changes from this scenario and update all other scenarios' basecase values
+    // Clear changes from this scenario and mark others as needing recalc
     set(s => ({
-      scenarios: s.scenarios.map(sc => {
-        if (sc.id === scenarioId) {
-          return { ...sc, changes: [], status: 'needs_recalc' as const, updatedAt: new Date().toISOString() };
-        }
-        if (sc.modelId === scenario.modelId) {
-          return { ...sc, status: 'needs_recalc' as const };
-        }
-        return sc;
-      }),
+      scenarios: s.scenarios
+        .filter(sc => sc.id !== scenarioId) // Remove the promoted scenario
+        .map(sc => {
+          if (sc.modelId === scenario.modelId) {
+            return { ...sc, status: 'needs_recalc' as const };
+          }
+          return sc;
+        }),
       activeScenarioId: null,
+      displayScenarioIds: s.displayScenarioIds.filter(id => id !== scenarioId),
     }));
   },
 }));
