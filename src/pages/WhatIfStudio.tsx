@@ -248,6 +248,7 @@ export default function WhatIfStudio() {
             onRename={renameScenario}
             onRemoveChange={removeChange}
             onPromote={() => setShowPromoteModal(true)}
+            onRunScenario={handleRunScenario}
           />
         ) : (
           <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
