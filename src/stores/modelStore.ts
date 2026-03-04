@@ -285,4 +285,31 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   deleteProduct: (modelId, productId) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.filter((p) => p.id !== productId), updated_at: new Date().toISOString() } : m),
   })),
+
+  addOperation: (modelId, op) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString() } : m),
+  })),
+  updateOperation: (modelId, opId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteOperation: (modelId, opId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.filter((o) => o.id !== opId), updated_at: new Date().toISOString() } : m),
+  })),
+
+  addRouting: (modelId, entry) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString() } : m),
+  })),
+  updateRouting: (modelId, entryId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteRouting: (modelId, entryId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString() } : m),
+  })),
+  setRouting: (modelId, productId, entries) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
+      updated_at: new Date().toISOString(),
+    } : m),
+  })),
 }));
