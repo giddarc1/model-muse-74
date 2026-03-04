@@ -209,7 +209,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         make_to_stock: p.make_to_stock, gather_tbatches: p.gather_tbatches,
         comments: p.comments || null,
       }))
-    ));
+    ).select());
   }
 
   if (model.operations.length) {
