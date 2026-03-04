@@ -115,7 +115,7 @@ interface ModelStore {
   modelsLoading: boolean;
   setActiveModel: (id: string | null) => void;
   getActiveModel: () => Model | undefined;
-  loadModels: () => Promise<void>;
+  loadModels: (force?: boolean) => Promise<void>;
   createModel: (name: string, description?: string) => string;
   duplicateModel: (id: string) => string;
   renameModel: (id: string, name: string) => void;
@@ -306,8 +306,9 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   modelsLoaded: false,
   modelsLoading: false,
 
-  loadModels: async () => {
+  loadModels: async (force = false) => {
     if (get().modelsLoading) return;
+    if (get().modelsLoaded && !force) return;
     set({ modelsLoading: true });
     try {
       const models = await fetchAllModels();

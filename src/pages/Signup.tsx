@@ -39,10 +39,14 @@ export default function Signup() {
     if (data?.session) {
       try {
         await seedDemoModelToDB();
+        toast.success('Welcome to RapidMCT!');
+        // Force a fresh model load after seeding completes
+        const { useModelStore } = await import('@/stores/modelStore');
+        await useModelStore.getState().loadModels(true);
       } catch (err) {
         console.error('Demo seed error:', err);
+        toast.success('Welcome to RapidMCT!');
       }
-      toast.success('Welcome to RapidMCT!');
       navigate('/library');
     }
     setSubmitting(false);
