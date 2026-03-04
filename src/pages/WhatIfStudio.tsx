@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
+import { useResultsStore } from '@/stores/resultsStore';
+import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -32,7 +34,9 @@ export default function WhatIfStudio() {
     setActiveScenario, createScenario, duplicateScenario, renameScenario,
     updateScenarioDescription, deleteScenario, toggleDisplayScenario,
     applyScenarioChange, removeChange, promoteToBasecase, getScenariosForModel,
+    markCalculated,
   } = useScenarioStore();
+  const { setResults } = useResultsStore();
 
   // Lazy-init demo scenarios
   const [initialized, setInitialized] = useState(false);
@@ -63,6 +67,34 @@ export default function WhatIfStudio() {
     setNewName('');
     setShowNewModal(false);
     toast.success(`Scenario "${newName.trim()}" created`);
+  };
+
+  const handleRunScenario = (scenario: Scenario) => {
+    // Calculate basecase first if not already done
+    const basecaseResults = useResultsStore.getState().getResults('basecase');
+    if (!basecaseResults) {
+      const bcResults = calculate(model, null);
+      setResults('basecase', bcResults);
+    }
+    const results = calculate(model, scenario);
+    setResults(scenario.id, results);
+    markCalculated(scenario.id);
+    toast.success(`Scenario "${scenario.name}" calculated`);
+  };
+
+  const handleRecalcAll = () => {
+    // Calculate basecase
+    const bcResults = calculate(model, null);
+    setResults('basecase', bcResults);
+    // Calculate all scenarios for this model
+    let count = 0;
+    scenarios.forEach(sc => {
+      const results = calculate(model, sc);
+      setResults(sc.id, results);
+      markCalculated(sc.id);
+      count++;
+    });
+    toast.success(`Recalculated basecase + ${count} scenario(s)`);
   };
 
   const handlePromote = () => {
@@ -198,7 +230,7 @@ export default function WhatIfStudio() {
               </label>
             ))}
           </div>
-          <Button size="sm" variant="outline" className="w-full h-7 text-xs">
+          <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={handleRecalcAll}>
             <RefreshCw className="h-3 w-3 mr-1" /> Recalc All
           </Button>
         </div>
@@ -216,6 +248,7 @@ export default function WhatIfStudio() {
             onRename={renameScenario}
             onRemoveChange={removeChange}
             onPromote={() => setShowPromoteModal(true)}
+            onRunScenario={handleRunScenario}
           />
         ) : (
           <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
@@ -279,7 +312,7 @@ function BasecaseView() {
 }
 
 function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote,
+  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario,
 }: {
   scenario: Scenario;
   model: any;
@@ -287,6 +320,7 @@ function ScenarioEditorPanel({
   onRename: (id: string, name: string) => void;
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
+  onRunScenario: (scenario: Scenario) => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
@@ -338,7 +372,7 @@ function ScenarioEditorPanel({
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <Button size="sm" className="h-8 text-xs">
+        <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
           <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
         </Button>
         <Button size="sm" variant="outline" className="h-8 text-xs">
