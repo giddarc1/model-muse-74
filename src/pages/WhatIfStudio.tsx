@@ -25,15 +25,26 @@ export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
   const model = useModelStore(s => s.models.find(m => m.id === modelId));
 
-  const scenarios = useScenarioStore(s => s.scenarios.filter(sc => sc.modelId === modelId));
-  const initScenarios = useScenarioStore(s => s.getScenariosForModel);
-
-  useEffect(() => {
-    if (modelId) initScenarios(modelId);
-  }, [modelId, initScenarios]);
+  const allScenarios = useScenarioStore(s => s.scenarios);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
-  const activeScenario = useScenarioStore(s => s.getActiveScenario());
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
+  const {
+    setActiveScenario, createScenario, duplicateScenario, renameScenario,
+    updateScenarioDescription, deleteScenario, toggleDisplayScenario,
+    applyScenarioChange, removeChange, promoteToBasecase, getScenariosForModel,
+  } = useScenarioStore();
+
+  // Lazy-init demo scenarios
+  const [initialized, setInitialized] = useState(false);
+  useEffect(() => {
+    if (modelId && !initialized) {
+      getScenariosForModel(modelId);
+      setInitialized(true);
+    }
+  }, [modelId, initialized, getScenariosForModel]);
+
+  const scenarios = allScenarios.filter(sc => sc.modelId === modelId);
+  const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
   const {
     setActiveScenario, createScenario, duplicateScenario, renameScenario,
     updateScenarioDescription, deleteScenario, toggleDisplayScenario,
