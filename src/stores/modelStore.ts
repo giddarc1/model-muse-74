@@ -114,6 +114,7 @@ interface ModelStore {
   getActiveModel: () => Model | undefined;
   createModel: (name: string, description?: string) => string;
   duplicateModel: (id: string) => string;
+  renameModel: (id: string, name: string) => void;
   deleteModel: (id: string) => void;
   toggleStar: (id: string) => void;
   archiveModel: (id: string) => void;
