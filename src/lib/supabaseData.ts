@@ -178,6 +178,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
 
   if (model.labor.length) {
     inserts.push(supabase.from('model_labor').insert(
+
       model.labor.map(l => ({
         id: l.id, model_id: model.id, name: l.name, count: l.count,
         overtime_pct: l.overtime_pct, unavail_pct: l.unavail_pct, dept_code: l.dept_code || null,
