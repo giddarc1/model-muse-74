@@ -143,6 +143,22 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
+function createHubRouting(productId: string): RoutingEntry[] {
+  return [
+    { id: uid(), product_id: productId, from_op_name: 'DOCK', to_op_name: 'BENCH', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'BENCH', to_op_name: 'RFTURN', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'RFTURN', to_op_name: 'DEBURR', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'DEBURR', to_op_name: 'FNTURN', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'FNTURN', to_op_name: 'INSPECT', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'SLOT', pct_routed: 85 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'REWORK', pct_routed: 10 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'SCRAP', pct_routed: 5 },
+    { id: uid(), product_id: productId, from_op_name: 'REWORK', to_op_name: 'INSPECT', pct_routed: 80 },
+    { id: uid(), product_id: productId, from_op_name: 'REWORK', to_op_name: 'SCRAP', pct_routed: 20 },
+    { id: uid(), product_id: productId, from_op_name: 'SLOT', to_op_name: 'STOCK', pct_routed: 100 },
+  ];
+}
+
 function createDemoModel(): Model {
   const laborIds = { PREP: uid(), MACHINST: uid(), INSPECTR: uid(), REPAIR: uid() };
   const equipIds = { BENCH: uid(), VT_LATHE: uid(), DEBURR: uid(), INSPECT: uid(), REWORK: uid(), MILL: uid(), DRILL: uid() };
