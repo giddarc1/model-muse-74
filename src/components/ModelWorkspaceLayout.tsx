@@ -1,19 +1,32 @@
-import { Outlet, useParams, useNavigate } from 'react-router-dom';
+import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { ModelContextBar } from './ModelContextBar';
 import { ModelSidebar } from './ModelSidebar';
 import { toast } from 'sonner';
 
+const SCREEN_NAMES: Record<string, string> = {
+  overview: 'Overview', general: 'General Data', labor: 'Labor', equipment: 'Equipment',
+  products: 'Products', operations: 'Operations', 'all-operations': 'All Operations',
+  ibom: 'IBOM', run: 'Run & Results', whatif: 'What-If Studio', reports: 'Reports', settings: 'Model Settings',
+};
+
 export function ModelWorkspaceLayout() {
   const { modelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const setActiveModel = useModelStore((s) => s.setActiveModel);
   const models = useModelStore((s) => s.models);
   const modelsLoaded = useModelStore((s) => s.modelsLoaded);
   const loadModels = useModelStore((s) => s.loadModels);
   const loadScenariosFromDb = useScenarioStore((s) => s.loadScenariosFromDb);
+
+  const model = models.find(m => m.id === modelId);
+  const screenSegment = location.pathname.split('/').pop() || 'overview';
+  const screenName = SCREEN_NAMES[screenSegment] || screenSegment;
+  usePageTitle(model ? `${model.name} — ${screenName}` : 'Loading...');
 
   useEffect(() => {
     if (!modelsLoaded) {
@@ -27,7 +40,6 @@ export function ModelWorkspaceLayout() {
       return;
     }
     setActiveModel(modelId!);
-    // Load scenarios and cached results from Supabase
     loadScenariosFromDb(modelId!);
     return () => setActiveModel(null);
   }, [modelId, models, modelsLoaded, navigate, setActiveModel, loadModels, loadScenariosFromDb]);

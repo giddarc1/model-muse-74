@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => { document.title = 'RapidMCT — Create Account'; return () => { document.title = 'RapidMCT'; }; }, []);
 
   if (loading) return null;
   if (session) return <Navigate to="/library" replace />;

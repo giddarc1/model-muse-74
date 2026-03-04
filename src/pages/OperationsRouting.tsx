@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,13 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc } from 'lucide-react';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
 
 export default function OperationsRouting() {
+  usePageTitle('Operations & Routing');
   const model = useModelStore((s) => s.getActiveModel());
   const addOperation = useModelStore((s) => s.addOperation);
   const updateOperation = useModelStore((s) => s.updateOperation);
@@ -51,17 +52,24 @@ export default function OperationsRouting() {
     return ['DOCK', ...userOps, 'STOCK', 'SCRAP'];
   }, [productOps]);
 
+  // Per-from-op routing sum with status
+  const routingSums = useMemo(() => {
+    const sums: Record<string, number> = {};
+    productRouting.forEach((r) => {
+      sums[r.from_op_name] = (sums[r.from_op_name] || 0) + r.pct_routed;
+    });
+    return sums;
+  }, [productRouting]);
+
   const routingWarnings = useMemo(() => {
     const warnings: string[] = [];
-    const fromOps = new Set(productRouting.map((r) => r.from_op_name));
-    fromOps.forEach((fromOp) => {
-      const total = productRouting.filter((r) => r.from_op_name === fromOp).reduce((s, r) => s + r.pct_routed, 0);
+    Object.entries(routingSums).forEach(([fromOp, total]) => {
       if (Math.abs(total - 100) > 0.01) {
         warnings.push(`${fromOp}: routes sum to ${total}% (should be 100%)`);
       }
     });
     return warnings;
-  }, [productRouting]);
+  }, [routingSums]);
 
   if (!model) return null;
 
@@ -72,21 +80,12 @@ export default function OperationsRouting() {
       return;
     }
     addOperation(model.id, {
-      id: crypto.randomUUID(),
-      product_id: selectedProductId,
-      op_name: newOpName.trim().toUpperCase(),
-      op_number: newOpNumber,
-      equip_id: newOpEquip,
-      pct_assigned: 100,
-      equip_setup_lot: 0,
-      equip_run_piece: 0,
-      labor_setup_lot: 0,
-      labor_run_piece: 0,
+      id: crypto.randomUUID(), product_id: selectedProductId,
+      op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
+      equip_id: newOpEquip, pct_assigned: 100,
+      equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0,
     });
-    // Auto-increment next op number
-    setNewOpNumber(newOpNumber + 10);
-    setNewOpName('');
-    setNewOpEquip('');
+    setNewOpNumber(newOpNumber + 10); setNewOpName(''); setNewOpEquip('');
     setShowAddOp(false);
     toast.success('Operation added');
   };
@@ -94,46 +93,41 @@ export default function OperationsRouting() {
   const handleAddRoute = () => {
     if (!routeFromOp || !routeToOp) return;
     addRouting(model.id, {
-      id: crypto.randomUUID(),
-      product_id: selectedProductId,
-      from_op_name: routeFromOp,
-      to_op_name: routeToOp,
-      pct_routed: routePct,
+      id: crypto.randomUUID(), product_id: selectedProductId,
+      from_op_name: routeFromOp, to_op_name: routeToOp, pct_routed: routePct,
     });
-    setShowAddRoute(false);
-    setRouteFromOp('');
-    setRouteToOp('');
-    setRoutePct(100);
+    setShowAddRoute(false); setRouteFromOp(''); setRouteToOp(''); setRoutePct(100);
   };
 
   const handleAutoRoute = () => {
-    if (productOps.length === 0) {
-      toast.error('Add operations first');
-      return;
-    }
+    if (productOps.length === 0) { toast.error('Add operations first'); return; }
     const sorted = [...productOps].sort((a, b) => a.op_number - b.op_number);
     const entries: RoutingEntry[] = [];
-    // DOCK → first op
     entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
-    // Each op → next op
     for (let i = 0; i < sorted.length - 1; i++) {
       entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
     }
-    // Last op → STOCK
     entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
     setRouting(model.id, selectedProductId, entries);
-    toast.success(`Default routing generated: DOCK → ${sorted.map((o) => o.op_name).join(' → ')} → STOCK`);
+    toast.success(`Default routing generated: DOCK → ${sorted.map(o => o.op_name).join(' → ')} → STOCK`);
   };
 
   const handleResort = () => {
-    // Re-number operations by 10s in current order
-    productOps.forEach((op, i) => {
-      updateOperation(model.id, op.id, { op_number: (i + 1) * 10 });
-    });
+    productOps.forEach((op, i) => updateOperation(model.id, op.id, { op_number: (i + 1) * 10 }));
     toast.success('Operations re-sorted');
   };
 
-  const equipName = (id: string) => model.equipment.find((e) => e.id === id)?.name || '—';
+  const routingSumIndicator = (fromOp: string) => {
+    const sum = routingSums[fromOp];
+    if (sum === undefined) return null;
+    if (Math.abs(sum - 100) < 0.01) {
+      return <span className="flex items-center gap-0.5 text-xs text-success font-mono"><CheckCircle className="h-3 w-3" /> 100%</span>;
+    }
+    if (sum < 100) {
+      return <span className="flex items-center gap-0.5 text-xs text-warning font-mono"><AlertTriangle className="h-3 w-3" /> {sum}%</span>;
+    }
+    return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
+  };
 
   return (
     <div className="p-6 animate-fade-in">
@@ -149,17 +143,9 @@ export default function OperationsRouting() {
         <Label className="text-xs text-muted-foreground mb-1.5 block">Select Product</Label>
         <div className="flex gap-2 flex-wrap">
           {model.products.map((p) => (
-            <Button
-              key={p.id}
-              variant={p.id === selectedProductId ? 'default' : 'outline'}
-              size="sm"
-              className="font-mono text-xs"
-              onClick={() => setSearchParams({ product: p.id })}
-            >
+            <Button key={p.id} variant={p.id === selectedProductId ? 'default' : 'outline'} size="sm" className="font-mono text-xs" onClick={() => setSearchParams({ product: p.id })}>
               {p.name}
-              <Badge variant="secondary" className="ml-1.5 text-xs h-4 px-1">
-                {model.operations.filter((o) => o.product_id === p.id).length}
-              </Badge>
+              <Badge variant="secondary" className="ml-1.5 text-xs h-4 px-1">{model.operations.filter(o => o.product_id === p.id).length}</Badge>
             </Button>
           ))}
         </div>
@@ -179,9 +165,7 @@ export default function OperationsRouting() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">
-                    Operations for <span className="font-mono text-primary">{selectedProduct.name}</span>
-                  </CardTitle>
+                  <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{selectedProduct.name}</span></CardTitle>
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -217,39 +201,23 @@ export default function OperationsRouting() {
                   <TableBody>
                     {productOps.map((op) => (
                       <TableRow key={op.id}>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => updateOperation(model.id, op.id, { op_number: +e.target.value })} />
-                        </TableCell>
+                        <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => updateOperation(model.id, op.id, { op_number: +e.target.value })} /></TableCell>
                         <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
                         <TableCell>
                           <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
                             <SelectTrigger className="h-8 w-32 font-mono text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">None</SelectItem>
-                              {model.equipment.map((eq) => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+                              {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => updateOperation(model.id, op.id, { pct_assigned: +e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_lot: +e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} />
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
+                        <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => updateOperation(model.id, op.id, { pct_assigned: +e.target.value })} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_lot: +e.target.value })} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
+                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
+                        <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -281,8 +249,7 @@ export default function OperationsRouting() {
                 <div className="mx-4 mb-3 p-3 bg-warning/10 border border-warning/30 rounded-md">
                   {routingWarnings.map((w, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm text-warning">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                      <span>{w}</span>
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" /><span>{w}</span>
                     </div>
                   ))}
                 </div>
@@ -296,6 +263,7 @@ export default function OperationsRouting() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="font-mono text-xs">From Operation</TableHead>
+                      <TableHead className="font-mono text-xs w-16">Sum</TableHead>
                       <TableHead className="font-mono text-xs w-10"></TableHead>
                       <TableHead className="font-mono text-xs">To Operation</TableHead>
                       <TableHead className="font-mono text-xs w-24">% Routed</TableHead>
@@ -304,32 +272,37 @@ export default function OperationsRouting() {
                   </TableHeader>
                   <TableBody>
                     {productRouting
-                      .sort((a, b) => {
-                        const order = allOpNames;
-                        return order.indexOf(a.from_op_name) - order.indexOf(b.from_op_name);
-                      })
-                      .map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-mono font-medium">{r.from_op_name}</TableCell>
-                          <TableCell><ArrowDown className="h-3.5 w-3.5 text-muted-foreground rotate-[-90deg]" /></TableCell>
-                          <TableCell>
-                            <Select value={r.to_op_name} onValueChange={(v) => updateRouting(model.id, r.id, { to_op_name: v })}>
-                              <SelectTrigger className="h-8 w-32 font-mono text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {allOpNames.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => updateRouting(model.id, r.id, { pct_routed: +e.target.value })} />
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRouting(model.id, r.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      .sort((a, b) => allOpNames.indexOf(a.from_op_name) - allOpNames.indexOf(b.from_op_name))
+                      .map((r, i, arr) => {
+                        const showFromHeader = i === 0 || arr[i - 1].from_op_name !== r.from_op_name;
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell className="font-mono font-medium">
+                              {showFromHeader ? r.from_op_name : <span className="text-muted-foreground/30">↳</span>}
+                            </TableCell>
+                            <TableCell>
+                              {showFromHeader ? routingSumIndicator(r.from_op_name) : null}
+                            </TableCell>
+                            <TableCell><ArrowDown className="h-3.5 w-3.5 text-muted-foreground rotate-[-90deg]" /></TableCell>
+                            <TableCell>
+                              <Select value={r.to_op_name} onValueChange={(v) => updateRouting(model.id, r.id, { to_op_name: v })}>
+                                <SelectTrigger className="h-8 w-32 font-mono text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {allOpNames.map(name => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => updateRouting(model.id, r.id, { pct_routed: +e.target.value })} />
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRouting(model.id, r.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                   </TableBody>
                 </Table>
               )}
@@ -344,14 +317,8 @@ export default function OperationsRouting() {
           <DialogHeader><DialogTitle>Add Operation</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Operation Name</Label>
-                <Input value={newOpName} onChange={(e) => setNewOpName(e.target.value)} placeholder="e.g., RFTURN" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddOp()} />
-              </div>
-              <div>
-                <Label>Op Number</Label>
-                <Input type="number" value={newOpNumber} onChange={(e) => setNewOpNumber(+e.target.value)} />
-              </div>
+              <div><Label>Operation Name</Label><Input value={newOpName} onChange={(e) => setNewOpName(e.target.value)} placeholder="e.g., RFTURN" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleAddOp()} /></div>
+              <div><Label>Op Number</Label><Input type="number" value={newOpNumber} onChange={(e) => setNewOpNumber(+e.target.value)} /></div>
             </div>
             <div>
               <Label>Equipment Group</Label>
@@ -359,7 +326,7 @@ export default function OperationsRouting() {
                 <SelectTrigger><SelectValue placeholder="Select equipment" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {model.equipment.map((eq) => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+                  {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -380,26 +347,19 @@ export default function OperationsRouting() {
               <div>
                 <Label>From Operation</Label>
                 <Select value={routeFromOp} onValueChange={setRouteFromOp}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
-                    {allOpNames.filter((n) => n !== 'STOCK' && n !== 'SCRAP').map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger><SelectValue placeholder="From..." /></SelectTrigger>
+                  <SelectContent>{allOpNames.filter(n => n !== 'STOCK' && n !== 'SCRAP').map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>To Operation</Label>
                 <Select value={routeToOp} onValueChange={setRouteToOp}>
-                  <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
-                    {allOpNames.filter((n) => n !== 'DOCK').map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger><SelectValue placeholder="To..." /></SelectTrigger>
+                  <SelectContent>{allOpNames.filter(n => n !== 'DOCK').map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-            <div>
-              <Label>% Routed</Label>
-              <Input type="number" value={routePct} onChange={(e) => setRoutePct(+e.target.value)} />
-            </div>
+            <div><Label>% Routed</Label><Input type="number" value={routePct} onChange={(e) => setRoutePct(+e.target.value)} /></div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowAddRoute(false)}>Cancel</Button>

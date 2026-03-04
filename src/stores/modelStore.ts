@@ -391,7 +391,12 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     db.updateModel(id, { name });
   },
 
-  toggleStar: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_starred: !m.is_starred } : m) })),
+  toggleStar: (id) => {
+    const model = get().models.find(m => m.id === id);
+    const newVal = !model?.is_starred;
+    set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_starred: newVal } : m) }));
+    db.updateModel(id, { is_starred: newVal });
+  },
 
   archiveModel: (id) => {
     const model = get().models.find(m => m.id === id);
