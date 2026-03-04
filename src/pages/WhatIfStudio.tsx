@@ -45,11 +45,8 @@ export default function WhatIfStudio() {
 
   const scenarios = allScenarios.filter(sc => sc.modelId === modelId);
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
-  const {
-    setActiveScenario, createScenario, duplicateScenario, renameScenario,
-    updateScenarioDescription, deleteScenario, toggleDisplayScenario,
-    applyScenarioChange, removeChange, promoteToBasecase,
-  } = useScenarioStore();
+
+
 
   const [newName, setNewName] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
