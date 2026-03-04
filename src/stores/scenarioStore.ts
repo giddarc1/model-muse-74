@@ -54,6 +54,7 @@ interface ScenarioStore {
 
   toggleDisplayScenario: (id: string) => void;
   markNeedsRecalc: (scenarioId: string) => void;
+  markCalculated: (scenarioId: string) => void;
   
   promoteToBasecase: (scenarioId: string) => void;
 }
