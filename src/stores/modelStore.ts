@@ -119,6 +119,13 @@ interface ModelStore {
   addProduct: (modelId: string, product: Product) => void;
   updateProduct: (modelId: string, productId: string, data: Partial<Product>) => void;
   deleteProduct: (modelId: string, productId: string) => void;
+  addOperation: (modelId: string, op: Operation) => void;
+  updateOperation: (modelId: string, opId: string, data: Partial<Operation>) => void;
+  deleteOperation: (modelId: string, opId: string) => void;
+  addRouting: (modelId: string, entry: RoutingEntry) => void;
+  updateRouting: (modelId: string, entryId: string, data: Partial<RoutingEntry>) => void;
+  deleteRouting: (modelId: string, entryId: string) => void;
+  setRouting: (modelId: string, productId: string, entries: RoutingEntry[]) => void;
 }
 
 const uid = () => crypto.randomUUID();
