@@ -185,7 +185,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         setup_factor: l.setup_factor, run_factor: l.run_factor, var_factor: l.var_factor,
         comments: l.comments || null,
       }))
-    ));
+    ).select());
   }
 
   if (model.equipment.length) {
