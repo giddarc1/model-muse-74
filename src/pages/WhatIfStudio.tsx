@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
+import { useResultsStore } from '@/stores/resultsStore';
+import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
