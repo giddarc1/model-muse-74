@@ -761,6 +761,7 @@ export type Database = {
           id: string
           is_archived: boolean | null
           is_demo: boolean | null
+          is_starred: boolean | null
           last_run_at: string | null
           name: string
           org_id: string
@@ -775,6 +776,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_demo?: boolean | null
+          is_starred?: boolean | null
           last_run_at?: string | null
           name: string
           org_id: string
@@ -789,6 +791,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_demo?: boolean | null
+          is_starred?: boolean | null
           last_run_at?: string | null
           name?: string
           org_id?: string
