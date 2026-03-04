@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,19 +13,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Plus, Search, Star, MoreVertical, Copy, Trash2, Archive,
-  LayoutGrid, List, Package, Cpu, Users, FlaskConical, Pencil, RotateCcw,
+  LayoutGrid, List, Package, Cpu, Users, FlaskConical, Pencil, RotateCcw, LogOut,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 export default function ModelLibrary() {
   const models = useModelStore((s) => s.models);
+  const modelsLoaded = useModelStore((s) => s.modelsLoaded);
+  const modelsLoading = useModelStore((s) => s.modelsLoading);
+  const loadModels = useModelStore((s) => s.loadModels);
   const createModel = useModelStore((s) => s.createModel);
   const duplicateModel = useModelStore((s) => s.duplicateModel);
   const deleteModel = useModelStore((s) => s.deleteModel);
   const renameModel = useModelStore((s) => s.renameModel);
   const toggleStar = useModelStore((s) => s.toggleStar);
   const archiveModel = useModelStore((s) => s.archiveModel);
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
@@ -33,14 +38,16 @@ export default function ModelLibrary() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [showArchived, setShowArchived] = useState(false);
-
-  // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
-
-  // Rename
   const [renameTarget, setRenameTarget] = useState<Model | null>(null);
   const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    if (!modelsLoaded && !modelsLoading) {
+      loadModels();
+    }
+  }, [modelsLoaded, modelsLoading, loadModels]);
 
   const filtered = models.filter((m) => {
     if (!showArchived && m.is_archived) return false;
@@ -74,6 +81,11 @@ export default function ModelLibrary() {
     toast.success('Model renamed');
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   const openModel = (id: string) => navigate(`/models/${id}/overview`);
 
   const statusBadge = (status: Model['run_status']) => {
@@ -97,7 +109,7 @@ export default function ModelLibrary() {
     return `${days}d ago`;
   };
 
-  const modelActions = (model: Model, inList = false) => (
+  const modelActions = (model: Model) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
         <button className="p-1 rounded hover:bg-muted">
@@ -123,9 +135,19 @@ export default function ModelLibrary() {
     </DropdownMenu>
   );
 
+  if (modelsLoading && !modelsLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading models…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
@@ -133,26 +155,23 @@ export default function ModelLibrary() {
               <h1 className="text-2xl font-bold tracking-tight">RapidMCT</h1>
               <p className="text-sm text-muted-foreground mt-1">Manufacturing Cycle Time Analysis Platform</p>
             </div>
-            <Button onClick={() => setShowCreate(true)} className="gap-2">
-              <Plus className="h-4 w-4" /> New Model
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setShowCreate(true)} className="gap-2">
+                <Plus className="h-4 w-4" /> New Model
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1 text-muted-foreground">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">{user?.email}</span>
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search models..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <Button
-              variant={showArchived ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setShowArchived(!showArchived)}
-            >
+            <Button variant={showArchived ? 'secondary' : 'ghost'} size="sm" onClick={() => setShowArchived(!showArchived)}>
               <Archive className="h-4 w-4 mr-1" />
               {showArchived ? 'Archived' : 'Active'}
             </Button>
@@ -168,7 +187,6 @@ export default function ModelLibrary() {
         </div>
       </header>
 
-      {/* Model Cards */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         {filtered.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
@@ -194,33 +212,22 @@ export default function ModelLibrary() {
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{model.description || 'No description'}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }}
-                        className="p-1 rounded hover:bg-muted"
-                      >
+                      <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-muted">
                         <Star className={`h-4 w-4 ${model.is_starred ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`} />
                       </button>
                       {modelActions(model)}
                     </div>
                   </div>
-
                   <div className="flex flex-wrap gap-1.5 mb-3">
-                    {model.tags.map((t) => (
-                      <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>
-                    ))}
+                    {model.tags.map((t) => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}
                     {statusBadge(model.run_status)}
                   </div>
-
                   <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
                     <span className="flex items-center gap-1"><Package className="h-3 w-3" />{model.products.length}</span>
                     <span className="flex items-center gap-1"><Cpu className="h-3 w-3" />{model.equipment.length}</span>
                     <span className="flex items-center gap-1"><Users className="h-3 w-3" />{model.labor.length}</span>
-                    <span className="flex items-center gap-1"><FlaskConical className="h-3 w-3" />0</span>
                   </div>
-
-                  <div className="text-xs text-muted-foreground mt-3">
-                    Updated {timeAgo(model.updated_at)}
-                  </div>
+                  <div className="text-xs text-muted-foreground mt-3">Updated {timeAgo(model.updated_at)}</div>
                 </div>
               </motion.div>
             ))}
@@ -246,7 +253,7 @@ export default function ModelLibrary() {
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.equipment.length}</td>
                     <td className="px-4 py-3">{statusBadge(model.run_status)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{timeAgo(model.updated_at)}</td>
-                    <td className="px-2">{modelActions(model, true)}</td>
+                    <td className="px-2">{modelActions(model)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -258,9 +265,7 @@ export default function ModelLibrary() {
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Model</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Create New Model</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div>
               <label className="text-sm font-medium mb-1 block">Model Name</label>
@@ -289,18 +294,11 @@ export default function ModelLibrary() {
           </DialogHeader>
           <div className="py-2">
             <label className="text-sm font-medium mb-1.5 block">Type the model name to confirm:</label>
-            <Input
-              value={deleteConfirmName}
-              onChange={(e) => setDeleteConfirmName(e.target.value)}
-              placeholder={deleteTarget?.name}
-              autoFocus
-            />
+            <Input value={deleteConfirmName} onChange={(e) => setDeleteConfirmName(e.target.value)} placeholder={deleteTarget?.name} autoFocus />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setDeleteTarget(null); setDeleteConfirmName(''); }}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirmName !== deleteTarget?.name}>
-              Delete Permanently
-            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirmName !== deleteTarget?.name}>Delete Permanently</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -308,17 +306,10 @@ export default function ModelLibrary() {
       {/* Rename Dialog */}
       <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Model</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Rename Model</DialogTitle></DialogHeader>
           <div>
             <label className="text-sm font-medium mb-1 block">New Name</label>
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-            />
+            <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRenameTarget(null)}>Cancel</Button>

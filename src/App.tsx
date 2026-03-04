@@ -3,6 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import ModelLibrary from "./pages/ModelLibrary";
 import { ModelWorkspaceLayout } from "./components/ModelWorkspaceLayout";
 import ModelOverview from "./pages/ModelOverview";
@@ -23,33 +29,42 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/library" replace />} />
-          <Route path="/library" element={<ModelLibrary />} />
-          <Route path="/models/:modelId" element={<ModelWorkspaceLayout />}>
-            <Route index element={<Navigate to="overview" replace />} />
-            <Route path="overview" element={<ModelOverview />} />
-            <Route path="general" element={<GeneralData />} />
-            <Route path="labor" element={<LaborData />} />
-            <Route path="equipment" element={<EquipmentData />} />
-            <Route path="products" element={<ProductData />} />
-            <Route path="operations" element={<OperationsRouting />} />
-            <Route path="all-operations" element={<AllOperations />} />
-            <Route path="ibom" element={<IBOMScreen />} />
-            <Route path="run" element={<RunResults />} />
-            <Route path="whatif" element={<WhatIfStudio />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<PlaceholderPage />} />
-          </Route>
-          <Route path="/settings" element={<PlaceholderPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public auth routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Protected routes */}
+            <Route path="/" element={<ProtectedRoute><Navigate to="/library" replace /></ProtectedRoute>} />
+            <Route path="/library" element={<ProtectedRoute><ModelLibrary /></ProtectedRoute>} />
+            <Route path="/models/:modelId" element={<ProtectedRoute><ModelWorkspaceLayout /></ProtectedRoute>}>
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<ModelOverview />} />
+              <Route path="general" element={<GeneralData />} />
+              <Route path="labor" element={<LaborData />} />
+              <Route path="equipment" element={<EquipmentData />} />
+              <Route path="products" element={<ProductData />} />
+              <Route path="operations" element={<OperationsRouting />} />
+              <Route path="all-operations" element={<AllOperations />} />
+              <Route path="ibom" element={<IBOMScreen />} />
+              <Route path="run" element={<RunResults />} />
+              <Route path="whatif" element={<WhatIfStudio />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<PlaceholderPage />} />
+            </Route>
+            <Route path="/settings" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
