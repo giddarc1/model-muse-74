@@ -342,4 +342,28 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       updated_at: new Date().toISOString(),
     } : m),
   })),
+
+  addIBOM: (modelId, entry) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString() } : m),
+  })),
+  updateIBOM: (modelId, entryId, data) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString() } : m),
+  })),
+  deleteIBOM: (modelId, entryId) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString() } : m),
+  })),
+  setIBOMForParent: (modelId, parentId, entries) => set((s) => ({
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      ibom: [...m.ibom.filter((e) => e.parent_product_id !== parentId), ...entries],
+      updated_at: new Date().toISOString(),
+    } : m),
+  })),
+}));
+    models: s.models.map((m) => m.id === modelId ? {
+      ...m,
+      routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
+      updated_at: new Date().toISOString(),
+    } : m),
+  })),
 }));
