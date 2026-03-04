@@ -303,7 +303,10 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'needs_recalc' as const } : sc),
   })),
 
-  promoteToBasecase: (scenarioId) => {
+  markCalculated: (scenarioId) => set(s => ({
+    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'calculated' as const } : sc),
+  })),
+
     const scenario = get().scenarios.find(s => s.id === scenarioId);
     if (!scenario) return;
     const modelStore = useModelStore.getState();
