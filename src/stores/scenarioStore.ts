@@ -54,6 +54,7 @@ interface ScenarioStore {
 
   toggleDisplayScenario: (id: string) => void;
   markNeedsRecalc: (scenarioId: string) => void;
+  markCalculated: (scenarioId: string) => void;
   
   promoteToBasecase: (scenarioId: string) => void;
 }
@@ -300,6 +301,10 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
 
   markNeedsRecalc: (scenarioId) => set(s => ({
     scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'needs_recalc' as const } : sc),
+  })),
+
+  markCalculated: (scenarioId) => set(s => ({
+    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'calculated' as const } : sc),
   })),
 
   promoteToBasecase: (scenarioId) => {
