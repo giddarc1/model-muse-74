@@ -115,7 +115,7 @@ interface ModelStore {
   modelsLoading: boolean;
   setActiveModel: (id: string | null) => void;
   getActiveModel: () => Model | undefined;
-  loadModels: () => Promise<void>;
+  loadModels: (force?: boolean) => Promise<void>;
   createModel: (name: string, description?: string) => string;
   duplicateModel: (id: string) => string;
   renameModel: (id: string, name: string) => void;

@@ -42,7 +42,7 @@ export default function Signup() {
         toast.success('Welcome to RapidMCT!');
         // Force a fresh model load after seeding completes
         const { useModelStore } = await import('@/stores/modelStore');
-        useModelStore.getState().loadModels();
+        await useModelStore.getState().loadModels(true);
       } catch (err) {
         console.error('Demo seed error:', err);
         toast.success('Welcome to RapidMCT!');
