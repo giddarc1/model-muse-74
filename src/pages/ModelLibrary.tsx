@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserLevelStore } from '@/hooks/useUserLevel';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { saveFullModelToDB } from '@/lib/supabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +15,20 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Plus, Search, Star, MoreVertical, Copy, Trash2, Archive,
-  LayoutGrid, List, Package, Cpu, Users, FlaskConical, Pencil, RotateCcw, LogOut,
+  LayoutGrid, List, Package, Cpu, Users, Pencil, RotateCcw, LogOut,
+  Download, Upload, Settings,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
+type StatusFilter = 'all' | 'never_run' | 'current' | 'needs_recalc';
+
 export default function ModelLibrary() {
+  usePageTitle('Model Library');
   const models = useModelStore((s) => s.models);
   const modelsLoaded = useModelStore((s) => s.modelsLoaded);
   const modelsLoading = useModelStore((s) => s.modelsLoading);
@@ -30,7 +40,9 @@ export default function ModelLibrary() {
   const toggleStar = useModelStore((s) => s.toggleStar);
   const archiveModel = useModelStore((s) => s.archiveModel);
   const { signOut, user } = useAuth();
+  const fetchUserLevel = useUserLevelStore(s => s.fetchUserLevel);
   const navigate = useNavigate();
+  const importRef = useRef<HTMLInputElement>(null);
 
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -38,20 +50,22 @@ export default function ModelLibrary() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [renameTarget, setRenameTarget] = useState<Model | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    if (!modelsLoaded && !modelsLoading) {
-      loadModels();
-    }
-  }, [modelsLoaded, modelsLoading, loadModels]);
+    if (!modelsLoaded && !modelsLoading) loadModels();
+    fetchUserLevel();
+  }, [modelsLoaded, modelsLoading, loadModels, fetchUserLevel]);
 
   const filtered = models.filter((m) => {
     if (!showArchived && m.is_archived) return false;
     if (showArchived && !m.is_archived) return false;
+    if (statusFilter !== 'all' && m.run_status !== statusFilter) return false;
     const q = search.toLowerCase();
     return m.name.toLowerCase().includes(q) || m.description.toLowerCase().includes(q);
   });
@@ -59,34 +73,106 @@ export default function ModelLibrary() {
   const handleCreate = () => {
     if (!newName.trim()) return;
     const id = createModel(newName.trim(), newDesc.trim());
-    setShowCreate(false);
-    setNewName('');
-    setNewDesc('');
+    setShowCreate(false); setNewName(''); setNewDesc('');
     navigate(`/models/${id}/general`);
   };
 
   const handleDelete = () => {
     if (!deleteTarget || deleteConfirmName !== deleteTarget.name) return;
     deleteModel(deleteTarget.id);
-    setDeleteTarget(null);
-    setDeleteConfirmName('');
+    setDeleteTarget(null); setDeleteConfirmName('');
     toast.success(`Model "${deleteTarget.name}" permanently deleted`);
   };
 
   const handleRename = () => {
     if (!renameTarget || !renameValue.trim()) return;
     renameModel(renameTarget.id, renameValue.trim());
-    setRenameTarget(null);
-    setRenameValue('');
+    setRenameTarget(null); setRenameValue('');
     toast.success('Model renamed');
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
+  const handleSignOut = async () => { await signOut(); navigate('/login'); };
+  const openModel = (id: string) => navigate(`/models/${id}/overview`);
+
+  const handleExportModel = (model: Model) => {
+    const exportData = {
+      name: model.name, description: model.description, tags: model.tags,
+      general: model.general, labor: model.labor, equipment: model.equipment,
+      products: model.products, operations: model.operations, routing: model.routing, ibom: model.ibom,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date().toISOString().split('T')[0];
+    a.download = `${model.name.replace(/\s+/g, '-')}-export-${date}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success('Model exported');
   };
 
-  const openModel = (id: string) => navigate(`/models/${id}/overview`);
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const snap = JSON.parse(text);
+      if (!snap.general || !snap.labor || !snap.equipment || !snap.products) {
+        toast.error('Invalid model file — missing required data sections');
+        setImporting(false); return;
+      }
+      const { createDemoModel } = await import('@/stores/modelStore');
+      const uid = () => crypto.randomUUID();
+      const idMap: Record<string, string> = {};
+      const newUid = (old: string) => { const n = uid(); idMap[old] = n; return n; };
+
+      // Build imported model with new IDs
+      const modelId = uid();
+      const labor = (snap.labor || []).map((l: any) => ({ ...l, id: newUid(l.id) }));
+      const equipment = (snap.equipment || []).map((e: any) => ({
+        ...e, id: newUid(e.id),
+        labor_group_id: e.labor_group_id ? (idMap[e.labor_group_id] || e.labor_group_id) : '',
+      }));
+      const products = (snap.products || []).map((p: any) => ({ ...p, id: newUid(p.id) }));
+      const operations = (snap.operations || []).map((o: any) => ({
+        ...o, id: newUid(o.id),
+        product_id: idMap[o.product_id] || o.product_id,
+        equip_id: o.equip_id ? (idMap[o.equip_id] || o.equip_id) : '',
+      }));
+      const routing = (snap.routing || []).map((r: any) => ({
+        ...r, id: uid(),
+        product_id: idMap[r.product_id] || r.product_id,
+      }));
+      const ibom = (snap.ibom || []).map((i: any) => ({
+        ...i, id: uid(),
+        parent_product_id: idMap[i.parent_product_id] || i.parent_product_id,
+        component_product_id: idMap[i.component_product_id] || i.component_product_id,
+      }));
+
+      const importedModel: Model = {
+        id: modelId,
+        name: `${snap.name || 'Imported Model'} (Imported)`,
+        description: snap.description || '',
+        tags: snap.tags || [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_run_at: null, run_status: 'never_run',
+        is_archived: false, is_demo: false, is_starred: false,
+        general: snap.general, labor, equipment, products, operations, routing, ibom,
+      };
+
+      await saveFullModelToDB(importedModel);
+      useModelStore.setState(s => ({ models: [importedModel, ...s.models] }));
+      toast.success(`Model "${importedModel.name}" imported successfully`);
+      navigate(`/models/${modelId}/overview`);
+    } catch (err) {
+      console.error('Import error:', err);
+      toast.error('Failed to import model — invalid file format');
+    } finally {
+      setImporting(false);
+      if (importRef.current) importRef.current.value = '';
+    }
+  };
 
   const statusBadge = (status: Model['run_status']) => {
     const map = {
@@ -99,22 +185,18 @@ export default function ModelLibrary() {
   };
 
   const timeAgo = (iso: string) => {
-    const d = new Date(iso);
-    const diff = Date.now() - d.getTime();
+    const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
   };
 
   const modelActions = (model: Model) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <button className="p-1 rounded hover:bg-muted">
-          <MoreVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <button className="p-1 rounded hover:bg-muted"><MoreVertical className="h-4 w-4 text-muted-foreground" /></button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setRenameTarget(model); setRenameValue(model.name); }}>
@@ -122,6 +204,9 @@ export default function ModelLibrary() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateModel(model.id); toast.success('Model duplicated'); }}>
           <Copy className="h-4 w-4 mr-2" /> Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleExportModel(model); }}>
+          <Download className="h-4 w-4 mr-2" /> Export JSON
         </DropdownMenuItem>
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveModel(model.id); toast.success(model.is_archived ? 'Model restored' : 'Model archived'); }}>
           {model.is_archived ? <RotateCcw className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
@@ -148,6 +233,7 @@ export default function ModelLibrary() {
 
   return (
     <div className="min-h-screen bg-background">
+      <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
       <header className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
@@ -156,8 +242,14 @@ export default function ModelLibrary() {
               <p className="text-sm text-muted-foreground mt-1">Manufacturing Cycle Time Analysis Platform</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => importRef.current?.click()} disabled={importing}>
+                <Upload className="h-4 w-4" /> {importing ? 'Importing…' : 'Import'}
+              </Button>
               <Button onClick={() => setShowCreate(true)} className="gap-2">
                 <Plus className="h-4 w-4" /> New Model
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
+                <Settings className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1 text-muted-foreground">
                 <LogOut className="h-4 w-4" />
@@ -171,9 +263,17 @@ export default function ModelLibrary() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="never_run">Never Run</SelectItem>
+                <SelectItem value="current">Results Current</SelectItem>
+                <SelectItem value="needs_recalc">Recalc Needed</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant={showArchived ? 'secondary' : 'ghost'} size="sm" onClick={() => setShowArchived(!showArchived)}>
-              <Archive className="h-4 w-4 mr-1" />
-              {showArchived ? 'Archived' : 'Active'}
+              <Archive className="h-4 w-4 mr-1" /> {showArchived ? 'Archived' : 'Active'}
             </Button>
             <div className="flex border rounded-md overflow-hidden">
               <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('grid')}>
@@ -192,16 +292,16 @@ export default function ModelLibrary() {
           <div className="text-center py-20 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-lg font-medium">No models found</p>
-            <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model to get started'}</p>
+            <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
+            <div className="flex gap-2 justify-center mt-4">
+              <Button onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Model</Button>
+              <Button variant="outline" onClick={() => importRef.current?.click()} className="gap-1"><Upload className="h-4 w-4" /> Import</Button>
+            </div>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((model, i) => (
-              <motion.div
-                key={model.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
+              <motion.div key={model.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                 className="group bg-card border rounded-lg hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => openModel(model.id)}
               >

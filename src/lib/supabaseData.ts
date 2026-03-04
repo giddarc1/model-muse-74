@@ -58,7 +58,7 @@ export async function fetchAllModels(): Promise<Model[]> {
       run_status: (m.run_status || 'never_run') as Model['run_status'],
       is_archived: m.is_archived || false,
       is_demo: m.is_demo || false,
-      is_starred: false, // local only
+      is_starred: m.is_starred || false,
       general: g ? {
         model_title: g.model_title || '',
         ops_time_unit: (g.ops_time_unit || 'MIN') as GeneralData['ops_time_unit'],
