@@ -1,21 +1,25 @@
 import { useModelStore } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Package, Cpu, Users, Play, Settings2, FlaskConical, Clock, ArrowRight } from 'lucide-react';
+import { Package, Cpu, Users, Play, Settings2, FlaskConical, ArrowRight } from 'lucide-react';
 
 export default function ModelOverview() {
   const model = useModelStore((s) => s.getActiveModel());
+  const scenarios = useScenarioStore((s) => s.scenarios);
   const navigate = useNavigate();
 
   if (!model) return null;
+
+  const modelScenarios = scenarios.filter(s => s.modelId === model.id);
 
   const stats = [
     { label: 'Products', value: model.products.length, icon: Package, color: 'text-primary' },
     { label: 'Equipment Groups', value: model.equipment.length, icon: Cpu, color: 'text-info' },
     { label: 'Labor Groups', value: model.labor.length, icon: Users, color: 'text-warning' },
-    { label: 'What-If Scenarios', value: 0, icon: FlaskConical, color: 'text-destructive' },
+    { label: 'What-If Scenarios', value: modelScenarios.length, icon: FlaskConical, color: 'text-destructive' },
   ];
 
   const quickLinks = [

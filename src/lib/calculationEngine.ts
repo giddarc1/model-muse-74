@@ -145,9 +145,9 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  // Time conversions
-  const conv1 = g.conv1; // ops time units per MCT time unit (e.g. 480 min/day)
-  const conv2 = g.conv2; // MCT time units per prod period (e.g. 210 days/year)
+  // Time conversions — guard against division by zero
+  const conv1 = Math.max(g.conv1, 0.001); // ops time units per MCT time unit (e.g. 480 min/day)
+  const conv2 = Math.max(g.conv2, 0.001); // MCT time units per prod period (e.g. 210 days/year)
   const opsPerPeriod = conv1 * conv2; // total ops time units per production period
 
   // Effective demand per product (units per production period, including IBOM propagation)
@@ -433,6 +433,46 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
   if (m.operations.length === 0) {
     errors.push('No operations defined. Add operations to products before running calculations.');
   }
+
+  // Detect routing loops
+  m.products.forEach(product => {
+    const routes = m.routing.filter(r => r.product_id === product.id);
+    const visited = new Set<string>();
+    const detectLoop = (opName: string, path: string[]): boolean => {
+      if (visited.has(opName)) {
+        warnings.push(`Product "${product.name}": routing loop detected (${[...path, opName].join(' → ')})`);
+        return true;
+      }
+      visited.add(opName);
+      const outgoing = routes.filter(r => r.from_op_name === opName);
+      for (const r of outgoing) {
+        if (r.to_op_name !== 'STOCK' && r.to_op_name !== 'SCRAP') {
+          if (detectLoop(r.to_op_name, [...path, opName])) return true;
+        }
+      }
+      visited.delete(opName);
+      return false;
+    };
+    detectLoop('DOCK', []);
+  });
+
+  // Sanitize all numeric results (prevent NaN/Infinity from reaching UI)
+  const sanitize = (v: number) => (isFinite(v) && !isNaN(v)) ? v : 0;
+  equipResults.forEach(e => {
+    e.setupUtil = sanitize(e.setupUtil); e.runUtil = sanitize(e.runUtil);
+    e.repairUtil = sanitize(e.repairUtil); e.waitLaborUtil = sanitize(e.waitLaborUtil);
+    e.totalUtil = sanitize(e.totalUtil); e.idle = sanitize(e.idle);
+  });
+  laborResults.forEach(l => {
+    l.setupUtil = sanitize(l.setupUtil); l.runUtil = sanitize(l.runUtil);
+    l.totalUtil = sanitize(l.totalUtil); l.idle = sanitize(l.idle);
+  });
+  productResults.forEach(p => {
+    p.wip = sanitize(p.wip); p.mct = sanitize(p.mct);
+    p.mctLotWait = sanitize(p.mctLotWait); p.mctQueue = sanitize(p.mctQueue);
+    p.mctWaitLabor = sanitize(p.mctWaitLabor); p.mctSetup = sanitize(p.mctSetup);
+    p.mctRun = sanitize(p.mctRun);
+  });
 
   return {
     equipment: equipResults,

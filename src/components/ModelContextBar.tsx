@@ -23,16 +23,22 @@ export function ModelContextBar() {
   const status = statusConfig[model.run_status];
 
   const handleSaveCheckpoint = async () => {
-    const { data: pn } = await supabase.from('model_param_names').select('*').eq('model_id', model.id).single();
-    const snapshot = {
-      general: model.general, labor: model.labor, equipment: model.equipment,
-      products: model.products, operations: model.operations, routing: model.routing,
-      ibom: model.ibom, param_names: pn || null,
-    };
-    await supabase.from('model_versions' as any).insert({
-      model_id: model.id, label: 'Manual Checkpoint', snapshot,
-    });
-    toast.success('Checkpoint saved');
+    try {
+      const { data: pn } = await supabase.from('model_param_names').select('*').eq('model_id', model.id).single();
+      const snapshot = {
+        general: model.general, labor: model.labor, equipment: model.equipment,
+        products: model.products, operations: model.operations, routing: model.routing,
+        ibom: model.ibom, param_names: pn || null,
+      };
+      const { error } = await supabase.from('model_versions').insert({
+        model_id: model.id, label: 'Manual Checkpoint', snapshot: snapshot as any,
+      });
+      if (error) throw error;
+      toast.success('Checkpoint saved');
+    } catch (err) {
+      console.error('Checkpoint error:', err);
+      toast.error('Failed to save checkpoint');
+    }
   };
 
   return (

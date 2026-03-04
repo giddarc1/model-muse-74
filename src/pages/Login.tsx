@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,21 +9,27 @@ import { toast } from 'sonner';
 
 export default function Login() {
   const { signIn, session, loading } = useAuth();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { document.title = 'RapidMCT — Sign In'; return () => { document.title = 'RapidMCT'; }; }, []);
 
+  const from = (location.state as any)?.from || '/library';
+
   if (loading) return null;
-  if (session) return <Navigate to="/library" replace />;
+  if (session) return <Navigate to={from} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     const { error } = await signIn(email, password);
     setSubmitting(false);
-    if (error) toast.error(error.message);
+    if (error) {
+      // Generic error message for security (don't distinguish wrong email vs wrong password)
+      toast.error('Invalid email or password');
+    }
   };
 
   return (

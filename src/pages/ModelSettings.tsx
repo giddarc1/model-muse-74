@@ -153,11 +153,16 @@ export default function ModelSettings() {
       ibom: model.ibom,
       param_names: pn || null,
     };
-    await supabase.from('model_versions' as any).insert({
+    const { error } = await supabase.from('model_versions').insert({
       model_id: model.id,
       label: 'Manual Checkpoint',
-      snapshot,
+      snapshot: snapshot as any,
     });
+    if (error) {
+      console.error('Checkpoint save error:', error);
+      toast.error('Failed to save checkpoint');
+      return;
+    }
     toast.success('Checkpoint saved');
     loadVersions();
   };

@@ -27,7 +27,11 @@ export default function Signup() {
     setSubmitting(true);
     const { error, data } = await signUp(email, password, fullName);
     if (error) {
-      toast.error(error.message);
+      if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
+        toast.error('An account with this email already exists');
+      } else {
+        toast.error(error.message || 'Sign up failed');
+      }
       setSubmitting(false);
       return;
     }
