@@ -60,9 +60,9 @@ export default function WhatIfStudio() {
 
   if (!model || !modelId) return null;
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newName.trim()) return;
-    const id = createScenario(modelId, newName.trim());
+    const id = await createScenario(modelId, newName.trim());
     setActiveScenario(id);
     setNewName('');
     setShowNewModal(false);

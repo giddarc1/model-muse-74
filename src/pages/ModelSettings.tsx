@@ -141,7 +141,7 @@ export default function ModelSettings() {
       routing: model.routing,
       ibom: model.ibom,
     };
-    await supabase.from('model_versions').insert({
+    await supabase.from('model_versions' as any).insert({
       model_id: model.id,
       label: 'Manual Checkpoint',
       snapshot,
