@@ -220,7 +220,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         equip_setup_lot: o.equip_setup_lot, equip_run_piece: o.equip_run_piece,
         labor_setup_lot: o.labor_setup_lot, labor_run_piece: o.labor_run_piece,
       }))
-    ));
+    ).select());
   }
 
   await Promise.all(inserts);
