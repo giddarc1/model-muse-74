@@ -10,6 +10,7 @@ import GeneralData from "./pages/GeneralData";
 import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
+import OperationsRouting from "./pages/OperationsRouting";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
