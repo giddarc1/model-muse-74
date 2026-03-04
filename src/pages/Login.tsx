@@ -13,6 +13,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => { document.title = 'RapidMCT — Sign In'; return () => { document.title = 'RapidMCT'; }; }, []);
+
   if (loading) return null;
   if (session) return <Navigate to="/library" replace />;
 

@@ -16,6 +16,8 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => { document.title = 'RapidMCT — Create Account'; return () => { document.title = 'RapidMCT'; }; }, []);
+
   if (loading) return null;
   if (session) return <Navigate to="/library" replace />;
 

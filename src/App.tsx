@@ -61,7 +61,7 @@ const App = () => (
               <Route path="reports" element={<Reports />} />
               <Route path="settings" element={<ModelSettings />} />
             </Route>
-            <Route path="/settings" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
