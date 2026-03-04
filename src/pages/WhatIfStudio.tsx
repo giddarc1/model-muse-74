@@ -312,7 +312,7 @@ function BasecaseView() {
 }
 
 function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote,
+  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario,
 }: {
   scenario: Scenario;
   model: any;
@@ -320,6 +320,7 @@ function ScenarioEditorPanel({
   onRename: (id: string, name: string) => void;
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
+  onRunScenario: (scenario: Scenario) => void;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
