@@ -23,6 +23,7 @@ import RunResults from "./pages/RunResults";
 import WhatIfStudio from "./pages/WhatIfStudio";
 import Reports from "./pages/Reports";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import ModelSettings from "./pages/ModelSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
