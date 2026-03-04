@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
@@ -25,7 +25,12 @@ export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
   const model = useModelStore(s => s.models.find(m => m.id === modelId));
 
-  const scenarios = useScenarioStore(s => s.getScenariosForModel(modelId || ''));
+  const scenarios = useScenarioStore(s => s.scenarios.filter(sc => sc.modelId === modelId));
+  const initScenarios = useScenarioStore(s => s.getScenariosForModel);
+
+  useEffect(() => {
+    if (modelId) initScenarios(modelId);
+  }, [modelId, initScenarios]);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.getActiveScenario());
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
