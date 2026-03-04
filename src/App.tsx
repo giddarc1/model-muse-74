@@ -38,7 +38,7 @@ const App = () => (
             <Route path="operations" element={<OperationsRouting />} />
             <Route path="ibom" element={<IBOMScreen />} />
             <Route path="run" element={<RunResults />} />
-            <Route path="whatif" element={<PlaceholderPage />} />
+            <Route path="whatif" element={<WhatIfStudio />} />
             <Route path="reports" element={<PlaceholderPage />} />
             <Route path="settings" element={<PlaceholderPage />} />
           </Route>
