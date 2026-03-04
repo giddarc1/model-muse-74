@@ -56,6 +56,14 @@ export interface Operation {
   labor_run_piece: number;
 }
 
+export interface RoutingEntry {
+  id: string;
+  product_id: string;
+  from_op_name: string;
+  to_op_name: string;
+  pct_routed: number;
+}
+
 export interface GeneralData {
   model_title: string;
   ops_time_unit: 'MIN' | 'HR' | 'SEC';
@@ -88,6 +96,7 @@ export interface Model {
   equipment: EquipmentGroup[];
   products: Product[];
   operations: Operation[];
+  routing: RoutingEntry[];
 }
 
 interface ModelStore {
