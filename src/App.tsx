@@ -11,6 +11,8 @@ import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
 import OperationsRouting from "./pages/OperationsRouting";
+import IBOMScreen from "./pages/IBOMScreen";
+import RunResults from "./pages/RunResults";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
