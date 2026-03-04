@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { fetchAllModels, saveFullModelToDB, db } from '@/lib/supabaseData';
 
 export interface LaborGroup {
   id: string;
@@ -110,8 +111,11 @@ export interface Model {
 interface ModelStore {
   models: Model[];
   activeModelId: string | null;
+  modelsLoaded: boolean;
+  modelsLoading: boolean;
   setActiveModel: (id: string | null) => void;
   getActiveModel: () => Model | undefined;
+  loadModels: () => Promise<void>;
   createModel: (name: string, description?: string) => string;
   duplicateModel: (id: string) => string;
   renameModel: (id: string, name: string) => void;
@@ -144,6 +148,7 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
+// ─── Hub routing helper ─────────────────────────────────────────────
 function createHubRouting(productId: string): RoutingEntry[] {
   return [
     { id: uid(), product_id: productId, from_op_name: 'DOCK', to_op_name: 'BENCH', pct_routed: 100 },
@@ -160,7 +165,8 @@ function createHubRouting(productId: string): RoutingEntry[] {
   ];
 }
 
-function createDemoModel(): Model {
+// ─── Demo model factory (exported for seeding) ─────────────────────
+export function createDemoModel(): Model {
   const laborIds = { PREP: uid(), MACHINST: uid(), INSPECTR: uid(), REPAIR: uid() };
   const equipIds = { BENCH: uid(), VT_LATHE: uid(), DEBURR: uid(), INSPECT: uid(), REWORK: uid(), MILL: uid(), DRILL: uid() };
   const prodIds = { HUB1: uid(), HUB2: uid(), HUB3: uid(), HUB4: uid(), SLEEVE: uid(), MOUNT: uid(), BRACKET: uid(), BOLT: uid() };
@@ -179,15 +185,8 @@ function createDemoModel(): Model {
     is_starred: true,
     general: {
       model_title: 'Hub Manufacturing Cell',
-      ops_time_unit: 'MIN',
-      mct_time_unit: 'DAY',
-      prod_period_unit: 'YEAR',
-      conv1: 480,
-      conv2: 210,
-      util_limit: 95,
-      var_equip: 30,
-      var_labor: 30,
-      var_prod: 30,
+      ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
+      conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
       author: 'RapidMCT Demo',
       comments: 'Based on the Hub Manufacturing Cell example from the MPX manual.',
     },
@@ -217,7 +216,7 @@ function createDemoModel(): Model {
       { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
     ],
     operations: [
-      // HUB1 operations
+      // HUB1
       { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
@@ -226,7 +225,7 @@ function createDemoModel(): Model {
       { id: uid(), product_id: prodIds.HUB1, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
-      // HUB2 operations (same structure)
+      // HUB2
       { id: uid(), product_id: prodIds.HUB2, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.HUB2, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
       { id: uid(), product_id: prodIds.HUB2, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
@@ -235,7 +234,7 @@ function createDemoModel(): Model {
       { id: uid(), product_id: prodIds.HUB2, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
       { id: uid(), product_id: prodIds.HUB2, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
       { id: uid(), product_id: prodIds.HUB2, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
-      // HUB3 operations
+      // HUB3
       { id: uid(), product_id: prodIds.HUB3, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.HUB3, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
       { id: uid(), product_id: prodIds.HUB3, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
@@ -244,7 +243,7 @@ function createDemoModel(): Model {
       { id: uid(), product_id: prodIds.HUB3, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
       { id: uid(), product_id: prodIds.HUB3, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
       { id: uid(), product_id: prodIds.HUB3, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
-      // HUB4 operations
+      // HUB4
       { id: uid(), product_id: prodIds.HUB4, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.HUB4, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
       { id: uid(), product_id: prodIds.HUB4, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
@@ -253,55 +252,42 @@ function createDemoModel(): Model {
       { id: uid(), product_id: prodIds.HUB4, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
       { id: uid(), product_id: prodIds.HUB4, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
       { id: uid(), product_id: prodIds.HUB4, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
-      // SLEEVE — simple: DOCK → DRILL → STOCK
+      // SLEEVE
       { id: uid(), product_id: prodIds.SLEEVE, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.SLEEVE, op_name: 'TURN', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
-      // MOUNT — simple: DOCK → BENCH → STOCK
+      // MOUNT
       { id: uid(), product_id: prodIds.MOUNT, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.MOUNT, op_name: 'ASSEMBLE', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
-      // BRACKET — simple: DOCK → DRILL → STOCK
+      // BRACKET
       { id: uid(), product_id: prodIds.BRACKET, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.BRACKET, op_name: 'STAMP', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
-      // BOLT — simple: DOCK → DRILL → STOCK
+      // BOLT
       { id: uid(), product_id: prodIds.BOLT, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
       { id: uid(), product_id: prodIds.BOLT, op_name: 'FORM', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
     ],
     routing: [
-      // HUB1 routing
       ...createHubRouting(prodIds.HUB1),
-      // HUB2 routing
       ...createHubRouting(prodIds.HUB2),
-      // HUB3 routing
       ...createHubRouting(prodIds.HUB3),
-      // HUB4 routing
       ...createHubRouting(prodIds.HUB4),
-      // SLEEVE: DOCK→TURN→STOCK
       { id: uid(), product_id: prodIds.SLEEVE, from_op_name: 'DOCK', to_op_name: 'TURN', pct_routed: 100 },
       { id: uid(), product_id: prodIds.SLEEVE, from_op_name: 'TURN', to_op_name: 'STOCK', pct_routed: 100 },
-      // MOUNT: DOCK→ASSEMBLE→STOCK
       { id: uid(), product_id: prodIds.MOUNT, from_op_name: 'DOCK', to_op_name: 'ASSEMBLE', pct_routed: 100 },
       { id: uid(), product_id: prodIds.MOUNT, from_op_name: 'ASSEMBLE', to_op_name: 'STOCK', pct_routed: 100 },
-      // BRACKET: DOCK→STAMP→STOCK
       { id: uid(), product_id: prodIds.BRACKET, from_op_name: 'DOCK', to_op_name: 'STAMP', pct_routed: 100 },
       { id: uid(), product_id: prodIds.BRACKET, from_op_name: 'STAMP', to_op_name: 'STOCK', pct_routed: 100 },
-      // BOLT: DOCK→FORM→STOCK
       { id: uid(), product_id: prodIds.BOLT, from_op_name: 'DOCK', to_op_name: 'FORM', pct_routed: 100 },
       { id: uid(), product_id: prodIds.BOLT, from_op_name: 'FORM', to_op_name: 'STOCK', pct_routed: 100 },
     ],
     ibom: [
-      // HUB1 → MOUNT (4) + SLEEVE (1)
       { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
       { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
-      // HUB2 → MOUNT (4) + SLEEVE (1)
       { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
       { id: uid(), parent_product_id: prodIds.HUB2, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
-      // HUB3 → MOUNT (4) + SLEEVE (1)
       { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
       { id: uid(), parent_product_id: prodIds.HUB3, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
-      // HUB4 → MOUNT (4) + SLEEVE (1)
       { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
       { id: uid(), parent_product_id: prodIds.HUB4, component_product_id: prodIds.SLEEVE, units_per_assy: 1 },
-      // MOUNT → BRACKET (2) + BOLT (2)
       { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BRACKET, units_per_assy: 2 },
       { id: uid(), parent_product_id: prodIds.MOUNT, component_product_id: prodIds.BOLT, units_per_assy: 2 },
     ],
@@ -309,23 +295,28 @@ function createDemoModel(): Model {
 }
 
 const defaultGeneral: GeneralData = {
-  model_title: '',
-  ops_time_unit: 'MIN',
-  mct_time_unit: 'DAY',
-  prod_period_unit: 'YEAR',
-  conv1: 480,
-  conv2: 210,
-  util_limit: 95,
-  var_equip: 30,
-  var_labor: 30,
-  var_prod: 30,
-  author: '',
-  comments: '',
+  model_title: '', ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
+  conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+  author: '', comments: '',
 };
 
 export const useModelStore = create<ModelStore>((set, get) => ({
-  models: [createDemoModel()],
+  models: [],
   activeModelId: null,
+  modelsLoaded: false,
+  modelsLoading: false,
+
+  loadModels: async () => {
+    if (get().modelsLoading) return;
+    set({ modelsLoading: true });
+    try {
+      const models = await fetchAllModels();
+      set({ models, modelsLoaded: true, modelsLoading: false });
+    } catch (err) {
+      console.error('loadModels error:', err);
+      set({ modelsLoading: false });
+    }
+  },
 
   setActiveModel: (id) => set({ activeModelId: id }),
 
@@ -338,15 +329,15 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     const id = uid();
     const model: Model = {
       id, name, description, tags: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      last_run_at: null,
-      run_status: 'never_run',
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      last_run_at: null, run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
       labor: [], equipment: [], products: [], operations: [], routing: [], ibom: [],
     };
     set((s) => ({ models: [model, ...s.models] }));
+    // Write to Supabase
+    saveFullModelToDB(model).catch(err => console.error('createModel DB error:', err));
     return id;
   },
 
@@ -354,139 +345,256 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     const source = get().models.find((m) => m.id === id);
     if (!source) return '';
     const newId = uid();
-    const dup: Model = {
-      ...JSON.parse(JSON.stringify(source)),
-      id: newId,
-      name: `${source.name} (Copy)`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_demo: false, is_starred: false,
-    };
+    // Deep clone and assign new IDs to all entities
+    const dup: Model = JSON.parse(JSON.stringify(source));
+    dup.id = newId;
+    dup.name = `${source.name} (Copy)`;
+    dup.created_at = new Date().toISOString();
+    dup.updated_at = new Date().toISOString();
+    dup.is_demo = false;
+    dup.is_starred = false;
+    // Generate new IDs for all sub-entities and update references
+    const idMap: Record<string, string> = {};
+    const newUid = (oldId: string) => { const n = uid(); idMap[oldId] = n; return n; };
+    dup.labor.forEach(l => { l.id = newUid(l.id); });
+    dup.equipment.forEach(e => { e.id = newUid(e.id); if (e.labor_group_id) e.labor_group_id = idMap[e.labor_group_id] || e.labor_group_id; });
+    dup.products.forEach(p => { p.id = newUid(p.id); });
+    dup.operations.forEach(o => {
+      o.id = newUid(o.id);
+      o.product_id = idMap[o.product_id] || o.product_id;
+      if (o.equip_id) o.equip_id = idMap[o.equip_id] || o.equip_id;
+    });
+    dup.routing.forEach(r => {
+      r.id = uid();
+      r.product_id = idMap[r.product_id] || r.product_id;
+    });
+    dup.ibom.forEach(i => {
+      i.id = uid();
+      i.parent_product_id = idMap[i.parent_product_id] || i.parent_product_id;
+      i.component_product_id = idMap[i.component_product_id] || i.component_product_id;
+    });
     set((s) => ({ models: [dup, ...s.models] }));
+    saveFullModelToDB(dup).catch(err => console.error('duplicateModel DB error:', err));
     return newId;
   },
 
-  deleteModel: (id) => set((s) => ({ models: s.models.filter((m) => m.id !== id) })),
-  renameModel: (id, name) => set((s) => ({
-    models: s.models.map((m) => m.id === id ? { ...m, name, general: { ...m.general, model_title: name }, updated_at: new Date().toISOString() } : m),
-  })),
+  deleteModel: (id) => {
+    set((s) => ({ models: s.models.filter((m) => m.id !== id) }));
+    db.deleteModel(id);
+  },
+
+  renameModel: (id, name) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === id ? { ...m, name, general: { ...m.general, model_title: name }, updated_at: new Date().toISOString() } : m),
+    }));
+    db.updateModel(id, { name });
+  },
+
   toggleStar: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_starred: !m.is_starred } : m) })),
-  archiveModel: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_archived: !m.is_archived } : m) })),
-  setRunStatus: (id, status) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, run_status: status } : m) })),
 
-  updateGeneral: (modelId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, general: { ...m.general, ...data }, updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
+  archiveModel: (id) => {
+    const model = get().models.find(m => m.id === id);
+    const newVal = !model?.is_archived;
+    set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_archived: newVal } : m) }));
+    db.updateModel(id, { is_archived: newVal });
+  },
 
-  addLabor: (modelId, labor) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: [...m.labor, labor], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateLabor: (modelId, laborId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.map((l) => l.id === laborId ? { ...l, ...data } : l), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  // Cascading: clear labor_group_id on equipment referencing this labor
-  deleteLabor: (modelId, laborId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      labor: m.labor.filter((l) => l.id !== laborId),
-      equipment: m.equipment.map((e) => e.labor_group_id === laborId ? { ...e, labor_group_id: '' } : e),
-      updated_at: new Date().toISOString(),
-      run_status: 'needs_recalc' as const,
-    } : m),
-  })),
+  setRunStatus: (id, status) => {
+    set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, run_status: status } : m) }));
+    db.updateModel(id, { run_status: status });
+  },
 
-  addEquipment: (modelId, eq) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: [...m.equipment, eq], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateEquipment: (modelId, eqId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.map((e) => e.id === eqId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  // Cascading: clear equip_id on operations referencing this equipment
-  deleteEquipment: (modelId, eqId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      equipment: m.equipment.filter((e) => e.id !== eqId),
-      operations: m.operations.map((o) => o.equip_id === eqId ? { ...o, equip_id: '' } : o),
-      updated_at: new Date().toISOString(),
-      run_status: 'needs_recalc' as const,
-    } : m),
-  })),
+  updateGeneral: (modelId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, general: { ...m.general, ...data }, updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateGeneral(modelId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
 
-  addProduct: (modelId, product) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: [...m.products, product], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateProduct: (modelId, productId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.map((p) => p.id === productId ? { ...p, ...data } : p), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  // Cascading: remove operations, routing, and IBOM entries for this product
-  deleteProduct: (modelId, productId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      products: m.products.filter((p) => p.id !== productId),
-      operations: m.operations.filter((o) => o.product_id !== productId),
-      routing: m.routing.filter((r) => r.product_id !== productId),
-      ibom: m.ibom.filter((e) => e.parent_product_id !== productId && e.component_product_id !== productId),
-      updated_at: new Date().toISOString(),
-      run_status: 'needs_recalc' as const,
-    } : m),
-  })),
-
-  addOperation: (modelId, op) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateOperation: (modelId, opId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  // Cascading: remove routing entries that reference this operation's op_name
-  deleteOperation: (modelId, opId) => set((s) => ({
-    models: s.models.map((m) => {
-      if (m.id !== modelId) return m;
-      const op = m.operations.find((o) => o.id === opId);
-      const opName = op?.op_name || '';
-      const productId = op?.product_id || '';
-      return {
+  addLabor: (modelId, labor) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, labor: [...m.labor, labor], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.insertLabor(modelId, labor);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateLabor: (modelId, laborId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, labor: m.labor.map((l) => l.id === laborId ? { ...l, ...data } : l), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateLabor(laborId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteLabor: (modelId, laborId) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? {
         ...m,
-        operations: m.operations.filter((o) => o.id !== opId),
-        routing: m.routing.filter((r) => !(r.product_id === productId && (r.from_op_name === opName || r.to_op_name === opName))),
-        updated_at: new Date().toISOString(),
-        run_status: 'needs_recalc' as const,
-      };
-    }),
-  })),
+        labor: m.labor.filter((l) => l.id !== laborId),
+        equipment: m.equipment.map((e) => e.labor_group_id === laborId ? { ...e, labor_group_id: '' } : e),
+        updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+      } : m),
+    }));
+    db.deleteLabor(laborId);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
 
-  addRouting: (modelId, entry) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateRouting: (modelId, entryId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  deleteRouting: (modelId, entryId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  setRouting: (modelId, productId, entries) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
-      updated_at: new Date().toISOString(),
-      run_status: 'needs_recalc' as const,
-    } : m),
-  })),
+  addEquipment: (modelId, eq) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, equipment: [...m.equipment, eq], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.insertEquipment(modelId, eq);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateEquipment: (modelId, eqId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, equipment: m.equipment.map((e) => e.id === eqId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateEquipment(eqId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteEquipment: (modelId, eqId) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? {
+        ...m,
+        equipment: m.equipment.filter((e) => e.id !== eqId),
+        operations: m.operations.map((o) => o.equip_id === eqId ? { ...o, equip_id: '' } : o),
+        updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+      } : m),
+    }));
+    db.deleteEquipment(eqId);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
 
-  addIBOM: (modelId, entry) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  updateIBOM: (modelId, entryId, data) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  deleteIBOM: (modelId, entryId) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
-  })),
-  setIBOMForParent: (modelId, parentId, entries) => set((s) => ({
-    models: s.models.map((m) => m.id === modelId ? {
-      ...m,
-      ibom: [...m.ibom.filter((e) => e.parent_product_id !== parentId), ...entries],
-      updated_at: new Date().toISOString(),
-      run_status: 'needs_recalc' as const,
-    } : m),
-  })),
+  addProduct: (modelId, product) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, products: [...m.products, product], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.insertProduct(modelId, product);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateProduct: (modelId, productId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, products: m.products.map((p) => p.id === productId ? { ...p, ...data } : p), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateProduct(productId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteProduct: (modelId, productId) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? {
+        ...m,
+        products: m.products.filter((p) => p.id !== productId),
+        operations: m.operations.filter((o) => o.product_id !== productId),
+        routing: m.routing.filter((r) => r.product_id !== productId),
+        ibom: m.ibom.filter((e) => e.parent_product_id !== productId && e.component_product_id !== productId),
+        updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+      } : m),
+    }));
+    db.deleteProduct(modelId, productId);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+
+  addOperation: (modelId, op) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, operations: [...m.operations, op], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.insertOperation(modelId, op);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateOperation: (modelId, opId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, operations: m.operations.map((o) => o.id === opId ? { ...o, ...data } : o), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateOperation(opId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteOperation: (modelId, opId) => {
+    const model = get().models.find(m => m.id === modelId);
+    const op = model?.operations.find(o => o.id === opId);
+    set((s) => ({
+      models: s.models.map((m) => {
+        if (m.id !== modelId) return m;
+        const opObj = m.operations.find((o) => o.id === opId);
+        const opName = opObj?.op_name || '';
+        const productId = opObj?.product_id || '';
+        return {
+          ...m,
+          operations: m.operations.filter((o) => o.id !== opId),
+          routing: m.routing.filter((r) => !(r.product_id === productId && (r.from_op_name === opName || r.to_op_name === opName))),
+          updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+        };
+      }),
+    }));
+    if (op) db.deleteOperation(modelId, opId, op.op_name, op.product_id);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+
+  addRouting: (modelId, entry) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, routing: [...m.routing, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    const model = get().models.find(m => m.id === modelId);
+    if (model) db.insertRouting(modelId, entry, model.operations);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateRouting: (modelId, entryId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.map((r) => r.id === entryId ? { ...r, ...data } : r), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateRouting(entryId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteRouting: (modelId, entryId) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, routing: m.routing.filter((r) => r.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.deleteRouting(entryId);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  setRouting: (modelId, productId, entries) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? {
+        ...m,
+        routing: [...m.routing.filter((r) => r.product_id !== productId), ...entries],
+        updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+      } : m),
+    }));
+    const model = get().models.find(m => m.id === modelId);
+    if (model) db.setRouting(modelId, productId, entries, model.operations);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+
+  addIBOM: (modelId, entry) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, ibom: [...m.ibom, entry], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.insertIBOM(modelId, entry);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  updateIBOM: (modelId, entryId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.map((e) => e.id === entryId ? { ...e, ...data } : e), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.updateIBOM(entryId, data);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  deleteIBOM: (modelId, entryId) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, ibom: m.ibom.filter((e) => e.id !== entryId), updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
+    }));
+    db.deleteIBOM(entryId);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+  setIBOMForParent: (modelId, parentId, entries) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? {
+        ...m,
+        ibom: [...m.ibom.filter((e) => e.parent_product_id !== parentId), ...entries],
+        updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const,
+      } : m),
+    }));
+    db.setIBOMForParent(modelId, parentId, entries);
+    db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
 }));
