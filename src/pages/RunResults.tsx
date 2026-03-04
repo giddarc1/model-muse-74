@@ -146,10 +146,8 @@ export default function RunResults() {
   const [transposed, setTransposed] = useState(false);
   const [ibomProduct, setIbomProduct] = useState('');
 
-  if (!model) return null;
-
-  const activeScenario = allScenarios.find(s => s.id === activeScenarioId) || null;
-  const modelScenarios = allScenarios.filter(s => s.modelId === model.id);
+  const activeScenario = model ? (allScenarios.find(s => s.id === activeScenarioId) || null) : null;
+  const modelScenarios = model ? allScenarios.filter(s => s.modelId === model.id) : [];
   const resultKey = activeScenario ? activeScenario.id : 'basecase';
   const results = getResults(resultKey);
   const basecaseResults = getResults('basecase');
@@ -158,11 +156,9 @@ export default function RunResults() {
   // Build list of scenarios to display in charts
   const chartScenarios: ScenarioEntry[] = useMemo(() => {
     const entries: ScenarioEntry[] = [];
-    // Always include current view (basecase or active scenario)
     if (basecaseResults) {
       entries.push({ id: 'basecase', name: 'Basecase', results: basecaseResults });
     }
-    // Add displayed what-if scenarios
     displayIds.forEach(id => {
       const sc = modelScenarios.find(s => s.id === id);
       const r = getResults(id);
@@ -175,85 +171,23 @@ export default function RunResults() {
 
   const isMultiScenario = chartScenarios.length > 1;
 
-  // Scenario results for summary table display
-  const displayScenarioResults = displayIds
+  const displayScenarioResults = useMemo(() => displayIds
     .map(id => ({ id, scenario: modelScenarios.find(s => s.id === id), results: getResults(id) }))
-    .filter(d => d.scenario && d.results) as { id: string; scenario: typeof modelScenarios[0]; results: CalcResults }[];
+    .filter(d => d.scenario && d.results) as { id: string; scenario: typeof modelScenarios[0]; results: CalcResults }[],
+    [displayIds, modelScenarios, getResults]);
 
-  const handleRun = async () => {
-    if (runMode === 'verify') {
-      const msgs = verifyData(model);
-      setVerifyMessages(msgs);
-      if (msgs.errors.length === 0 && msgs.warnings.length === 0) {
-        toast.success('Data verification complete — no issues found');
-      } else {
-        toast.warning(`Found ${msgs.errors.length} error(s) and ${msgs.warnings.length} warning(s)`);
-      }
-      return;
-    }
-
-    // Validation guards
-    const validationErrors: string[] = [];
-    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be greater than 0');
-    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be greater than 0');
-    model.products.forEach(p => {
-      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
-      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
-    });
-    model.equipment.forEach(e => {
-      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
-    });
-    model.labor.forEach(l => {
-      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
-    });
-    if (validationErrors.length > 0) {
-      setVerifyMessages({ errors: validationErrors, warnings: [] });
-      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`);
-      return;
-    }
-
-    setIsRunning(true);
-    setTimeout(async () => {
-      const calcResults = calculate(model, activeScenario);
-      setResults(resultKey, calcResults);
-      setRunStatus(model.id, 'current');
-      if (activeScenario) markCalculated(activeScenario.id);
-      setIsRunning(false);
-      setVerifyMessages(null);
-
-      // Persist results to Supabase
-      const { scenarioDb } = await import('@/lib/scenarioDb');
-      if (activeScenario) {
-        scenarioDb.saveResults(activeScenario.id, calcResults);
-      } else {
-        scenarioDb.saveBasecaseResults(model.id, calcResults);
-      }
-      // Update last_run_at
-      const { db } = await import('@/lib/supabaseData');
-      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
-
-      if (calcResults.errors.length > 0) {
-        toast.error(calcResults.errors[0]);
-      } else if (calcResults.overLimitResources.length > 0) {
-        toast.warning(`${calcResults.overLimitResources.length} resource(s) exceed utilization limit`);
-      } else {
-        toast.success(runMode === 'full' ? 'Full calculation complete — all production targets achievable' : 'Utilization calculation complete');
-      }
-    }, 100);
-  };
-
-  // Single-scenario chart data (fallback when only 1 scenario)
-  const equipChartData = results?.equipment.map(e => ({
+  // Single-scenario chart data
+  const equipChartData = useMemo(() => results?.equipment.map(e => ({
     name: e.name, setup: e.setupUtil, run: e.runUtil, repair: e.repairUtil, waitLabor: e.waitLaborUtil,
-  })) || [];
+  })) || [], [results]);
 
-  const laborChartData = results?.labor.map(l => ({
+  const laborChartData = useMemo(() => results?.labor.map(l => ({
     name: l.name, setup: l.setupUtil, run: l.runUtil, unavail: l.unavailPct,
-  })) || [];
+  })) || [], [results]);
 
-  const productChartData = results?.products.map(p => ({
+  const productChartData = useMemo(() => results?.products.map(p => ({
     name: p.name, lotWait: p.mctLotWait, queue: p.mctQueue, waitLabor: p.mctWaitLabor, setup: p.mctSetup, run: p.mctRun,
-  })) || [];
+  })) || [], [results]);
 
   // Grouped chart data
   const groupedEquip = useMemo(() => isMultiScenario ? buildGroupedEquipData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
@@ -261,8 +195,9 @@ export default function RunResults() {
   const groupedMCT = useMemo(() => isMultiScenario ? buildGroupedProductMCTData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
   const groupedWIP = useMemo(() => isMultiScenario ? buildGroupedProductWIPData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
 
-  // IBOM Tree data
-  const ibomSelectedProduct = ibomProduct || (model.products.find(p => p.demand > 0)?.id || '');
+  const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
+
+  if (!model) return null;
 
   return (
     <div className="p-6 animate-fade-in">
