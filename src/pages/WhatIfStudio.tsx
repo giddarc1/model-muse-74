@@ -69,6 +69,34 @@ export default function WhatIfStudio() {
     toast.success(`Scenario "${newName.trim()}" created`);
   };
 
+  const handleRunScenario = (scenario: Scenario) => {
+    // Calculate basecase first if not already done
+    const basecaseResults = useResultsStore.getState().getResults('basecase');
+    if (!basecaseResults) {
+      const bcResults = calculate(model, null);
+      setResults('basecase', bcResults);
+    }
+    const results = calculate(model, scenario);
+    setResults(scenario.id, results);
+    markCalculated(scenario.id);
+    toast.success(`Scenario "${scenario.name}" calculated`);
+  };
+
+  const handleRecalcAll = () => {
+    // Calculate basecase
+    const bcResults = calculate(model, null);
+    setResults('basecase', bcResults);
+    // Calculate all scenarios for this model
+    let count = 0;
+    scenarios.forEach(sc => {
+      const results = calculate(model, sc);
+      setResults(sc.id, results);
+      markCalculated(sc.id);
+      count++;
+    });
+    toast.success(`Recalculated basecase + ${count} scenario(s)`);
+  };
+
   const handlePromote = () => {
     if (!activeScenarioId) return;
     promoteToBasecase(activeScenarioId);
