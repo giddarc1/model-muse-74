@@ -226,7 +226,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
-      labor: [], equipment: [], products: [], operations: [],
+      labor: [], equipment: [], products: [], operations: [], routing: [],
     };
     set((s) => ({ models: [model, ...s.models] }));
     return id;
