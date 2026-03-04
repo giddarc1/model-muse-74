@@ -1,6 +1,7 @@
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useModelStore } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { ModelContextBar } from './ModelContextBar';
 import { ModelSidebar } from './ModelSidebar';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ export function ModelWorkspaceLayout() {
   const models = useModelStore((s) => s.models);
   const modelsLoaded = useModelStore((s) => s.modelsLoaded);
   const loadModels = useModelStore((s) => s.loadModels);
+  const loadScenariosFromDb = useScenarioStore((s) => s.loadScenariosFromDb);
 
   useEffect(() => {
     if (!modelsLoaded) {
@@ -25,8 +27,10 @@ export function ModelWorkspaceLayout() {
       return;
     }
     setActiveModel(modelId!);
+    // Load scenarios and cached results from Supabase
+    loadScenariosFromDb(modelId!);
     return () => setActiveModel(null);
-  }, [modelId, models, modelsLoaded, navigate, setActiveModel, loadModels]);
+  }, [modelId, models, modelsLoaded, navigate, setActiveModel, loadModels, loadScenariosFromDb]);
 
   if (!modelsLoaded) {
     return (

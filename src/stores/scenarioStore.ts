@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useModelStore } from './modelStore';
+import { scenarioDb } from '@/lib/scenarioDb';
 
 export interface ScenarioChange {
   id: string;
@@ -35,139 +36,41 @@ interface ScenarioStore {
   families: ScenarioFamily[];
   activeScenarioId: string | null;
   displayScenarioIds: string[];
+  loadedModelId: string | null;
 
   setActiveScenario: (id: string | null) => void;
   getActiveScenario: () => Scenario | undefined;
   getScenariosForModel: (modelId: string) => Scenario[];
-  
-  createScenario: (modelId: string, name: string, description?: string) => string;
-  duplicateScenario: (id: string) => string;
+  loadScenariosFromDb: (modelId: string) => Promise<void>;
+  setScenarios: (scenarios: Scenario[]) => void;
+
+  createScenario: (modelId: string, name: string, description?: string) => Promise<string>;
+  duplicateScenario: (id: string) => Promise<string>;
   renameScenario: (id: string, name: string) => void;
   updateScenarioDescription: (id: string, description: string) => void;
   deleteScenario: (id: string) => void;
-  
+
   addChange: (scenarioId: string, change: Omit<ScenarioChange, 'id'>) => void;
   updateChange: (scenarioId: string, changeId: string, whatIfValue: string | number) => void;
   removeChange: (scenarioId: string, changeId: string) => void;
-  
+
   applyScenarioChange: (scenarioId: string, dataType: ScenarioChange['dataType'], entityId: string, entityName: string, field: string, fieldLabel: string, whatIfValue: string | number) => void;
 
   toggleDisplayScenario: (id: string) => void;
   markNeedsRecalc: (scenarioId: string) => void;
   markCalculated: (scenarioId: string) => void;
-  
+
   promoteToBasecase: (scenarioId: string) => void;
 }
 
 const uid = () => crypto.randomUUID();
-
-function createDemoScenarios(modelId: string): Scenario[] {
-  const store = useModelStore.getState();
-  const model = store.models.find(m => m.id === modelId);
-  if (!model) return [];
-
-  const machinst = model.labor.find(l => l.name === 'MACHINST');
-  const repair = model.labor.find(l => l.name === 'REPAIR');
-  const vtLathe = model.equipment.find(e => e.name === 'VT_LATHE');
-  const mill = model.equipment.find(e => e.name === 'MILL');
-
-  const moveLabor: Scenario = {
-    id: uid(),
-    modelId,
-    name: 'Move Labor',
-    description: 'Move one worker from REPAIR to MACHINST to reduce machining bottleneck.',
-    familyId: null,
-    status: 'needs_recalc',
-    changes: [
-      ...(machinst ? [{
-        id: uid(),
-        dataType: 'Labor' as const,
-        entityId: machinst.id,
-        entityName: 'MACHINST',
-        field: 'count',
-        fieldLabel: 'No. in Group',
-        basecaseValue: machinst.count,
-        whatIfValue: machinst.count + 1,
-      }] : []),
-      ...(repair ? [{
-        id: uid(),
-        dataType: 'Labor' as const,
-        entityId: repair.id,
-        entityName: 'REPAIR',
-        field: 'count',
-        fieldLabel: 'No. in Group',
-        basecaseValue: repair.count,
-        whatIfValue: Math.max(1, repair.count - 1),
-      }] : []),
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  const improveChanges: ScenarioChange[] = [];
-  
-  model.products.forEach(p => {
-    if (p.lot_size !== 20) {
-      improveChanges.push({
-        id: uid(),
-        dataType: 'Product',
-        entityId: p.id,
-        entityName: p.name,
-        field: 'lot_size',
-        fieldLabel: 'Lot Size',
-        basecaseValue: p.lot_size,
-        whatIfValue: 20,
-      });
-    }
-  });
-
-  if (vtLathe) {
-    improveChanges.push({
-      id: uid(),
-      dataType: 'Equipment',
-      entityId: vtLathe.id,
-      entityName: 'VT_LATHE',
-      field: 'setup_factor',
-      fieldLabel: 'Setup Factor',
-      basecaseValue: 1,
-      whatIfValue: 0.25,
-    });
-  }
-  if (mill) {
-    improveChanges.push({
-      id: uid(),
-      dataType: 'Equipment',
-      entityId: mill.id,
-      entityName: 'MILL',
-      field: 'setup_factor',
-      fieldLabel: 'Setup Factor',
-      basecaseValue: 1,
-      whatIfValue: 0.25,
-    });
-  }
-
-  const improve: Scenario = {
-    id: uid(),
-    modelId,
-    name: 'Improve',
-    description: 'Reduce lot sizes to 20 and apply 75% setup reduction on VT_LATHE and MILL.',
-    familyId: null,
-    status: 'needs_recalc',
-    changes: improveChanges,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  return [moveLabor, improve];
-}
-
-let demoInitialized = false;
 
 export const useScenarioStore = create<ScenarioStore>((set, get) => ({
   scenarios: [],
   families: [],
   activeScenarioId: null,
   displayScenarioIds: [],
+  loadedModelId: null,
 
   setActiveScenario: (id) => set({ activeScenarioId: id }),
 
@@ -177,24 +80,34 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
   },
 
   getScenariosForModel: (modelId) => {
-    const { scenarios } = get();
-    // Lazy-init demo scenarios
-    if (!demoInitialized) {
-      const model = useModelStore.getState().models.find(m => m.id === modelId);
-      if (model?.is_demo && scenarios.filter(s => s.modelId === modelId).length === 0) {
-        demoInitialized = true;
-        const demoScenarios = createDemoScenarios(modelId);
-        if (demoScenarios.length > 0) {
-          set(s => ({ scenarios: [...s.scenarios, ...demoScenarios] }));
-          return demoScenarios;
-        }
-      }
-    }
-    return scenarios.filter(s => s.modelId === modelId);
+    return get().scenarios.filter(s => s.modelId === modelId);
   },
 
-  createScenario: (modelId, name, description = '') => {
-    const id = uid();
+  loadScenariosFromDb: async (modelId) => {
+    if (get().loadedModelId === modelId) return;
+    const { loadScenariosForModel } = await import('@/lib/scenarioDb');
+    const { scenarios, results } = await loadScenariosForModel(modelId);
+    set({ scenarios, loadedModelId: modelId, activeScenarioId: null, displayScenarioIds: [] });
+
+    // Populate resultsStore with loaded results
+    const { useResultsStore } = await import('./resultsStore');
+    Object.entries(results).forEach(([scenarioId, calcResults]) => {
+      useResultsStore.getState().setResults(scenarioId, calcResults);
+    });
+
+    // Load basecase results
+    const { loadBasecaseResults } = await import('@/lib/scenarioDb');
+    const bcResults = await loadBasecaseResults(modelId);
+    if (bcResults) {
+      useResultsStore.getState().setResults('basecase', bcResults);
+    }
+  },
+
+  setScenarios: (scenarios) => set({ scenarios }),
+
+  createScenario: async (modelId, name, description = '') => {
+    const dbId = await scenarioDb.create(modelId, name, description);
+    const id = dbId || uid();
     const scenario: Scenario = {
       id, modelId, name, description,
       familyId: null,
@@ -207,59 +120,100 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     return id;
   },
 
-  duplicateScenario: (id) => {
+  duplicateScenario: async (id) => {
     const source = get().scenarios.find(s => s.id === id);
     if (!source) return '';
-    const newId = uid();
+    const newName = `${source.name} (Copy)`;
+    const dbId = await scenarioDb.create(source.modelId, newName, source.description);
+    const newId = dbId || uid();
     const dup: Scenario = {
       ...JSON.parse(JSON.stringify(source)),
       id: newId,
-      name: `${source.name} (Copy)`,
+      name: newName,
+      status: 'needs_recalc',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    // Re-id changes and save to DB
+    dup.changes = dup.changes.map((c: ScenarioChange) => {
+      const newChange = { ...c, id: uid() };
+      scenarioDb.upsertChange(newId, newChange);
+      return newChange;
+    });
     set(s => ({ scenarios: [...s.scenarios, dup] }));
     return newId;
   },
 
-  renameScenario: (id, name) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === id ? { ...sc, name, updatedAt: new Date().toISOString() } : sc),
-  })),
+  renameScenario: (id, name) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === id ? { ...sc, name, updatedAt: new Date().toISOString() } : sc),
+    }));
+    scenarioDb.update(id, { name });
+  },
 
-  updateScenarioDescription: (id, description) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === id ? { ...sc, description, updatedAt: new Date().toISOString() } : sc),
-  })),
+  updateScenarioDescription: (id, description) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === id ? { ...sc, description, updatedAt: new Date().toISOString() } : sc),
+    }));
+    scenarioDb.update(id, { description });
+  },
 
-  deleteScenario: (id) => set(s => ({
-    scenarios: s.scenarios.filter(sc => sc.id !== id),
-    activeScenarioId: s.activeScenarioId === id ? null : s.activeScenarioId,
-  })),
+  deleteScenario: (id) => {
+    set(s => ({
+      scenarios: s.scenarios.filter(sc => sc.id !== id),
+      activeScenarioId: s.activeScenarioId === id ? null : s.activeScenarioId,
+      displayScenarioIds: s.displayScenarioIds.filter(sid => sid !== id),
+    }));
+    scenarioDb.delete(id);
+  },
 
-  addChange: (scenarioId, change) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? {
-      ...sc,
-      changes: [...sc.changes, { ...change, id: uid() }],
-      status: 'needs_recalc' as const,
-      updatedAt: new Date().toISOString(),
-    } : sc),
-  })),
+  addChange: (scenarioId, change) => {
+    const newChange: ScenarioChange = { ...change, id: uid() };
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? {
+        ...sc,
+        changes: [...sc.changes, newChange],
+        status: 'needs_recalc' as const,
+        updatedAt: new Date().toISOString(),
+      } : sc),
+    }));
+    scenarioDb.upsertChange(scenarioId, newChange);
+    scenarioDb.update(scenarioId, { status: 'needs_recalc' });
+  },
 
-  updateChange: (scenarioId, changeId, whatIfValue) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? {
-      ...sc,
-      changes: sc.changes.map(c => c.id === changeId ? { ...c, whatIfValue } : c),
-      status: 'needs_recalc' as const,
-      updatedAt: new Date().toISOString(),
-    } : sc),
-  })),
+  updateChange: (scenarioId, changeId, whatIfValue) => {
+    let updatedChange: ScenarioChange | null = null;
+    set(s => ({
+      scenarios: s.scenarios.map(sc => {
+        if (sc.id !== scenarioId) return sc;
+        return {
+          ...sc,
+          changes: sc.changes.map(c => {
+            if (c.id !== changeId) return c;
+            updatedChange = { ...c, whatIfValue };
+            return updatedChange;
+          }),
+          status: 'needs_recalc' as const,
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+    if (updatedChange) {
+      scenarioDb.upsertChange(scenarioId, updatedChange);
+      scenarioDb.update(scenarioId, { status: 'needs_recalc' });
+    }
+  },
 
-  removeChange: (scenarioId, changeId) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? {
-      ...sc,
-      changes: sc.changes.filter(c => c.id !== changeId),
-      updatedAt: new Date().toISOString(),
-    } : sc),
-  })),
+  removeChange: (scenarioId, changeId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? {
+        ...sc,
+        changes: sc.changes.filter(c => c.id !== changeId),
+        updatedAt: new Date().toISOString(),
+      } : sc),
+    }));
+    scenarioDb.removeChange(changeId);
+  },
 
   applyScenarioChange: (scenarioId, dataType, entityId, entityName, field, fieldLabel, whatIfValue) => {
     const scenario = get().scenarios.find(s => s.id === scenarioId);
@@ -268,13 +222,11 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     const existing = scenario.changes.find(c => c.entityId === entityId && c.field === field);
     if (existing) {
       if (existing.basecaseValue === whatIfValue) {
-        // Revert — remove change
         get().removeChange(scenarioId, existing.id);
       } else {
         get().updateChange(scenarioId, existing.id, whatIfValue);
       }
     } else {
-      // Look up basecase value
       const model = useModelStore.getState().getActiveModel();
       if (!model) return;
       let basecaseValue: string | number = '';
@@ -288,7 +240,7 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
         const entity = model.products.find(p => p.id === entityId);
         if (entity) basecaseValue = (entity as any)[field];
       }
-      if (basecaseValue === whatIfValue) return; // No actual change
+      if (basecaseValue === whatIfValue) return;
       get().addChange(scenarioId, { dataType, entityId, entityName, field, fieldLabel, basecaseValue, whatIfValue });
     }
   },
@@ -299,13 +251,19 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       : [...s.displayScenarioIds, id],
   })),
 
-  markNeedsRecalc: (scenarioId) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'needs_recalc' as const } : sc),
-  })),
+  markNeedsRecalc: (scenarioId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'needs_recalc' as const } : sc),
+    }));
+    scenarioDb.update(scenarioId, { status: 'needs_recalc' });
+  },
 
-  markCalculated: (scenarioId) => set(s => ({
-    scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'calculated' as const } : sc),
-  })),
+  markCalculated: (scenarioId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, status: 'calculated' as const } : sc),
+    }));
+    scenarioDb.update(scenarioId, { status: 'calculated' });
+  },
 
   promoteToBasecase: (scenarioId) => {
     const scenario = get().scenarios.find(s => s.id === scenarioId);
@@ -314,7 +272,6 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     const model = modelStore.models.find(m => m.id === scenario.modelId);
     if (!model) return;
 
-    // Apply each change to the basecase model
     scenario.changes.forEach(change => {
       if (change.dataType === 'Labor') {
         modelStore.updateLabor(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
@@ -325,18 +282,13 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       }
     });
 
-    // Clear changes from this scenario and mark others as needing recalc
     set(s => ({
       scenarios: s.scenarios
-        .filter(sc => sc.id !== scenarioId) // Remove the promoted scenario
-        .map(sc => {
-          if (sc.modelId === scenario.modelId) {
-            return { ...sc, status: 'needs_recalc' as const };
-          }
-          return sc;
-        }),
+        .filter(sc => sc.id !== scenarioId)
+        .map(sc => sc.modelId === scenario.modelId ? { ...sc, status: 'needs_recalc' as const } : sc),
       activeScenarioId: null,
       displayScenarioIds: s.displayScenarioIds.filter(id => id !== scenarioId),
     }));
+    scenarioDb.delete(scenarioId);
   },
 }));

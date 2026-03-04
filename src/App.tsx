@@ -23,6 +23,7 @@ import RunResults from "./pages/RunResults";
 import WhatIfStudio from "./pages/WhatIfStudio";
 import Reports from "./pages/Reports";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import ModelSettings from "./pages/ModelSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,7 +58,7 @@ const App = () => (
               <Route path="run" element={<RunResults />} />
               <Route path="whatif" element={<WhatIfStudio />} />
               <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<PlaceholderPage />} />
+              <Route path="settings" element={<ModelSettings />} />
             </Route>
             <Route path="/settings" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
