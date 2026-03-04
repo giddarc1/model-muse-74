@@ -405,12 +405,12 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       id: product.id, name: product.name, demand, lotSize,
       goodMade, goodShipped: Math.round(product.demand * product.demand_factor),
       started, scrap, wip,
-      mct: Math.round(totalMCT * 100) / 100,
-      mctLotWait: Math.round(totalLotWaitMCT * 100) / 100,
-      mctQueue: Math.round(totalQueueMCT * 100) / 100,
-      mctWaitLabor: Math.round(totalWaitLaborMCT * 100) / 100,
-      mctSetup: Math.round(totalSetupMCT * 100) / 100,
-      mctRun: Math.round(totalRunMCT * 100) / 100,
+      mct: Math.round(totalMCT * 10000) / 10000,
+      mctLotWait: Math.round(totalLotWaitMCT * 10000) / 10000,
+      mctQueue: Math.round(totalQueueMCT * 10000) / 10000,
+      mctWaitLabor: Math.round(totalWaitLaborMCT * 10000) / 10000,
+      mctSetup: Math.round(totalSetupMCT * 10000) / 10000,
+      mctRun: Math.round(totalRunMCT * 10000) / 10000,
     });
   });
 
