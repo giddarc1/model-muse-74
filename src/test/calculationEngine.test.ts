@@ -122,9 +122,9 @@ describe('RMT Calculation Engine — Hub Manufacturing Cell', () => {
     const vtLathe = model.equipment.find(e => e.name === 'VT_LATHE')!;
     const mill = model.equipment.find(e => e.name === 'MILL')!;
 
-    const improveChanges = model.products.map((p, i) => ({
+    const improveChanges: any[] = model.products.map((p, i) => ({
       id: `lot-${i}`,
-      dataType: 'Product' as const,
+      dataType: 'Product',
       entityId: p.id,
       entityName: p.name,
       field: 'lot_size',
@@ -133,8 +133,8 @@ describe('RMT Calculation Engine — Hub Manufacturing Cell', () => {
       whatIfValue: 20,
     }));
     improveChanges.push(
-      { id: 'vt-setup', dataType: 'Equipment' as const, entityId: vtLathe.id, entityName: 'VT_LATHE', field: 'setup_factor', fieldLabel: 'Setup Factor', basecaseValue: 1, whatIfValue: 0.25 },
-      { id: 'mill-setup', dataType: 'Equipment' as const, entityId: mill.id, entityName: 'MILL', field: 'setup_factor', fieldLabel: 'Setup Factor', basecaseValue: 1, whatIfValue: 0.25 },
+      { id: 'vt-setup', dataType: 'Equipment', entityId: vtLathe.id, entityName: 'VT_LATHE', field: 'setup_factor', fieldLabel: 'Setup Factor', basecaseValue: 1, whatIfValue: 0.25 },
+      { id: 'mill-setup', dataType: 'Equipment', entityId: mill.id, entityName: 'MILL', field: 'setup_factor', fieldLabel: 'Setup Factor', basecaseValue: 1, whatIfValue: 0.25 },
     );
 
     const improveScenario = {
