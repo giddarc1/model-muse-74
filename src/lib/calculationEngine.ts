@@ -145,9 +145,9 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  // Time conversions
-  const conv1 = g.conv1; // ops time units per MCT time unit (e.g. 480 min/day)
-  const conv2 = g.conv2; // MCT time units per prod period (e.g. 210 days/year)
+  // Time conversions — guard against division by zero
+  const conv1 = Math.max(g.conv1, 0.001); // ops time units per MCT time unit (e.g. 480 min/day)
+  const conv2 = Math.max(g.conv2, 0.001); // MCT time units per prod period (e.g. 210 days/year)
   const opsPerPeriod = conv1 * conv2; // total ops time units per production period
 
   // Effective demand per product (units per production period, including IBOM propagation)
