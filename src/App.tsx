@@ -11,9 +11,11 @@ import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
 import OperationsRouting from "./pages/OperationsRouting";
+import AllOperations from "./pages/AllOperations";
 import IBOMScreen from "./pages/IBOMScreen";
 import RunResults from "./pages/RunResults";
 import WhatIfStudio from "./pages/WhatIfStudio";
+import Reports from "./pages/Reports";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -36,10 +38,11 @@ const App = () => (
             <Route path="equipment" element={<EquipmentData />} />
             <Route path="products" element={<ProductData />} />
             <Route path="operations" element={<OperationsRouting />} />
+            <Route path="all-operations" element={<AllOperations />} />
             <Route path="ibom" element={<IBOMScreen />} />
             <Route path="run" element={<RunResults />} />
             <Route path="whatif" element={<WhatIfStudio />} />
-            <Route path="reports" element={<PlaceholderPage />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<PlaceholderPage />} />
           </Route>
           <Route path="/settings" element={<PlaceholderPage />} />

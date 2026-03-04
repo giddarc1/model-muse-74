@@ -3,7 +3,7 @@ import { useModelStore } from '@/stores/modelStore';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
-  Network, Play, FlaskConical, FileText, Wrench
+  Network, Play, FlaskConical, FileText, Wrench, Grid3X3
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Equipment', icon: Cpu, path: 'equipment' },
   { label: 'Products', icon: Package, path: 'products' },
   { label: 'Operations', icon: GitBranch, path: 'operations' },
+  { label: 'All Operations', icon: Grid3X3, path: 'all-operations' },
   { label: 'IBOM', icon: Network, path: 'ibom' },
   { label: 'Run & Results', icon: Play, path: 'run' },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif' },
