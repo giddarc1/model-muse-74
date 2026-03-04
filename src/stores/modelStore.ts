@@ -306,8 +306,9 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   modelsLoaded: false,
   modelsLoading: false,
 
-  loadModels: async () => {
+  loadModels: async (force = false) => {
     if (get().modelsLoading) return;
+    if (get().modelsLoaded && !force) return;
     set({ modelsLoading: true });
     try {
       const models = await fetchAllModels();
