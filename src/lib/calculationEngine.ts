@@ -464,7 +464,7 @@ export function verifyData(model: Model): { errors: string[]; warnings: string[]
 
   // Check operations reference valid equipment
   model.operations.forEach(op => {
-    if (!model.equipment.find(e => e.id === op.equip_id)) {
+    if (op.equip_id && !model.equipment.find(e => e.id === op.equip_id)) {
       errors.push(`Operation "${op.op_name}" references non-existent equipment.`);
     }
   });

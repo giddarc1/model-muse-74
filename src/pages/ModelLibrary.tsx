@@ -44,10 +44,10 @@ export default function ModelLibrary() {
   const [renameValue, setRenameValue] = useState('');
 
   useEffect(() => {
-    if (!modelsLoaded && !modelsLoading) {
+    if (!modelsLoaded || !modelsLoading) {
       loadModels();
     }
-  }, [modelsLoaded, modelsLoading, loadModels]);
+  }, []);
 
   const filtered = models.filter((m) => {
     if (!showArchived && m.is_archived) return false;
