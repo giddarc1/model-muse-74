@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useModelStore } from '@/stores/modelStore';
+import { createDemoModel, type Model } from '@/stores/modelStore';
 import { calculate } from '@/lib/calculationEngine';
 import type { Scenario } from '@/stores/scenarioStore';
 
 describe('RMT Calculation Engine — Hub Manufacturing Cell', () => {
-  let model: ReturnType<typeof useModelStore.getState>['models'][0];
+  let model: Model;
 
   beforeEach(() => {
-    model = useModelStore.getState().models[0];
+    model = createDemoModel();
     expect(model).toBeDefined();
     expect(model.is_demo).toBe(true);
   });
