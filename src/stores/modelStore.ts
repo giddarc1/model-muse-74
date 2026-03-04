@@ -143,6 +143,22 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
+function createHubRouting(productId: string): RoutingEntry[] {
+  return [
+    { id: uid(), product_id: productId, from_op_name: 'DOCK', to_op_name: 'BENCH', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'BENCH', to_op_name: 'RFTURN', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'RFTURN', to_op_name: 'DEBURR', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'DEBURR', to_op_name: 'FNTURN', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'FNTURN', to_op_name: 'INSPECT', pct_routed: 100 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'SLOT', pct_routed: 85 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'REWORK', pct_routed: 10 },
+    { id: uid(), product_id: productId, from_op_name: 'INSPECT', to_op_name: 'SCRAP', pct_routed: 5 },
+    { id: uid(), product_id: productId, from_op_name: 'REWORK', to_op_name: 'INSPECT', pct_routed: 80 },
+    { id: uid(), product_id: productId, from_op_name: 'REWORK', to_op_name: 'SCRAP', pct_routed: 20 },
+    { id: uid(), product_id: productId, from_op_name: 'SLOT', to_op_name: 'STOCK', pct_routed: 100 },
+  ];
+}
+
 function createDemoModel(): Model {
   const laborIds = { PREP: uid(), MACHINST: uid(), INSPECTR: uid(), REPAIR: uid() };
   const equipIds = { BENCH: uid(), VT_LATHE: uid(), DEBURR: uid(), INSPECT: uid(), REWORK: uid(), MILL: uid(), DRILL: uid() };
@@ -199,8 +215,78 @@ function createDemoModel(): Model {
       { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
       { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
     ],
-    operations: [],
-    routing: [],
+    operations: [
+      // HUB1 operations
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'FNTURN', op_number: 50, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 12, labor_setup_lot: 45, labor_run_piece: 12 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
+      // HUB2 operations (same structure)
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'FNTURN', op_number: 50, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 12, labor_setup_lot: 45, labor_run_piece: 12 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
+      { id: uid(), product_id: prodIds.HUB2, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
+      // HUB3 operations
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'FNTURN', op_number: 50, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 12, labor_setup_lot: 45, labor_run_piece: 12 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
+      { id: uid(), product_id: prodIds.HUB3, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
+      // HUB4 operations
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'FNTURN', op_number: 50, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 12, labor_setup_lot: 45, labor_run_piece: 12 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'INSPECT', op_number: 60, equip_id: equipIds.INSPECT, pct_assigned: 100, equip_setup_lot: 15, equip_run_piece: 4, labor_setup_lot: 15, labor_run_piece: 4 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'REWORK', op_number: 70, equip_id: equipIds.REWORK, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 6, labor_setup_lot: 20, labor_run_piece: 6 },
+      { id: uid(), product_id: prodIds.HUB4, op_name: 'SLOT', op_number: 80, equip_id: equipIds.MILL, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 7, labor_setup_lot: 30, labor_run_piece: 7 },
+      // SLEEVE — simple: DOCK → DRILL → STOCK
+      { id: uid(), product_id: prodIds.SLEEVE, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.SLEEVE, op_name: 'TURN', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
+      // MOUNT — simple: DOCK → BENCH → STOCK
+      { id: uid(), product_id: prodIds.MOUNT, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.MOUNT, op_name: 'ASSEMBLE', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
+      // BRACKET — simple: DOCK → DRILL → STOCK
+      { id: uid(), product_id: prodIds.BRACKET, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.BRACKET, op_name: 'STAMP', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
+      // BOLT — simple: DOCK → DRILL → STOCK
+      { id: uid(), product_id: prodIds.BOLT, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.BOLT, op_name: 'FORM', op_number: 20, equip_id: equipIds.DRILL, pct_assigned: 100, equip_setup_lot: 20, equip_run_piece: 2, labor_setup_lot: 20, labor_run_piece: 2 },
+    ],
+    routing: [
+      // HUB1 routing
+      ...createHubRouting(prodIds.HUB1),
+      // HUB2 routing
+      ...createHubRouting(prodIds.HUB2),
+      // HUB3 routing
+      ...createHubRouting(prodIds.HUB3),
+      // HUB4 routing
+      ...createHubRouting(prodIds.HUB4),
+      // SLEEVE: DOCK→TURN→STOCK
+      { id: uid(), product_id: prodIds.SLEEVE, from_op_name: 'DOCK', to_op_name: 'TURN', pct_routed: 100 },
+      { id: uid(), product_id: prodIds.SLEEVE, from_op_name: 'TURN', to_op_name: 'STOCK', pct_routed: 100 },
+      // MOUNT: DOCK→ASSEMBLE→STOCK
+      { id: uid(), product_id: prodIds.MOUNT, from_op_name: 'DOCK', to_op_name: 'ASSEMBLE', pct_routed: 100 },
+      { id: uid(), product_id: prodIds.MOUNT, from_op_name: 'ASSEMBLE', to_op_name: 'STOCK', pct_routed: 100 },
+      // BRACKET: DOCK→STAMP→STOCK
+      { id: uid(), product_id: prodIds.BRACKET, from_op_name: 'DOCK', to_op_name: 'STAMP', pct_routed: 100 },
+      { id: uid(), product_id: prodIds.BRACKET, from_op_name: 'STAMP', to_op_name: 'STOCK', pct_routed: 100 },
+      // BOLT: DOCK→FORM→STOCK
+      { id: uid(), product_id: prodIds.BOLT, from_op_name: 'DOCK', to_op_name: 'FORM', pct_routed: 100 },
+      { id: uid(), product_id: prodIds.BOLT, from_op_name: 'FORM', to_op_name: 'STOCK', pct_routed: 100 },
+    ],
     ibom: [
       // HUB1 → MOUNT (4) + SLEEVE (1)
       { id: uid(), parent_product_id: prodIds.HUB1, component_product_id: prodIds.MOUNT, units_per_assy: 4 },
