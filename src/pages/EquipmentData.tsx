@@ -32,7 +32,12 @@ export default function EquipmentData() {
   };
 
   const handleCellChange = (id: string, field: keyof EquipmentGroup, value: any) => {
-    updateEquipment(model.id, id, { [field]: value });
+    // Auto-set count when switching to delay type
+    if (field === 'equip_type' && value === 'delay') {
+      updateEquipment(model.id, id, { [field]: value, count: -1 });
+    } else {
+      updateEquipment(model.id, id, { [field]: value });
+    }
   };
 
   const laborName = (id: string) => model.labor.find((l) => l.id === id)?.name || '—';
@@ -84,7 +89,7 @@ export default function EquipmentData() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.count} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.count} disabled={eq.equip_type === 'delay'} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.mttf} onChange={(e) => handleCellChange(eq.id, 'mttf', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.mttr} onChange={(e) => handleCellChange(eq.id, 'mttr', +e.target.value)} /></TableCell>
                     <TableCell><Input type="number" className="h-8 w-16 font-mono" value={eq.overtime_pct} onChange={(e) => handleCellChange(eq.id, 'overtime_pct', +e.target.value)} /></TableCell>

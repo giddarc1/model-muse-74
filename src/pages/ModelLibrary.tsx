@@ -5,22 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Plus, Search, Star, MoreVertical, Copy, Trash2, Archive,
-  LayoutGrid, List, Package, Cpu, Users, FlaskConical,
+  LayoutGrid, List, Package, Cpu, Users, FlaskConical, Pencil, RotateCcw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function ModelLibrary() {
   const models = useModelStore((s) => s.models);
   const createModel = useModelStore((s) => s.createModel);
   const duplicateModel = useModelStore((s) => s.duplicateModel);
   const deleteModel = useModelStore((s) => s.deleteModel);
+  const renameModel = useModelStore((s) => s.renameModel);
   const toggleStar = useModelStore((s) => s.toggleStar);
   const archiveModel = useModelStore((s) => s.archiveModel);
   const navigate = useNavigate();
@@ -31,6 +33,14 @@ export default function ModelLibrary() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [showArchived, setShowArchived] = useState(false);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+
+  // Rename
+  const [renameTarget, setRenameTarget] = useState<Model | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const filtered = models.filter((m) => {
     if (!showArchived && m.is_archived) return false;
@@ -46,6 +56,22 @@ export default function ModelLibrary() {
     setNewName('');
     setNewDesc('');
     navigate(`/models/${id}/general`);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget || deleteConfirmName !== deleteTarget.name) return;
+    deleteModel(deleteTarget.id);
+    setDeleteTarget(null);
+    setDeleteConfirmName('');
+    toast.success(`Model "${deleteTarget.name}" permanently deleted`);
+  };
+
+  const handleRename = () => {
+    if (!renameTarget || !renameValue.trim()) return;
+    renameModel(renameTarget.id, renameValue.trim());
+    setRenameTarget(null);
+    setRenameValue('');
+    toast.success('Model renamed');
   };
 
   const openModel = (id: string) => navigate(`/models/${id}/overview`);
@@ -70,6 +96,32 @@ export default function ModelLibrary() {
     const days = Math.floor(hrs / 24);
     return `${days}d ago`;
   };
+
+  const modelActions = (model: Model, inList = false) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <button className="p-1 rounded hover:bg-muted">
+          <MoreVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setRenameTarget(model); setRenameValue(model.name); }}>
+          <Pencil className="h-4 w-4 mr-2" /> Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateModel(model.id); toast.success('Model duplicated'); }}>
+          <Copy className="h-4 w-4 mr-2" /> Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveModel(model.id); toast.success(model.is_archived ? 'Model restored' : 'Model archived'); }}>
+          {model.is_archived ? <RotateCcw className="h-4 w-4 mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+          {model.is_archived ? 'Restore' : 'Archive'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeleteTarget(model); setDeleteConfirmName(''); }} className="text-destructive">
+          <Trash2 className="h-4 w-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,7 +174,7 @@ export default function ModelLibrary() {
           <div className="text-center py-20 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-lg font-medium">No models found</p>
-            <p className="text-sm mt-1">Create a new model to get started</p>
+            <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model to get started'}</p>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -148,24 +200,7 @@ export default function ModelLibrary() {
                       >
                         <Star className={`h-4 w-4 ${model.is_starred ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`} />
                       </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-1 rounded hover:bg-muted">
-                            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateModel(model.id); }}>
-                            <Copy className="h-4 w-4 mr-2" /> Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveModel(model.id); }}>
-                            <Archive className="h-4 w-4 mr-2" /> {model.is_archived ? 'Restore' : 'Archive'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteModel(model.id); }} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {modelActions(model)}
                     </div>
                   </div>
 
@@ -211,17 +246,7 @@ export default function ModelLibrary() {
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.equipment.length}</td>
                     <td className="px-4 py-3">{statusBadge(model.run_status)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{timeAgo(model.updated_at)}</td>
-                    <td className="px-2">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-1 rounded hover:bg-muted"><MoreVertical className="h-4 w-4" /></button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateModel(model.id); }}><Copy className="h-4 w-4 mr-2" />Duplicate</DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); deleteModel(model.id); }} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+                    <td className="px-2">{modelActions(model, true)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -239,7 +264,7 @@ export default function ModelLibrary() {
           <div className="space-y-4 py-2">
             <div>
               <label className="text-sm font-medium mb-1 block">Model Name</label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., Q4 Production Cell" autoFocus />
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., Q4 Production Cell" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleCreate()} />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Description (optional)</label>
@@ -249,6 +274,55 @@ export default function ModelLibrary() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handleCreate} disabled={!newName.trim()}>Create Model</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Model</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>"{deleteTarget?.name}"</strong> and all its data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium mb-1.5 block">Type the model name to confirm:</label>
+            <Input
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder={deleteTarget?.name}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => { setDeleteTarget(null); setDeleteConfirmName(''); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirmName !== deleteTarget?.name}>
+              Delete Permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Model</DialogTitle>
+          </DialogHeader>
+          <div>
+            <label className="text-sm font-medium mb-1 block">New Name</label>
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenameTarget(null)}>Cancel</Button>
+            <Button onClick={handleRename} disabled={!renameValue.trim()}>Rename</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

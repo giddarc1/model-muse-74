@@ -86,8 +86,8 @@ function createDemoScenarios(modelId: string): Scenario[] {
         entityName: 'MACHINST',
         field: 'count',
         fieldLabel: 'No. in Group',
-        basecaseValue: 5,
-        whatIfValue: 6,
+        basecaseValue: machinst.count,
+        whatIfValue: machinst.count + 1,
       }] : []),
       ...(repair ? [{
         id: uid(),
@@ -96,8 +96,8 @@ function createDemoScenarios(modelId: string): Scenario[] {
         entityName: 'REPAIR',
         field: 'count',
         fieldLabel: 'No. in Group',
-        basecaseValue: 3,
-        whatIfValue: 2,
+        basecaseValue: repair.count,
+        whatIfValue: Math.max(1, repair.count - 1),
       }] : []),
     ],
     createdAt: new Date().toISOString(),
@@ -325,18 +325,18 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       }
     });
 
-    // Clear changes from this scenario and update all other scenarios' basecase values
+    // Clear changes from this scenario and mark others as needing recalc
     set(s => ({
-      scenarios: s.scenarios.map(sc => {
-        if (sc.id === scenarioId) {
-          return { ...sc, changes: [], status: 'needs_recalc' as const, updatedAt: new Date().toISOString() };
-        }
-        if (sc.modelId === scenario.modelId) {
-          return { ...sc, status: 'needs_recalc' as const };
-        }
-        return sc;
-      }),
+      scenarios: s.scenarios
+        .filter(sc => sc.id !== scenarioId) // Remove the promoted scenario
+        .map(sc => {
+          if (sc.modelId === scenario.modelId) {
+            return { ...sc, status: 'needs_recalc' as const };
+          }
+          return sc;
+        }),
       activeScenarioId: null,
+      displayScenarioIds: s.displayScenarioIds.filter(id => id !== scenarioId),
     }));
   },
 }));
