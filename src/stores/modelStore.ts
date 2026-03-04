@@ -117,6 +117,7 @@ interface ModelStore {
   deleteModel: (id: string) => void;
   toggleStar: (id: string) => void;
   archiveModel: (id: string) => void;
+  setRunStatus: (id: string, status: Model['run_status']) => void;
   updateGeneral: (modelId: string, data: Partial<GeneralData>) => void;
   addLabor: (modelId: string, labor: LaborGroup) => void;
   updateLabor: (modelId: string, laborId: string, data: Partial<LaborGroup>) => void;
