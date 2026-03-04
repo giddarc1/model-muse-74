@@ -110,8 +110,11 @@ export default function ProductData() {
                 {model.products.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono font-medium">{p.name}</TableCell>
-                    <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></TableCell>
-                    <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></TableCell>
+                    <TableCell><Input type="number" className={`h-8 w-20 font-mono ${p.demand < 0 ? 'border-destructive' : ''}`} value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></TableCell>
+                    <TableCell>
+                      <Input type="number" className={`h-8 w-20 font-mono ${p.lot_size < 1 ? 'border-destructive' : ''}`} value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} />
+                      {p.lot_size < 1 && <span className="text-[10px] text-destructive">≥ 1</span>}
+                    </TableCell>
                     {showAdvanced && <>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></TableCell>

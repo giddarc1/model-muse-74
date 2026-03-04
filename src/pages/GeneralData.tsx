@@ -78,11 +78,13 @@ export default function GeneralData() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Conversion 1 ({g.ops_time_unit} per {g.mct_time_unit})</Label>
-                  <Input type="number" value={g.conv1} onChange={(e) => update({ conv1: +e.target.value })} />
+                  <Input type="number" value={g.conv1} onChange={(e) => update({ conv1: +e.target.value })} className={g.conv1 <= 0 ? 'border-destructive' : ''} />
+                  {g.conv1 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
                 </div>
                 <div>
                   <Label>Conversion 2 ({g.mct_time_unit} per {g.prod_period_unit})</Label>
-                  <Input type="number" value={g.conv2} onChange={(e) => update({ conv2: +e.target.value })} />
+                  <Input type="number" value={g.conv2} onChange={(e) => update({ conv2: +e.target.value })} className={g.conv2 <= 0 ? 'border-destructive' : ''} />
+                  {g.conv2 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
                 </div>
               </div>
             </CardContent>
