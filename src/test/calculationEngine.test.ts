@@ -89,15 +89,15 @@ describe('RMT Calculation Engine — Hub Manufacturing Cell', () => {
 
   it('IBOM should propagate demand correctly', () => {
     const results = calculate(model);
-    // MOUNT demand = 0 end demand + (50+40+30+30) × 4 = 600/year
+    // MOUNT demand = 0 end demand + (5000+4000+3000+2500) × 4 = 58000/year
     const mount = results.products.find(p => p.name === 'MOUNT')!;
-    expect(mount.demand).toBe(600);
-    // BRACKET = 600 × 2 = 1200/year
+    expect(mount.demand).toBe(58000);
+    // BRACKET = 58000 × 2 = 116000/year
     const bracket = results.products.find(p => p.name === 'BRACKET')!;
-    expect(bracket.demand).toBe(1200);
-    // SLEEVE = 150/year
+    expect(bracket.demand).toBe(116000);
+    // SLEEVE = 14500/year
     const sleeve = results.products.find(p => p.name === 'SLEEVE')!;
-    expect(sleeve.demand).toBe(150);
+    expect(sleeve.demand).toBe(14500);
   });
 
   it('Move Labor scenario (MACHINST +1) should not break and should compute', () => {
