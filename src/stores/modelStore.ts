@@ -104,6 +104,7 @@ export interface Model {
   products: Product[];
   operations: Operation[];
   routing: RoutingEntry[];
+  ibom: IBOMEntry[];
 }
 
 interface ModelStore {
