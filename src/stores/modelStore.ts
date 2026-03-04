@@ -282,6 +282,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   deleteModel: (id) => set((s) => ({ models: s.models.filter((m) => m.id !== id) })),
   toggleStar: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_starred: !m.is_starred } : m) })),
   archiveModel: (id) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, is_archived: !m.is_archived } : m) })),
+  setRunStatus: (id, status) => set((s) => ({ models: s.models.map((m) => m.id === id ? { ...m, run_status: status } : m) })),
 
   updateGeneral: (modelId, data) => set((s) => ({
     models: s.models.map((m) => m.id === modelId ? { ...m, general: { ...m.general, ...data }, updated_at: new Date().toISOString() } : m),
