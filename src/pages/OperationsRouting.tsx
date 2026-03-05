@@ -88,7 +88,10 @@ export default function OperationsRouting() {
       id: crypto.randomUUID(), product_id: selectedProductId,
       op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
       equip_id: newOpEquip, pct_assigned: 100,
-      equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0,
+      equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+      equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+      labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+      labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
     });
     setNewOpNumber(newOpNumber + 10); setNewOpName(''); setNewOpEquip('');
     setShowAddOp(false);
