@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Model, LaborGroup, EquipmentGroup, Product, Operation, RoutingEntry, IBOMEntry, GeneralData } from '@/stores/modelStore';
+import type { Model, LaborGroup, EquipmentGroup, Product, Operation, RoutingEntry, IBOMEntry, GeneralData, ParamNames } from '@/stores/modelStore';
+import { defaultParamNames } from '@/stores/modelStore';
 
 // ─── Fetch all models with child data ───────────────────────────────
 export async function fetchAllModels(): Promise<Model[]> {
