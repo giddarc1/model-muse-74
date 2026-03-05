@@ -142,6 +142,56 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
 
+/* ─── Sortable Table Header ─── */
+function SortHead({ label, sortKey, current, onSort, align = 'right' }: {
+  label: string; sortKey: string; current: { key: string; dir: SortDir };
+  onSort: (k: string) => void; align?: 'left' | 'right';
+}) {
+  const active = current.key === sortKey && current.dir !== 'default';
+  return (
+    <TableHead
+      className={`font-mono text-xs cursor-pointer select-none hover:text-foreground transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          current.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-30" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
+/* ─── Production Chart Data Builder ─── */
+function buildProductionData(results: CalcResults, model: any) {
+  return results.products.map(pr => {
+    const prod = model.products.find((p: any) => p.id === pr.id);
+    // Pieces used as components in other products
+    const usedInAssembly = model.ibom
+      .filter((e: any) => e.component_product_id === pr.id)
+      .reduce((sum: number, e: any) => {
+        const parent = results.products.find((p: any) => p.id === e.parent_product_id);
+        return sum + (parent ? parent.goodMade * (e.units_per_assy || 1) : 0);
+      }, 0);
+    // Shipped in assembly = demand fulfilled through parent assembly shipments
+    const shippedInAssembly = usedInAssembly > 0 ? usedInAssembly : 0;
+    const shipped = pr.goodShipped;
+    const scrapInProd = pr.scrap;
+    const total = shipped + usedInAssembly + scrapInProd;
+    return {
+      name: pr.name,
+      shipped: Math.round(shipped),
+      usedInAssembly: Math.round(usedInAssembly),
+      shippedInAssembly: Math.round(shippedInAssembly),
+      scrapInProduction: Math.round(scrapInProd),
+      total: Math.round(total),
+    };
+  });
+}
+
 // Extended run mode type for advanced modes
 type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'optimize_lots';
 
