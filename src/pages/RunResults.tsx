@@ -854,41 +854,7 @@ export default function RunResults() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Equipment Results Table</CardTitle></CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-mono text-xs">Equipment</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Count</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Setup %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Run %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Repair %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Wait Labor %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Total %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Idle %</TableHead>
-                      <TableHead className="font-mono text-xs">Labor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results!.equipment.map(eq => (
-                      <TableRow key={eq.id}>
-                        <TableCell className="font-mono font-medium">{eq.name}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.count}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.setupUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.runUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.repairUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.waitLaborUtil}</TableCell>
-                        <TableCell className={`font-mono text-right font-medium ${eq.totalUtil > model.general.util_limit ? 'text-destructive' : ''}`}>{eq.totalUtil}</TableCell>
-                        <TableCell className="font-mono text-right text-muted-foreground">{eq.idle}</TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{eq.laborGroup}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
 
             {/* Equipment WIP Chart */}
             {canAccess(userLevel, 'equip-wip-chart') && (
