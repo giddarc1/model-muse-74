@@ -79,6 +79,7 @@ export async function fetchAllModels(): Promise<Model[]> {
         overtime_pct: Number(l.overtime_pct ?? 0),
         unavail_pct: Number(l.unavail_pct ?? 0),
         dept_code: l.dept_code || '',
+        prioritize_use: l.prioritize_use || false,
         setup_factor: Number(l.setup_factor ?? 1),
         run_factor: Number(l.run_factor ?? 1),
         var_factor: Number(l.var_factor ?? 1),
