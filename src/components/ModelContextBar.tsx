@@ -28,9 +28,7 @@ interface RecentVersion {
 
 export function ModelContextBar() {
   const model = useModelStore((s) => s.getActiveModel());
-  const setRunStatus = useModelStore((s) => s.setRunStatus);
   const activeScenario = useScenarioStore((s) => s.getActiveScenario());
-  const markCalculated = useScenarioStore((s) => s.markCalculated);
   const navigate = useNavigate();
   const { isRunning, handleRun: sharedRun } = useRunCalculation();
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
