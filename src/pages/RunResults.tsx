@@ -211,6 +211,7 @@ const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string;
 
 const OPTIMIZATION_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
   { mode: 'lot_size_range', icon: BarChart3, label: 'Lot Size Range', description: 'Run a range of lot sizes and chart MCT vs lot size curve.' },
+  { mode: 'tbatch_range', icon: Layers, label: 'Transfer Batch Range', description: 'Sweep transfer batch sizes for a product and chart MCT sensitivity.' },
   { mode: 'optimize_lots', icon: Settings2, label: 'Optimize Lot Sizes', description: 'Minimize total WIP by iteratively adjusting lot sizes and transfer batches.' },
 ];
 
