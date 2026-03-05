@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
-  TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft,
+  TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -196,7 +196,7 @@ function buildProductionData(results: CalcResults, model: any) {
 }
 
 // Extended run mode type for advanced modes
-type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'optimize_lots';
+type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'tbatch_range' | 'optimize_lots';
 
 const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
   { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis with utilization, MCT, WIP, and queue times.' },
@@ -211,6 +211,7 @@ const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string;
 
 const OPTIMIZATION_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
   { mode: 'lot_size_range', icon: BarChart3, label: 'Lot Size Range', description: 'Run a range of lot sizes and chart MCT vs lot size curve.' },
+  { mode: 'tbatch_range', icon: Layers, label: 'Transfer Batch Range', description: 'Sweep transfer batch sizes for a product and chart MCT sensitivity.' },
   { mode: 'optimize_lots', icon: Settings2, label: 'Optimize Lot Sizes', description: 'Minimize total WIP by iteratively adjusting lot sizes and transfer batches.' },
 ];
 
@@ -240,6 +241,11 @@ export default function RunResults() {
   const [lsrMax, setLsrMax] = useState(200);
   const [lsrStep, setLsrStep] = useState(10);
   const [lsrResults, setLsrResults] = useState<{lotSize: number; mct: number}[]>([]);
+  const [tbrProduct, setTbrProduct] = useState(model?.products[0]?.id || '');
+  const [tbrMin, setTbrMin] = useState(1);
+  const [tbrMax, setTbrMax] = useState(50);
+  const [tbrStep, setTbrStep] = useState(5);
+  const [tbrResults, setTbrResults] = useState<{tbatch: number; mct: number}[]>([]);
   const [optProducts, setOptProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
   const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
   const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
@@ -433,6 +439,39 @@ export default function RunResults() {
       return;
     }
 
+    if (extRunMode === 'tbatch_range') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === tbrProduct);
+      if (!product) { setAdvRunning(false); return; }
+      const steps: number[] = [];
+      for (let tb = tbrMin; tb <= tbrMax; tb += tbrStep) steps.push(tb);
+      const curResults: {tbatch: number; mct: number}[] = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAdvProgress({ current: i + 1, total: steps.length, label: `Transfer Batch: ${steps[i]}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === tbrProduct ? { ...p, tbatch_size: steps[i] } : p) };
+        const r = calculate(testModel);
+        const pr = r.products.find(p => p.id === tbrProduct);
+        curResults.push({ tbatch: steps[i], mct: pr?.mct || 0 });
+
+        const scName = `${product.name}-TBatch-${steps[i]}`;
+        const scenarioId = await createScenario(model.id, scName);
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', tbrProduct, product.name, 'tbatch_size', 'Transfer Batch Size', steps[i]);
+        const sc = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+        if (sc) {
+          setStoreResults(scenarioId, r);
+          useScenarioStore.getState().markCalculated(scenarioId);
+          scenarioDb.saveResults(scenarioId, r);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      setTbrResults(curResults);
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Created ${steps.length} transfer batch scenarios for ${product.name}`);
+      return;
+    }
+
     if (extRunMode === 'optimize_lots') {
       setAdvRunning(true);
       const selectedProducts = model.products.filter(p => optProducts.has(p.id));
@@ -494,9 +533,9 @@ export default function RunResults() {
       toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
       return;
     }
-  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, optProducts, createScenario, setStoreResults, handleRun]);
+  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
 
-  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'optimize_lots'].includes(extRunMode);
+  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -507,7 +546,7 @@ export default function RunResults() {
   );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : 'Run Optimize';
+  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : extRunMode === 'tbatch_range' ? 'Run TBatch Range' : 'Run Optimize';
 
   return (
     <div className="p-6 animate-fade-in">
@@ -628,6 +667,30 @@ export default function RunResults() {
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={lsrResults}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="lotSize" label={{value:'Lot Size',position:'bottom'}} style={axisStyle} /><YAxis label={{value:'MCT',angle:-90,position:'insideLeft'}} style={axisStyle} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="mct" stroke="hsl(var(--primary))" strokeWidth={2} dot={{r:3}} /></LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'tbatch_range' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Product</Label>
+                <Select value={tbrProduct} onValueChange={setTbrProduct}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} (Lot: {p.lot_size})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label className="text-xs">Min</Label><Input type="number" value={tbrMin} onChange={e => setTbrMin(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Max</Label><Input type="number" value={tbrMax} onChange={e => setTbrMax(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Step</Label><Input type="number" value={tbrStep} onChange={e => setTbrStep(+e.target.value)} className="h-8 mt-1" /></div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Use -1 for full lot (no transfer batching). Values ≥ 1 enable overlapping operations.</p>
+              {tbrResults.length > 0 && (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={tbrResults}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="tbatch" label={{value:'Transfer Batch Size',position:'bottom'}} style={axisStyle} /><YAxis label={{value:'MCT',angle:-90,position:'insideLeft'}} style={axisStyle} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="mct" stroke="hsl(var(--primary))" strokeWidth={2} dot={{r:3}} /></LineChart>
                   </ResponsiveContainer>
                 </div>
               )}
