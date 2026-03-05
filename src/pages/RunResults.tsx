@@ -439,7 +439,39 @@ export default function RunResults() {
       return;
     }
 
-    if (extRunMode === 'optimize_lots') {
+    if (extRunMode === 'tbatch_range') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === tbrProduct);
+      if (!product) { setAdvRunning(false); return; }
+      const steps: number[] = [];
+      for (let tb = tbrMin; tb <= tbrMax; tb += tbrStep) steps.push(tb);
+      const curResults: {tbatch: number; mct: number}[] = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAdvProgress({ current: i + 1, total: steps.length, label: `Transfer Batch: ${steps[i]}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === tbrProduct ? { ...p, tbatch_size: steps[i] } : p) };
+        const r = calculate(testModel);
+        const pr = r.products.find(p => p.id === tbrProduct);
+        curResults.push({ tbatch: steps[i], mct: pr?.mct || 0 });
+
+        const scName = `${product.name}-TBatch-${steps[i]}`;
+        const scenarioId = await createScenario(model.id, scName);
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', tbrProduct, product.name, 'tbatch_size', 'Transfer Batch Size', steps[i]);
+        const sc = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+        if (sc) {
+          setStoreResults(scenarioId, r);
+          useScenarioStore.getState().markCalculated(scenarioId);
+          scenarioDb.saveResults(scenarioId, r);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      setTbrResults(curResults);
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Created ${steps.length} transfer batch scenarios for ${product.name}`);
+      return;
+    }
+
       setAdvRunning(true);
       const selectedProducts = model.products.filter(p => optProducts.has(p.id));
       if (selectedProducts.length === 0) { setAdvRunning(false); return; }
