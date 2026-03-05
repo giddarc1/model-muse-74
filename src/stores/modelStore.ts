@@ -8,6 +8,7 @@ export interface LaborGroup {
   overtime_pct: number;
   unavail_pct: number;
   dept_code: string;
+  prioritize_use: boolean;
   setup_factor: number;
   run_factor: number;
   var_factor: number;
