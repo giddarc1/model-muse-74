@@ -109,8 +109,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         demand_factor: Number(p.demand_factor ?? 1),
         lot_factor: Number(p.lot_factor ?? 1),
         var_factor: Number(p.var_factor ?? 1),
+        setup_factor: Number((p as any).setup_factor ?? 1),
         make_to_stock: p.make_to_stock || false,
         gather_tbatches: p.gather_tbatches ?? true,
+        dept_code: (p as any).dept_code || '',
         comments: p.comments || '',
       })),
       operations: ops.map(o => ({
