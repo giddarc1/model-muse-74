@@ -41,7 +41,7 @@ export default function LaborData() {
     setShowAdd(false);
   };
 
-  const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number) => {
+  const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number | boolean) => {
     updateLabor(model.id, id, { [field]: value });
   };
 
