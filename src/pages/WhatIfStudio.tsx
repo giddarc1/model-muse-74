@@ -157,7 +157,35 @@ export default function WhatIfStudio() {
     toast.success('Scenario renamed');
   };
 
-  // (familyHelpers, familyPreview, familyGroups already declared above early return)
+  const handleCreateFamily = async () => {
+    if (!familyParentId) return;
+    const parentSc = scenarios.find(s => s.id === familyParentId);
+    if (!parentSc) return;
+    const fId = crypto.randomUUID();
+    useScenarioStore.getState().setScenarios(
+      allScenarios.map(s => s.id === familyParentId ? { ...s, familyId: fId } : s)
+    );
+    for (let i = 0; i < familyCount; i++) {
+      let nm = familyTemplate;
+      nm = nm.replace(/{N}/g, String(i + 1));
+      const mIdx = (familyStartMonth + i) % 12;
+      const yOff = Math.floor((familyStartMonth + i) / 12);
+      nm = nm.replace(/{MMM}/g, months[mIdx]);
+      nm = nm.replace(/{YYYY}/g, String(familyStartYear + yOff));
+      const newId = await createScenario(modelId, nm);
+      parentSc.changes.forEach(c => {
+        applyScenarioChange(newId, c.dataType, c.entityId, c.entityName, c.field, c.fieldLabel, c.whatIfValue);
+      });
+      useScenarioStore.getState().setScenarios(
+        useScenarioStore.getState().scenarios.map(s => s.id === newId ? { ...s, familyId: fId } : s)
+      );
+    }
+    useScenarioStore.getState().setScenarios(
+      useScenarioStore.getState().scenarios.map(s => s.id === familyParentId ? { ...s, familyId: fId } : s)
+    );
+    setShowFamilyModal(false);
+    toast.success(`Created family with ${familyCount} scenarios`);
+  };
 
   const toggleFamilyCollapse = (familyId: string) => {
     setCollapsedFamilies(prev => {
