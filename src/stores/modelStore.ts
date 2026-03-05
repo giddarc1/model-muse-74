@@ -156,6 +156,8 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
+const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0 };
+
 // ─── Hub routing helper ─────────────────────────────────────────────
 function createHubRouting(productId: string): RoutingEntry[] {
   return [
