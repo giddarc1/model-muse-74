@@ -196,6 +196,9 @@ export default function OperationsRouting() {
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
+                    {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
+                  </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleResort} disabled={productOps.length === 0}>
                     <SortAsc className="h-3.5 w-3.5" /> Re-sort
                   </Button>
