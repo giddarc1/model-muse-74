@@ -41,6 +41,7 @@ export default function OperationsRouting() {
   const [routeFromOp, setRouteFromOp] = useState('');
   const [routeToOp, setRouteToOp] = useState('');
   const [routePct, setRoutePct] = useState(100);
+  const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
 
   const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
   const productOps = useMemo(
