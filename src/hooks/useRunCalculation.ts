@@ -53,7 +53,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
   const isRunning = useSyncExternalStore(subscribeIsRunning, getIsRunningSnapshot);
 
   const handleRun = useCallback(async (mode: RunMode) => {
-    if (!model) return;
+    if (!model || _isRunning) return;
 
     // Verify-only mode
     if (mode === 'verify') {
