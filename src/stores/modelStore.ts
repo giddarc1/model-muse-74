@@ -41,8 +41,10 @@ export interface Product {
   demand_factor: number;
   lot_factor: number;
   var_factor: number;
+  setup_factor: number;
   make_to_stock: boolean;
   gather_tbatches: boolean;
+  dept_code: string;
   comments: string;
 }
 
