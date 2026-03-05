@@ -164,6 +164,12 @@ export default function WhatIfStudio() {
     toast.success('Scenario promoted to Basecase');
   };
 
+  const handleSaveAs = async (scenario: Scenario) => {
+    const newId = await duplicateScenario(scenario.id);
+    setActiveScenario(newId);
+    toast.success(`Saved as copy of "${scenario.name}"`);
+  };
+
   const handleRename = (id: string) => {
     if (!renameValue.trim()) return;
     renameScenario(id, renameValue.trim());
