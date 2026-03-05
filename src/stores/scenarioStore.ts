@@ -285,6 +285,8 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
         modelStore.updateEquipment(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
       } else if (change.dataType === 'Product') {
         modelStore.updateProduct(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
+      } else if (change.dataType === 'Routing') {
+        modelStore.updateRouting(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
       }
     });
 

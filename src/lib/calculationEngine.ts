@@ -73,6 +73,7 @@ function applyScenario(model: Model, scenario: Scenario | null): Model {
     equipment: model.equipment.map(e => ({ ...e })),
     products: model.products.map(p => ({ ...p })),
     operations: model.operations.map(o => ({ ...o })),
+    routing: model.routing.map(r => ({ ...r })),
   };
   scenario.changes.forEach(c => {
     if (c.dataType === 'Labor') {
@@ -84,6 +85,15 @@ function applyScenario(model: Model, scenario: Scenario | null): Model {
     } else if (c.dataType === 'Product') {
       const item = m.products.find(p => p.id === c.entityId);
       if (item) (item as any)[c.field] = c.whatIfValue;
+    } else if (c.dataType === 'Routing') {
+      const item = m.routing.find(r => r.id === c.entityId);
+      if (item) (item as any)[c.field] = Number(c.whatIfValue);
+    } else if (c.dataType === 'Product Inclusion') {
+      // Exclude products marked as 'No'
+      if (c.whatIfValue === 'No') {
+        const prod = m.products.find(p => p.id === c.entityId);
+        if (prod) prod.demand = 0;
+      }
     }
   });
   return m;
