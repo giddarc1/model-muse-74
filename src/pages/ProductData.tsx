@@ -114,6 +114,7 @@ export default function ProductData() {
                     <TableHead className="font-mono text-xs">MTS</TableHead>
                     <TableHead className="font-mono text-xs">Gather</TableHead>
                   </>}
+                  <TableHead className="font-mono text-xs">Scrap %</TableHead>
                   <TableHead className="font-mono text-xs">Ops</TableHead>
                   <TableHead className="font-mono text-xs">Comments</TableHead>
                   <TableHead className="w-24"></TableHead>
