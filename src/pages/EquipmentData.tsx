@@ -31,6 +31,7 @@ export default function EquipmentData() {
     addEquipment(model.id, {
       id: crypto.randomUUID(), name: newName.trim().toUpperCase(), equip_type: 'standard', count: 1,
       mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: '', dept_code: '',
+      out_of_area: false, unavail_pct: 0,
       setup_factor: 1, run_factor: 1, var_factor: 1, comments: '',
     });
     setNewName('');
