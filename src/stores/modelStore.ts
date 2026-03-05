@@ -52,9 +52,17 @@ export interface Operation {
   equip_id: string;
   pct_assigned: number;
   equip_setup_lot: number;
+  equip_setup_piece: number;
+  equip_setup_tbatch: number;
   equip_run_piece: number;
+  equip_run_lot: number;
+  equip_run_tbatch: number;
   labor_setup_lot: number;
+  labor_setup_piece: number;
+  labor_setup_tbatch: number;
   labor_run_piece: number;
+  labor_run_lot: number;
+  labor_run_tbatch: number;
 }
 
 export interface RoutingEntry {
