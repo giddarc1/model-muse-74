@@ -81,6 +81,10 @@ export interface Operation {
   labor_run_piece: number;
   labor_run_lot: number;
   labor_run_tbatch: number;
+  oper1: number;
+  oper2: number;
+  oper3: number;
+  oper4: number;
 }
 
 export interface RoutingEntry {
