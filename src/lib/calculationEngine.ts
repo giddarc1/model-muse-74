@@ -356,9 +356,15 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const assignFrac = op.pct_assigned / 100;
       if (assignFrac <= 0) return;
 
-      // Setup contribution to MCT (in ops time units, per lot)
-      const setupTime = (op.equip_setup_lot * eq.setup_factor) / lotSize; // per piece
-      const runTime = op.equip_run_piece * eq.run_factor;
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+
+      // Full setup/run time per lot including all components
+      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor;
+      const runPerLot = (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
+
+      // Per-piece equivalents for MCT
+      const setupTime = setupPerLot / lotSize;
+      const runTime = runPerLot / lotSize;
 
       // Convert to MCT time units
       const setupMCT = (setupTime / conv1) * assignFrac;
@@ -368,13 +374,12 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       totalRunMCT += runMCT;
 
       // Lot waiting: (lotSize - tbatchSize) / lotSize * runTime per piece * lotSize / conv1
-      // Simplified: (lotSize - tbatchSize) * runTime / conv1
       if (product.gather_tbatches && tbatchSize < lotSize) {
         const lotWait = ((lotSize - tbatchSize) * runTime) / conv1 * assignFrac;
         totalLotWaitMCT += lotWait;
       }
 
-      // Queue time — Kingman's formula: Wq = (Ca² + Cs²)/2 × U/(1-U) × meanServiceTime
+      // Queue time — Kingman's formula
       const equipUtil = equipUtilMap.get(eq.id) || 0;
       const safeUtil = Math.min(equipUtil, 0.99);
       if (safeUtil > 0 && eq.equip_type !== 'delay') {
