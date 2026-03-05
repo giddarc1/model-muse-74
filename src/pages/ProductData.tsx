@@ -138,6 +138,19 @@ export default function ProductData() {
                       <TableCell><Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} /></TableCell>
                     </>}
                     <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
+                              {getScrapRate(p.id) > 0 ? `${getScrapRate(p.id)}%` : '—'}
+                              <ExternalLink className="h-3 w-3 ml-0.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit routing to change scrap rate</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                    <TableCell>
                       <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
                         <GitBranch className="h-3 w-3" />{opsCount(p.id)}
                       </Button>
