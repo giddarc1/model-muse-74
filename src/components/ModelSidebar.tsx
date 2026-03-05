@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
   { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all-operations' },
+  { label: 'Parameter Names', icon: Tag, path: 'param-names', feature: 'advanced-params' },
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif', feature: null },
