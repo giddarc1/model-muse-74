@@ -316,7 +316,7 @@ export default function OperationsRouting() {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => updateRouting(model.id, r.id, { pct_routed: +e.target.value })} />
+                              <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => handleRoutingChange(r.id, 'pct_routed', +e.target.value, r)} />
                             </TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRouting(model.id, r.id)}>
