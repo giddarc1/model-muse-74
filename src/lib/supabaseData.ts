@@ -126,6 +126,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         setup_factor: Number(e.setup_factor ?? 1),
         run_factor: Number(e.run_factor ?? 1),
         var_factor: Number(e.var_factor ?? 1),
+        eq1: Number(e.eq1 ?? 0),
+        eq2: Number(e.eq2 ?? 0),
+        eq3: Number(e.eq3 ?? 0),
+        eq4: Number(e.eq4 ?? 0),
         comments: e.comments || '',
       })),
       products: (prodByModel[m.id] || []).map(p => ({
