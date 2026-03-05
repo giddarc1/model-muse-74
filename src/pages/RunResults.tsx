@@ -169,7 +169,8 @@ export default function RunResults() {
 
   const { isRunning, runLog, verifyMessages, handleRun } = useRunCalculation();
 
-  const [runMode, setRunMode] = useState<RunMode>('full');
+  const [extRunMode, setExtRunMode] = useState<ExtendedRunMode>('full');
+  const runMode: RunMode = (extRunMode === 'full' || extRunMode === 'verify' || extRunMode === 'util_only') ? extRunMode : 'full';
   const [transposed, setTransposed] = useState(false);
   const [ibomProduct, setIbomProduct] = useState('');
 
