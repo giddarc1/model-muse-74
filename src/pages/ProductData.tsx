@@ -193,6 +193,12 @@ export default function ProductData() {
                       <div><Label className="text-xs">Lot Size</Label><Input type="number" className="h-8 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></div>
                     </div>
                     <div><Label className="text-xs">Comments</Label><Input className="h-8" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Scrap Rate</Label>
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
+                        {getScrapRate(p.id) > 0 ? `${getScrapRate(p.id)}%` : '—'} <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => goToOps(p.id)}>
                       <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
                     </Button>
