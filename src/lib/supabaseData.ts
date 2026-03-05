@@ -28,6 +28,7 @@ export async function fetchAllModels(): Promise<Model[]> {
   };
 
   const generalByModel = Object.fromEntries((generalRes.data || []).map(g => [g.model_id, g]));
+  const paramNamesByModel = Object.fromEntries((paramNamesRes.data || []).map(p => [p.model_id, p]));
   const laborByModel = group(laborRes.data);
   const equipByModel = group(equipRes.data);
   const prodByModel = group(prodRes.data);
