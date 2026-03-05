@@ -237,9 +237,7 @@ export function ModelContextBar() {
 
   // ── Tooltip text ────────────────────────────────────────────────
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const runTooltip = isResultsCurrent
-    ? 'Results are current — click to re-run'
-    : `Quick recalculate — runs Full Calculate on ${scenarioLabel}`;
+  const runTooltip = `Quick recalculate — runs Full Calculate on ${scenarioLabel}`;
   const statusTooltip = model.run_status === 'current'
     ? `Last calculated: ${model.last_run_at ? new Date(model.last_run_at).toLocaleString() : 'unknown'}`
     : model.run_status === 'needs_recalc'

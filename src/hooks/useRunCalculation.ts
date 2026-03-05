@@ -144,7 +144,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
   return {
     isRunning,
-    runLog: _runLog,
+    runLog,
     verifyMessages,
     handleRun,
     clearVerifyMessages: () => setVerifyMessages(null),

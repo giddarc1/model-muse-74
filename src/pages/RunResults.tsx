@@ -135,6 +135,7 @@ const RUN_MODE_OPTIONS: { mode: RunMode; icon: typeof Play; label: string; descr
   { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis. Calculates utilization, MCT, WIP, and queue times for all products and resources.' },
   { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates all input data for errors and inconsistencies without running calculations. Use this to check your model before a full run.' },
   { mode: 'util_only', icon: Gauge, label: 'Calculate Utilization Only', description: 'Calculates equipment and labor utilization only. Faster than Full Calculate — useful when exploring capacity balance.', feature: 'util-only-mode' },
+  { mode: 'full', icon: ListChecks, label: 'Product Inclusion', description: 'Select a subset of products to include in this run. Useful for cell design analysis.', feature: 'product-inclusion' },
 ];
 
 export default function RunResults() {
