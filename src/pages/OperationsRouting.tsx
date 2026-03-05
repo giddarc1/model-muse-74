@@ -225,6 +225,16 @@ export default function OperationsRouting() {
                       <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
                       <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
                       <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
+                      {showAdvancedTimes && <>
+                        <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
+                        <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
+                        <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
+                        <TableHead className="font-mono text-xs">E.Run/TB</TableHead>
+                        <TableHead className="font-mono text-xs">L.Setup/Pc</TableHead>
+                        <TableHead className="font-mono text-xs">L.Setup/TB</TableHead>
+                        <TableHead className="font-mono text-xs">L.Run/Lot</TableHead>
+                        <TableHead className="font-mono text-xs">L.Run/TB</TableHead>
+                      </>}
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -247,6 +257,16 @@ export default function OperationsRouting() {
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
+                        {showAdvancedTimes && <>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_run_lot: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_run_lot: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
+                        </>}
                         <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                       </TableRow>
                     ))}
