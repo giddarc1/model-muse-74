@@ -12,6 +12,10 @@ export interface LaborGroup {
   setup_factor: number;
   run_factor: number;
   var_factor: number;
+  lab1: number;
+  lab2: number;
+  lab3: number;
+  lab4: number;
   comments: string;
 }
 
