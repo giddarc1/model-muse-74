@@ -1111,6 +1111,56 @@ function NormalSummary({ results, model, scenarioResults }: {
 }) {
   const hasScenarios = scenarioResults.length > 0;
 
+  // Group products by dept_code for subtotals
+  const groups = useMemo(() => {
+    const map = new Map<string, ProductResult[]>();
+    results.products.forEach(pr => {
+      const prod = model.products.find((p: any) => p.id === pr.id);
+      const group = prod?.dept_code || '';
+      if (!map.has(group)) map.set(group, []);
+      map.get(group)!.push(pr);
+    });
+    return map;
+  }, [results, model]);
+  const hasGroups = [...groups.keys()].some(k => k !== '');
+
+  const renderProductRow = (row: ProductResult) => (
+    <TableRow key={row.id}>
+      <TableCell className="font-mono font-medium">{row.name}</TableCell>
+      <TableCell className="font-mono text-right">{row.demand.toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right">{row.lotSize}</TableCell>
+      <TableCell className="font-mono text-right">{row.goodMade.toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right">{row.started.toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right">{row.scrap > 0 ? row.scrap.toLocaleString() : '—'}</TableCell>
+      <TableCell className="font-mono text-right">{row.wip}</TableCell>
+      <TableCell className="font-mono text-right font-medium">{row.mct.toFixed(4)}</TableCell>
+      {hasScenarios && scenarioResults.map(sr => {
+        const sp = sr.results.products.find(p => p.id === row.id);
+        const diff = sp ? sp.mct - row.mct : 0;
+        return (
+          <TableCell key={sr.id} className={`font-mono text-right text-xs ${diff < 0 ? 'text-success' : diff > 0 ? 'text-destructive' : ''}`}>
+            {sp?.mct.toFixed(4) || '—'}
+            {diff !== 0 && <span className="ml-1 text-[10px]">({diff > 0 ? '+' : ''}{diff.toFixed(4)})</span>}
+          </TableCell>
+        );
+      })}
+    </TableRow>
+  );
+
+  const renderSubtotal = (label: string, products: ProductResult[]) => (
+    <TableRow key={`sub-${label}`} className="bg-muted/50 font-medium">
+      <TableCell className="font-mono text-xs">{label} subtotal</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
+      <TableCell />
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.goodMade, 0).toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.started, 0).toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.scrap, 0).toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.wip, 0).toFixed(1)}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{Math.min(...products.map(p => p.mct)).toFixed(4)}–{Math.max(...products.map(p => p.mct)).toFixed(4)}</TableCell>
+      {hasScenarios && scenarioResults.map(sr => <TableCell key={sr.id} />)}
+    </TableRow>
+  );
+
   return (
     <Table>
       <TableHeader>
@@ -1131,28 +1181,13 @@ function NormalSummary({ results, model, scenarioResults }: {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {results.products.map(row => (
-          <TableRow key={row.id}>
-            <TableCell className="font-mono font-medium">{row.name}</TableCell>
-            <TableCell className="font-mono text-right">{row.demand.toLocaleString()}</TableCell>
-            <TableCell className="font-mono text-right">{row.lotSize}</TableCell>
-            <TableCell className="font-mono text-right">{row.goodMade.toLocaleString()}</TableCell>
-            <TableCell className="font-mono text-right">{row.started.toLocaleString()}</TableCell>
-            <TableCell className="font-mono text-right">{row.scrap > 0 ? row.scrap.toLocaleString() : '—'}</TableCell>
-            <TableCell className="font-mono text-right">{row.wip}</TableCell>
-            <TableCell className="font-mono text-right font-medium">{row.mct.toFixed(4)}</TableCell>
-            {hasScenarios && scenarioResults.map(sr => {
-              const sp = sr.results.products.find(p => p.id === row.id);
-              const diff = sp ? sp.mct - row.mct : 0;
-              return (
-                <TableCell key={sr.id} className={`font-mono text-right text-xs ${diff < 0 ? 'text-success' : diff > 0 ? 'text-destructive' : ''}`}>
-                  {sp?.mct.toFixed(4) || '—'}
-                  {diff !== 0 && <span className="ml-1 text-[10px]">({diff > 0 ? '+' : ''}{diff.toFixed(4)})</span>}
-                </TableCell>
-              );
-            })}
-          </TableRow>
-        ))}
+        {hasGroups ? (
+          [...groups.entries()].map(([group, products]) => (
+            <>{products.map(renderProductRow)}{group && renderSubtotal(group, products)}</>
+          ))
+        ) : (
+          results.products.map(renderProductRow)
+        )}
         <TableRow className="border-t-2 font-medium">
           <TableCell className="font-mono">TOTAL</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
