@@ -181,9 +181,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
     }
 
     const overtimeFactor = 1 + eq.overtime_pct / 100;
-    const availableTime = count * overtimeFactor * opsPerPeriod * eq.setup_factor; // in ops time units per period
-    // Actually: available time = count * (1 + OT%) * conv1 * conv2
-    const availTime = count * overtimeFactor * opsPerPeriod;
+    const unavailFactor = 1 - (eq.unavail_pct || 0) / 100;
+    const availTime = count * overtimeFactor * unavailFactor * opsPerPeriod;
 
     // Repair utilization
     let repairFraction = 0;
