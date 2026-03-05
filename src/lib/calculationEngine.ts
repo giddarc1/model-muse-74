@@ -279,7 +279,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const assignFraction = op.pct_assigned / 100;
       const numLots = (demand / lotSize) * assignFraction;
 
-      const setupPerLot = (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor;
+      const prodSetupFactor = product.setup_factor || 1;
+      const setupPerLot = (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor;
       const runPerLot = (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor;
 
       totalSetupTime += numLots * setupPerLot;
