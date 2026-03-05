@@ -1002,6 +1002,9 @@ export default function RunResults() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Production Chart (2G) */}
+            <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
           </TabsContent>
 
           {/* Enhanced Summary Tab */}
