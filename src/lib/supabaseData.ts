@@ -94,6 +94,8 @@ export async function fetchAllModels(): Promise<Model[]> {
         overtime_pct: Number(e.overtime_pct ?? 0),
         labor_group_id: e.labor_group_id || '',
         dept_code: e.dept_code || '',
+        out_of_area: (e as any).out_of_area || false,
+        unavail_pct: Number((e as any).unavail_pct ?? 0),
         setup_factor: Number(e.setup_factor ?? 1),
         run_factor: Number(e.run_factor ?? 1),
         var_factor: Number(e.var_factor ?? 1),
