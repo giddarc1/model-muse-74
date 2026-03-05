@@ -1600,56 +1600,23 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
   const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
 
-  const renderByEquipment = () => {
-    const eq = model.equipment.find(e => e.id === selectedId);
-    if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
-    const ops = allMetrics.filter((m: any) => m.equipId === eq.id).sort((a: any, b: any) => a.opNumber - b.opNumber);
-    return (
-      <Table>
-        <TableHeader><TableRow>
-          <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
-          <SortHead label="Operation" sortKey="opName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
-          <SortHead label="Op #" sortKey="opNumber" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label="% Assign" sortKey="pctAssigned" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Repair${unitSuffix}`} sortKey="repairUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label="WIP" sortKey="wip" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label="MCT at Op" sortKey="mctAtOp" current={eqSort.sort} onSort={eqSort.handleSort} />
-          <SortHead label="Visits/100" sortKey="visits" current={eqSort.sort} onSort={eqSort.handleSort} />
-        </TableRow></TableHeader>
-        <TableBody>
-          {eqSort.sorted.map((m: any) => (
-            <TableRow key={m.opId}>
-              <TableCell className="font-mono text-xs">{m.productName}</TableCell>
-              <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.opNumber}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.repairUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.visits}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    );
-  };
-
+  // Sort hooks must be called before render functions that use them
   const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
   const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
   const prodOps = useMemo(() => allMetrics.filter((m: any) => m.productId === selectedId), [allMetrics, selectedId]);
   const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
   const labSort = useSortableTable(labOps, 'opNumber', 'asc');
   const prodSort = useSortableTable(prodOps, 'opNumber', 'asc');
+
+  const renderByEquipment = () => {
+    const eq = model.equipment.find(e => e.id === selectedId);
+    if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
+    return (
+      <div className="overflow-x-auto">
+      <Table>
+        <TableHeader><TableRow>
+          <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+          <SortHead label="Operation" sortKey="opName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
 
   const renderByLabor = () => {
     const lab = model.labor.find(l => l.id === selectedId);
