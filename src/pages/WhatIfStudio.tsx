@@ -502,7 +502,7 @@ function BasecaseView() {
 
 // 2C: Scenario Editor with Direct Edits
 function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, userLevel,
+  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, onSaveAs, userLevel,
 }: {
   scenario: Scenario;
   model: any;
@@ -511,6 +511,7 @@ function ScenarioEditorPanel({
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
+  onSaveAs: (scenario: Scenario) => void;
   userLevel: string;
 }) {
   const [editingName, setEditingName] = useState(false);
