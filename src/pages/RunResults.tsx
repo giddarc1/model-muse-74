@@ -1,22 +1,31 @@
-import { useState, useMemo } from 'react';
-import { useModelStore } from '@/stores/modelStore';
+import { useState, useMemo, useCallback } from 'react';
+import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { type CalcResults, type ProductResult, type EquipmentResult } from '@/lib/calculationEngine';
+import { type CalcResults, type ProductResult, type EquipmentResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import {
+  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
+  TrendingUp, BarChart3, Settings2, Square, ChevronRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { scenarioDb } from '@/lib/scenarioDb';
 
 // ── Scenario color palettes for grouped charts ──
 const SCENARIO_PALETTES = [
