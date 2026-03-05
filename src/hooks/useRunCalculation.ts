@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
@@ -26,8 +26,10 @@ interface UseRunCalculationReturn {
 
 // Module-level run log so it persists across hook instances
 let _runLog: RunLogEntry[] = [];
-let _runLogListeners: Array<() => void> = [];
+let _runLogListeners: Set<() => void> = new Set();
 function notifyRunLog() { _runLogListeners.forEach(fn => fn()); }
+function subscribeRunLog(cb: () => void) { _runLogListeners.add(cb); return () => { _runLogListeners.delete(cb); }; }
+function getRunLogSnapshot() { return _runLog; }
 
 export function useRunCalculation(): UseRunCalculationReturn {
   const model = useModelStore(s => s.getActiveModel());
@@ -38,14 +40,9 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
   const [isRunning, setIsRunning] = useState(false);
   const [verifyMessages, setVerifyMessages] = useState<{ errors: string[]; warnings: string[] } | null>(null);
-  const [, forceUpdate] = useState(0);
 
-  // Subscribe to run log changes
-  useState(() => {
-    const listener = () => forceUpdate(n => n + 1);
-    _runLogListeners.push(listener);
-    return () => { _runLogListeners = _runLogListeners.filter(l => l !== listener); };
-  });
+  // Subscribe to run log changes using proper external store
+  const runLog = useSyncExternalStore(subscribeRunLog, getRunLogSnapshot);
 
   const handleRun = useCallback(async (mode: RunMode) => {
     if (!model) return;
@@ -147,7 +144,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
   return {
     isRunning,
-    runLog: _runLog,
+    runLog,
     verifyMessages,
     handleRun,
     clearVerifyMessages: () => setVerifyMessages(null),
