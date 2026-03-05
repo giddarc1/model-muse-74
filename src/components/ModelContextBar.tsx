@@ -361,16 +361,15 @@ export function ModelContextBar() {
                     {isResultsCurrent ? (
                       <CheckCircle className="h-3.5 w-3.5 mr-1 text-success" />
                     ) : (
-                      <Play className="h-3.5 w-3.5 mr-1" />
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Run
+                    <span className="hidden lg:inline">Recalculate</span>
+                    <span className="lg:hidden">Run</span>
                   </>
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {isResultsCurrent ? 'Results are current — click to re-run' : runTooltip}
-            </TooltipContent>
+            <TooltipContent side="bottom">{runTooltip}</TooltipContent>
           </Tooltip>
         </div>
       </div>
