@@ -10,7 +10,7 @@ export async function fetchAllModels(): Promise<Model[]> {
 
   const ids = models.map(m => m.id);
 
-  const [generalRes, laborRes, equipRes, prodRes, opsRes, routingRes, ibomRes] = await Promise.all([
+  const [generalRes, laborRes, equipRes, prodRes, opsRes, routingRes, ibomRes, paramNamesRes] = await Promise.all([
     supabase.from('model_general').select('*').in('model_id', ids),
     supabase.from('model_labor').select('*').in('model_id', ids),
     supabase.from('model_equipment').select('*').in('model_id', ids),
@@ -18,6 +18,7 @@ export async function fetchAllModels(): Promise<Model[]> {
     supabase.from('model_operations').select('*').in('model_id', ids),
     supabase.from('model_routing').select('*').in('model_id', ids),
     supabase.from('model_ibom').select('*').in('model_id', ids),
+    supabase.from('model_param_names').select('*').in('model_id', ids),
   ]);
 
   const group = <T extends { model_id: string }>(items: T[] | null) => {
