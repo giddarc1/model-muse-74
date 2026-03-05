@@ -394,6 +394,7 @@ export default function WhatIfStudio() {
             onRemoveChange={removeChange}
             onPromote={() => setShowPromoteModal(true)}
             onRunScenario={handleRunScenario}
+            onSaveAs={handleSaveAs}
             userLevel={userLevel}
           />
         ) : (
