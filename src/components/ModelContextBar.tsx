@@ -67,10 +67,6 @@ export function ModelContextBar() {
 
   const status = statusConfig[model.run_status];
   const isResultsCurrent = model.run_status === 'current';
-  const resultKey = activeScenario ? activeScenario.id : 'basecase';
-
-  // ── Run Full Calculate ──────────────────────────────────────────
-  const handleRun = async () => {
     const validationErrors: string[] = [];
     if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be > 0');
     if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be > 0');
