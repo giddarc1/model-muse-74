@@ -1,1 +1,4 @@
 project_id = "tbhpdfnzgbwbdlsmxrhy"
+
+[functions.handle-signup]
+verify_jwt = false
