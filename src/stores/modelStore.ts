@@ -240,9 +240,11 @@ export function createDemoModel(): Model {
       model_title: 'Hub Manufacturing Cell',
       ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
       conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+      gen1: 0, gen2: 0, gen3: 0, gen4: 0,
       author: 'RapidMCT Demo',
       comments: 'Based on the Hub Manufacturing Cell example from the MPX manual.',
     },
+    param_names: { ...defaultParamNames },
     labor: [
       { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
       { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
