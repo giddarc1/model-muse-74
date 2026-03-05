@@ -11,6 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
+
 export default function LaborData() {
   const model = useModelStore((s) => s.getActiveModel());
   const addLabor = useModelStore((s) => s.addLabor);
