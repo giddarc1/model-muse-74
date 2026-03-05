@@ -234,7 +234,234 @@ export default function RunResults() {
   );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const modeLabel = runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization';
+  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : 'Run Optimize';
+
+  // Advanced mode state
+  const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
+  const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
+  const [mtScenarioName, setMtScenarioName] = useState('');
+  const [mtResult, setMtResult] = useState<{demand: number; limitingResource: string} | null>(null);
+  const [lsrProduct, setLsrProduct] = useState(model?.products[0]?.id || '');
+  const [lsrMin, setLsrMin] = useState(10);
+  const [lsrMax, setLsrMax] = useState(200);
+  const [lsrStep, setLsrStep] = useState(10);
+  const [lsrResults, setLsrResults] = useState<{lotSize: number; mct: number}[]>([]);
+  const [optProducts, setOptProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
+  const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
+  const [advRunning, setAdvRunning] = useState(false);
+
+  const { createScenario } = useScenarioStore();
+  const { setResults: setStoreResults } = useResultsStore();
+
+  // Render a mode card
+  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}, isAdvancedOnly = false) => {
+    const Icon = opt.icon;
+    const isDisabled = isAdvancedOnly && userLevel !== 'advanced';
+    const selected = !isDisabled && extRunMode === opt.mode;
+    return (
+      <button
+        key={opt.label}
+        onClick={() => !isDisabled && setExtRunMode(opt.mode)}
+        disabled={isDisabled}
+        className={`text-left p-3 rounded-lg border-2 transition-all ${
+          isDisabled ? 'border-border opacity-50 cursor-not-allowed'
+          : selected ? 'border-primary bg-primary/5'
+          : 'border-border hover:border-primary/40 hover:bg-accent/30'
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
+          {isAdvancedOnly && userLevel !== 'advanced' && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced</Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
+      </button>
+    );
+  };
+
+  // Advanced run handlers
+  const handleAdvancedRun = useCallback(async () => {
+    if (!model || advRunning) return;
+
+    if (extRunMode === 'product_inclusion') {
+      // Save product inclusion as What-If
+      const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
+      if (excluded.length === 0) { handleRun('full'); return; }
+      const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
+      excluded.forEach(p => {
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
+      });
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const calcResults = calculate(model, scenario);
+        setStoreResults(scenarioId, calcResults);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, calcResults);
+      }
+      toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
+      return;
+    }
+
+    if (extRunMode === 'max_throughput') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === mtProduct);
+      if (!product) { setAdvRunning(false); return; }
+      let demand = product.demand > 0 ? product.demand : 100;
+      let lastValidDemand = demand;
+      let limitingResource = '';
+      const step = Math.max(1, Math.round(demand * 0.1));
+      let iterations = 0;
+      const maxIter = 200;
+
+      while (iterations < maxIter) {
+        iterations++;
+        setAdvProgress({ current: iterations, total: maxIter, label: `Testing demand: ${Math.round(demand)}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand } : p) };
+        const r = calculate(testModel);
+        const overLimit = r.overLimitResources;
+        if (overLimit.length > 0) {
+          limitingResource = overLimit[0];
+          if (step <= 1) break;
+          demand = lastValidDemand;
+          // Binary search refinement
+          let lo = lastValidDemand, hi = demand + step;
+          for (let i = 0; i < 20; i++) {
+            const mid = Math.round((lo + hi) / 2);
+            const tr = calculate({ ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand: mid } : p) });
+            if (tr.overLimitResources.length > 0) { hi = mid; limitingResource = tr.overLimitResources[0]; }
+            else { lo = mid; lastValidDemand = mid; }
+            if (hi - lo <= 1) break;
+          }
+          break;
+        }
+        lastValidDemand = demand;
+        demand += step;
+        await new Promise(r => setTimeout(r, 0)); // yield
+      }
+
+      // Save as scenario
+      const name = mtScenarioName || `Max Throughput — ${product.name}`;
+      const scenarioId = await createScenario(model.id, name);
+      useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtProduct, product.name, 'demand', 'Demand', lastValidDemand);
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+      }
+      setMtResult({ demand: lastValidDemand, limitingResource });
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Max throughput for ${product.name}: ${lastValidDemand} units`);
+      return;
+    }
+
+    if (extRunMode === 'lot_size_range') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === lsrProduct);
+      if (!product) { setAdvRunning(false); return; }
+      const steps: number[] = [];
+      for (let ls = lsrMin; ls <= lsrMax; ls += lsrStep) steps.push(ls);
+      const results: {lotSize: number; mct: number}[] = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAdvProgress({ current: i + 1, total: steps.length, label: `Lot size: ${steps[i]}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === lsrProduct ? { ...p, lot_size: steps[i] } : p) };
+        const r = calculate(testModel);
+        const pr = r.products.find(p => p.id === lsrProduct);
+        results.push({ lotSize: steps[i], mct: pr?.mct || 0 });
+
+        // Save as scenario
+        const name = `${product.name}-LotSize-${steps[i]}`;
+        const scenarioId = await createScenario(model.id, name);
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', lsrProduct, product.name, 'lot_size', 'Lot Size', steps[i]);
+        const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+        if (scenario) {
+          setStoreResults(scenarioId, r);
+          useScenarioStore.getState().markCalculated(scenarioId);
+          scenarioDb.saveResults(scenarioId, r);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      setLsrResults(results);
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Created ${steps.length} lot size scenarios for ${product.name}`);
+      return;
+    }
+
+    if (extRunMode === 'optimize_lots') {
+      setAdvRunning(true);
+      const selectedProducts = model.products.filter(p => optProducts.has(p.id));
+      if (selectedProducts.length === 0) { setAdvRunning(false); return; }
+
+      // Record original values
+      const original = selectedProducts.map(p => {
+        const r = calculate(model);
+        const pr = r.products.find(pp => pp.id === p.id);
+        return { name: p.name, lot: p.lot_size, wip: pr?.wip || 0 };
+      });
+      const baseWip = calculate(model).products.reduce((s, p) => s + p.wip, 0);
+
+      // Simple hill-climbing: try reducing each product's lot size
+      let bestLots = Object.fromEntries(selectedProducts.map(p => [p.id, p.lot_size]));
+      let bestWip = baseWip;
+      const maxIter = 50;
+
+      for (let iter = 0; iter < maxIter; iter++) {
+        setAdvProgress({ current: iter + 1, total: maxIter, label: `WIP: ${Math.round(bestWip)} (iter ${iter + 1})` });
+        let improved = false;
+        for (const p of selectedProducts) {
+          for (const delta of [-Math.max(1, Math.round(bestLots[p.id] * 0.1)), Math.max(1, Math.round(bestLots[p.id] * 0.1))]) {
+            const newLot = Math.max(1, bestLots[p.id] + delta);
+            if (newLot === bestLots[p.id]) continue;
+            const testModel = { ...model, products: model.products.map(pp => pp.id === p.id ? { ...pp, lot_size: newLot } : bestLots[pp.id] !== undefined ? { ...pp, lot_size: bestLots[pp.id] } : pp) };
+            const r = calculate(testModel);
+            const totalWip = r.products.reduce((s, pp) => s + pp.wip, 0);
+            if (totalWip < bestWip && r.overLimitResources.length === 0) {
+              bestLots[p.id] = newLot;
+              bestWip = totalWip;
+              improved = true;
+            }
+          }
+        }
+        if (!improved) break;
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      // Save as scenario
+      const scenarioId = await createScenario(model.id, 'Optimized Lot Sizes');
+      for (const p of selectedProducts) {
+        if (bestLots[p.id] !== p.lot_size) {
+          useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', p.id, p.name, 'lot_size', 'Lot Size', bestLots[p.id]);
+        }
+      }
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+
+        const optimized = selectedProducts.map(p => {
+          const pr = r.products.find(pp => pp.id === p.id);
+          return { name: p.name, lot: bestLots[p.id], wip: pr?.wip || 0 };
+        });
+        setOptResult({ original, optimized, wipReduction: Math.round((1 - bestWip / baseWip) * 1000) / 10 });
+      }
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
+      return;
+    }
+  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, optProducts, createScenario, setStoreResults, handleRun]);
+
+  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'optimize_lots'].includes(extRunMode);
 
   return (
     <div className="p-6 animate-fade-in">
