@@ -54,6 +54,10 @@ export interface Product {
   make_to_stock: boolean;
   gather_tbatches: boolean;
   dept_code: string;
+  prod1: number;
+  prod2: number;
+  prod3: number;
+  prod4: number;
   comments: string;
 }
 
