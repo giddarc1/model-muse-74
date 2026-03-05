@@ -387,6 +387,16 @@ export default function RunResults() {
       )}
 
       {/* Results Area */}
+      {!hasRun && (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Play className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-muted-foreground font-medium mb-1">No results yet</p>
+            <p className="text-sm text-muted-foreground/70 mb-4">Select a run mode above and click Run to calculate model results.</p>
+          </CardContent>
+        </Card>
+      )}
+
       {hasRun && (
         <Tabs defaultValue="equipment">
           <TabsList>
