@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useState, useCallback, useSyncExternalStore } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
