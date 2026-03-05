@@ -24,6 +24,8 @@ export interface EquipmentGroup {
   overtime_pct: number;
   labor_group_id: string;
   dept_code: string;
+  out_of_area: boolean;
+  unavail_pct: number;
   setup_factor: number;
   run_factor: number;
   var_factor: number;
