@@ -910,37 +910,7 @@ export default function RunResults() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Labor Results Table</CardTitle></CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-mono text-xs">Labor Group</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Count</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Setup %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Run %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Unavail %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Total %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Idle %</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results!.labor.map(l => (
-                      <TableRow key={l.id}>
-                        <TableCell className="font-mono font-medium">{l.name}</TableCell>
-                        <TableCell className="font-mono text-right">{l.count}</TableCell>
-                        <TableCell className="font-mono text-right">{l.setupUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{l.runUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{l.unavailPct}</TableCell>
-                        <TableCell className={`font-mono text-right font-medium ${l.totalUtil > model.general.util_limit ? 'text-destructive' : ''}`}>{l.totalUtil}</TableCell>
-                        <TableCell className="font-mono text-right text-muted-foreground">{l.idle}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
 
             {/* Labor Equipment Wait Chart */}
             {canAccess(userLevel, 'labor-wait-chart') && (
