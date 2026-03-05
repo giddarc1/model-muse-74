@@ -67,52 +67,8 @@ export function ModelContextBar() {
 
   const status = statusConfig[model.run_status];
   const isResultsCurrent = model.run_status === 'current';
-    const validationErrors: string[] = [];
-    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be > 0');
-    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be > 0');
-    model.products.forEach(p => {
-      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
-      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
-    });
-    model.equipment.forEach(e => {
-      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
-    });
-    model.labor.forEach(l => {
-      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
-    });
-    if (validationErrors.length > 0) {
-      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`, {
-        description: validationErrors.slice(0, 3).join('; ') + (validationErrors.length > 3 ? '…' : ''),
-      });
-      return;
-    }
 
-    setIsRunning(true);
-    setTimeout(async () => {
-      const calcResults = calculate(model, activeScenario || undefined);
-      setResults(resultKey, calcResults);
-      setRunStatus(model.id, 'current');
-      if (activeScenario) markCalculated(activeScenario.id);
-      setIsRunning(false);
-
-      const { scenarioDb } = await import('@/lib/scenarioDb');
-      if (activeScenario) {
-        scenarioDb.saveResults(activeScenario.id, calcResults);
-      } else {
-        scenarioDb.saveBasecaseResults(model.id, calcResults);
-      }
-      const { db } = await import('@/lib/supabaseData');
-      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
-
-      if (calcResults.errors.length > 0) {
-        toast.error(calcResults.errors[0]);
-      } else if (calcResults.overLimitResources.length > 0) {
-        toast.warning(`${calcResults.overLimitResources.length} resource(s) exceed utilization limit`);
-      } else {
-        toast.success('Full calculation complete — all production targets achievable');
-      }
-    }, 100);
-  };
+  const handleRun = () => sharedRun('full');
 
   // ── Open checkpoint dialog ──────────────────────────────────────
   const handleOpenCheckpointDialog = () => {
