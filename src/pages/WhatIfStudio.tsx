@@ -571,8 +571,11 @@ function ScenarioEditorPanel({
         <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
           <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
         </Button>
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onSaveAs(scenario)}>
+          <Save className="h-3.5 w-3.5 mr-1" /> Save As
+        </Button>
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onPromote}>
-          <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
+          <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Replace Basecase
         </Button>
       </div>
 
