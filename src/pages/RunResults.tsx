@@ -241,14 +241,14 @@ export default function RunResults() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Mode Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {RUN_MODE_OPTIONS.map(opt => {
               if (opt.feature && !canAccess(userLevel, opt.feature)) return null;
               const Icon = opt.icon;
-              const isSelected = runMode === opt.mode;
+              const isSelected = runMode === opt.mode && (opt.label !== 'Product Inclusion' || runMode === 'full');
               return (
                 <button
-                  key={opt.mode}
+                  key={opt.label}
                   onClick={() => setRunMode(opt.mode)}
                   className={`text-left p-3 rounded-lg border-2 transition-all ${
                     isSelected
