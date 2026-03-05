@@ -2,21 +2,21 @@ import { useState, useMemo } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { calculate, verifyData, type CalcResults, type ProductResult, type EquipmentResult } from '@/lib/calculationEngine';
+import { type CalcResults, type ProductResult, type EquipmentResult } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network } from 'lucide-react';
+import { Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-
-type RunMode = 'full' | 'verify' | 'util_only';
+import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 
 // ── Scenario color palettes for grouped charts ──
 const SCENARIO_PALETTES = [
@@ -131,18 +131,23 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
 
+const RUN_MODE_OPTIONS: { mode: RunMode; icon: typeof Play; label: string; description: string; feature?: string }[] = [
+  { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis. Calculates utilization, MCT, WIP, and queue times for all products and resources.' },
+  { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates all input data for errors and inconsistencies without running calculations. Use this to check your model before a full run.' },
+  { mode: 'util_only', icon: Gauge, label: 'Calculate Utilization Only', description: 'Calculates equipment and labor utilization only. Faster than Full Calculate — useful when exploring capacity balance.', feature: 'util-only-mode' },
+];
+
 export default function RunResults() {
   const model = useModelStore(s => s.getActiveModel());
-  const setRunStatus = useModelStore(s => s.setRunStatus);
   const allScenarios = useScenarioStore(s => s.scenarios);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
-  const markCalculated = useScenarioStore(s => s.markCalculated);
-  const { setResults, getResults } = useResultsStore();
+  const { getResults } = useResultsStore();
+  const { userLevel } = useUserLevelStore();
+
+  const { isRunning, runLog, verifyMessages, handleRun } = useRunCalculation();
 
   const [runMode, setRunMode] = useState<RunMode>('full');
-  const [isRunning, setIsRunning] = useState(false);
-  const [verifyMessages, setVerifyMessages] = useState<{ errors: string[]; warnings: string[] } | null>(null);
   const [transposed, setTransposed] = useState(false);
   const [ibomProduct, setIbomProduct] = useState('');
 
@@ -199,110 +204,82 @@ export default function RunResults() {
 
   if (!model) return null;
 
-  const handleRun = async () => {
-    if (runMode === 'verify') {
-      const msgs = verifyData(model);
-      setVerifyMessages(msgs);
-      if (msgs.errors.length === 0 && msgs.warnings.length === 0) {
-        toast.success('Data verification complete — no issues found');
-      } else {
-        toast.warning(`Found ${msgs.errors.length} error(s) and ${msgs.warnings.length} warning(s)`);
-      }
-      return;
-    }
-
-    const validationErrors: string[] = [];
-    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be greater than 0');
-    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be greater than 0');
-    model.products.forEach(p => {
-      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
-      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
-    });
-    model.equipment.forEach(e => {
-      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
-    });
-    model.labor.forEach(l => {
-      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
-    });
-    if (validationErrors.length > 0) {
-      setVerifyMessages({ errors: validationErrors, warnings: [] });
-      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`);
-      return;
-    }
-
-    setIsRunning(true);
-    setTimeout(async () => {
-      const calcResults = calculate(model, activeScenario);
-      setResults(resultKey, calcResults);
-      setRunStatus(model.id, 'current');
-      if (activeScenario) markCalculated(activeScenario.id);
-      setIsRunning(false);
-      setVerifyMessages(null);
-
-      const { scenarioDb } = await import('@/lib/scenarioDb');
-      if (activeScenario) {
-        scenarioDb.saveResults(activeScenario.id, calcResults);
-      } else {
-        scenarioDb.saveBasecaseResults(model.id, calcResults);
-      }
-      const { db } = await import('@/lib/supabaseData');
-      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
-
-      if (calcResults.errors.length > 0) {
-        toast.error(calcResults.errors[0]);
-      } else if (calcResults.overLimitResources.length > 0) {
-        toast.warning(`${calcResults.overLimitResources.length} resource(s) exceed utilization limit`);
-      } else {
-        toast.success(runMode === 'full' ? 'Full calculation complete — all production targets achievable' : 'Utilization calculation complete');
-      }
-    }, 100);
-  };
+  const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
+  const modeLabel = runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization';
 
   return (
     <div className="p-6 animate-fade-in">
-      <h1 className="text-xl font-bold mb-1">Run & Results</h1>
-      <p className="text-sm text-muted-foreground mb-1">
-        Execute calculations and view model outputs.
-        {activeScenario && (
-          <Badge className="ml-2 bg-warning/20 text-warning text-[10px] border-0">Scenario: {activeScenario.name}</Badge>
-        )}
-      </p>
+      {/* ── Header ── */}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold mb-0.5">Run Model</h1>
+        <p className="text-sm text-muted-foreground">
+          Active scenario: <span className="font-medium text-foreground">{scenarioLabel}</span>
+        </p>
+      </div>
+
+      {/* ── Stale Results Banner ── */}
       {model.run_status === 'needs_recalc' && hasRun && (
-        <div className="mb-4 flex items-center gap-2 p-3 bg-warning/10 border border-warning/30 rounded-md">
-          <AlertTriangle className="h-4 w-4 text-warning" />
-          <span className="text-sm text-warning font-medium">Model data has changed since last run. Recalculation needed.</span>
+        <div className="mb-4 flex items-center justify-between gap-2 p-3 bg-warning/10 border border-warning/30 rounded-md">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+            <span className="text-sm text-warning font-medium">
+              These results are from {model.last_run_at ? new Date(model.last_run_at).toLocaleString() : 'a previous run'}. Data has changed since — recalculate to update.
+            </span>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 text-xs border-warning/40 text-warning hover:bg-warning/10" onClick={() => handleRun('full')}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Recalculate Now
+          </Button>
         </div>
       )}
 
-      {/* Run Control Panel */}
+      {/* ── Run Control Panel ── */}
       <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1.5 block">Run Mode</label>
-              <div className="flex gap-2">
-                <Button variant={runMode === 'full' ? 'default' : 'outline'} size="sm" onClick={() => setRunMode('full')} className="text-xs">
-                  <Play className="h-3.5 w-3.5 mr-1" /> Full Calculate
-                </Button>
-                <Button variant={runMode === 'verify' ? 'default' : 'outline'} size="sm" onClick={() => setRunMode('verify')} className="text-xs">
-                  <Shield className="h-3.5 w-3.5 mr-1" /> Verify Data
-                </Button>
-                <Button variant={runMode === 'util_only' ? 'default' : 'outline'} size="sm" onClick={() => setRunMode('util_only')} className="text-xs">
-                  Utilization Only
-                </Button>
-              </div>
-            </div>
-            <Button size="lg" onClick={handleRun} disabled={isRunning} className="gap-2 px-8">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Run Mode</CardTitle>
+          <CardDescription>Select a calculation mode and run</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Mode Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {RUN_MODE_OPTIONS.map(opt => {
+              if (opt.feature && !canAccess(userLevel, opt.feature)) return null;
+              const Icon = opt.icon;
+              const isSelected = runMode === opt.mode;
+              return (
+                <button
+                  key={opt.mode}
+                  onClick={() => setRunMode(opt.mode)}
+                  className={`text-left p-3 rounded-lg border-2 transition-all ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40 hover:bg-accent/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Icon className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>{opt.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Run Button */}
+          <div className="flex items-center gap-4">
+            <Button size="lg" onClick={() => handleRun(runMode)} disabled={isRunning} className="gap-2 px-8">
               {isRunning ? (
                 <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Calculating...</>
               ) : (
-                <><Play className="h-4 w-4" /> {runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization'}</>
+                <><Play className="h-4 w-4" /> {modeLabel}</>
               )}
             </Button>
+            <span className="text-xs text-muted-foreground">on <span className="font-medium">{scenarioLabel}</span></span>
           </div>
 
+          {/* Validation / Error panels */}
           {results && results.overLimitResources.length > 0 && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
                 <span className="text-sm text-destructive font-semibold">Resources exceed utilization limit ({model.general.util_limit}%)</span>
@@ -314,7 +291,7 @@ export default function RunResults() {
           )}
 
           {results && results.errors.length > 0 && (
-            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
               <div className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /><span className="text-sm text-destructive font-semibold">Errors</span></div>
               <ul className="text-xs text-destructive/80 space-y-0.5 ml-6 list-disc mt-1">
                 {results.errors.map((e, i) => <li key={i}>{e}</li>)}
@@ -323,14 +300,14 @@ export default function RunResults() {
           )}
 
           {results && results.overLimitResources.length === 0 && results.errors.length === 0 && (
-            <div className="mt-4 flex items-center gap-2 p-3 bg-success/10 border border-success/30 rounded-md">
+            <div className="flex items-center gap-2 p-3 bg-success/10 border border-success/30 rounded-md">
               <CheckCircle className="h-4 w-4 text-success" />
               <span className="text-sm text-success font-medium">All production targets can be achieved. Results are current.</span>
             </div>
           )}
 
           {verifyMessages && (
-            <div className="mt-4 space-y-2">
+            <div className="space-y-2">
               {verifyMessages.errors.map((e, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs text-destructive"><XCircle className="h-3.5 w-3.5" /> {e}</div>
               ))}
@@ -344,6 +321,50 @@ export default function RunResults() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Run Log ── */}
+      {runLog.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Recent Runs</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Time</TableHead>
+                  <TableHead className="text-xs">Mode</TableHead>
+                  <TableHead className="text-xs">Scenario</TableHead>
+                  <TableHead className="text-xs text-right">Duration</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {runLog.map(entry => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="text-xs font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</TableCell>
+                    <TableCell className="text-xs capitalize">{entry.mode === 'full' ? 'Full Calculate' : entry.mode === 'verify' ? 'Verify Data' : 'Util Only'}</TableCell>
+                    <TableCell className="text-xs">{entry.scenarioName}</TableCell>
+                    <TableCell className="text-xs text-right font-mono">{entry.durationMs < 1000 ? `${entry.durationMs}ms` : `${(entry.durationMs / 1000).toFixed(1)}s`}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] ${
+                        entry.status === 'success' ? 'border-success/40 text-success' :
+                        entry.status === 'warning' ? 'border-warning/40 text-warning' :
+                        'border-destructive/40 text-destructive'
+                      }`}>
+                        {entry.status === 'success' ? <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> :
+                         entry.status === 'warning' ? <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> :
+                         <XCircle className="h-2.5 w-2.5 mr-0.5" />}
+                        {entry.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Results Area */}
       {hasRun && (
