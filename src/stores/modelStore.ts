@@ -108,8 +108,20 @@ export interface GeneralData {
   var_equip: number;
   var_labor: number;
   var_prod: number;
+  gen1: number;
+  gen2: number;
+  gen3: number;
+  gen4: number;
   author: string;
   comments: string;
+}
+
+export interface ParamNames {
+  gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
+  lab1_name: string; lab2_name: string; lab3_name: string; lab4_name: string;
+  eq1_name: string; eq2_name: string; eq3_name: string; eq4_name: string;
+  prod1_name: string; prod2_name: string; prod3_name: string; prod4_name: string;
+  oper1_name: string; oper2_name: string; oper3_name: string; oper4_name: string;
 }
 
 export interface Model {
