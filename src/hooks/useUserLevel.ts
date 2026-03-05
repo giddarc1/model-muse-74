@@ -34,6 +34,7 @@ export function canAccess(level: UserLevel, feature: string): boolean {
   const noviceHidden = [
     'all-operations', 'advanced-params', 'formula-builder', 'param-names',
     'util-only-mode', 'whatif-families', 'inline-change-edit',
+    'oper-details', 'equip-wip-chart', 'labor-wait-chart',
   ];
   const standardHidden = [
     'product-inclusion', 'max-throughput', 'optimize-lots', 'whatif-families', 'inline-change-edit',

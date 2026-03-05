@@ -6,7 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 
 export default function LaborData() {
   const model = useModelStore((s) => s.getActiveModel());
@@ -16,6 +19,8 @@ export default function LaborData() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+  const { userLevel } = useUserLevelStore();
+  const showAdvanced = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -36,7 +41,7 @@ export default function LaborData() {
     setShowAdd(false);
   };
 
-  const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number) => {
+  const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number | boolean) => {
     updateLabor(model.id, id, { [field]: value });
   };
 
@@ -140,6 +145,30 @@ export default function LaborData() {
                   <div><Label className="text-xs">Dept Code</Label><Input className="h-8" value={l.dept_code} onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} /></div>
                 </div>
                 <div><Label className="text-xs">Comments</Label><Input className="h-8" value={l.comments} onChange={(e) => handleCellChange(l.id, 'comments', e.target.value)} /></div>
+                {showAdvanced && (
+                  <div className="pt-2 border-t border-border space-y-3">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><Label className="text-xs">Setup Factor</Label><Input type="number" className="h-8 font-mono" value={l.setup_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.setup_factor} = {Math.round(l.setup_factor * 100)}%</span></div>
+                      <div><Label className="text-xs">Run Factor</Label><Input type="number" className="h-8 font-mono" value={l.run_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.run_factor} = {Math.round(l.run_factor * 100)}%</span></div>
+                      <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={l.var_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.var_factor} = {Math.round(l.var_factor * 100)}%</span></div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-xs">Group / Dept / Area</Label>
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Optional organisational label. No direct effect on calculations — provided for reference and model documentation.</TooltipContent></Tooltip></TooltipProvider>
+                      </div>
+                      <Input className="h-8" value={l.dept_code} placeholder="e.g. Assembly, Machining" onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-xs">Prioritize Use</Label>
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">When enabled, operators are assumed to prioritise the most heavily loaded machines. This reduces Wait for Labor at high-utilisation equipment and increases it slightly at lower-utilisation equipment.</TooltipContent></Tooltip></TooltipProvider>
+                      </div>
+                      <Switch checked={l.prioritize_use} onCheckedChange={(v) => handleCellChange(l.id, 'prioritize_use', v)} />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

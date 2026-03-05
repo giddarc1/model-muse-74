@@ -181,9 +181,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
     }
 
     const overtimeFactor = 1 + eq.overtime_pct / 100;
-    const availableTime = count * overtimeFactor * opsPerPeriod * eq.setup_factor; // in ops time units per period
-    // Actually: available time = count * (1 + OT%) * conv1 * conv2
-    const availTime = count * overtimeFactor * opsPerPeriod;
+    const unavailFactor = 1 - (eq.unavail_pct || 0) / 100;
+    const availTime = count * overtimeFactor * unavailFactor * opsPerPeriod;
 
     // Repair utilization
     let repairFraction = 0;
@@ -211,7 +210,9 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const numLots = (demand / lotSize) * assignFraction;
 
       // Full setup time per lot = setup_lot + setup_piece * lotSize + setup_tbatch * numTbatches
-      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor;
+      // Apply both equipment setup_factor AND product setup_factor
+      const prodSetupFactor = product.setup_factor || 1;
+      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
       // Full run time per lot = run_piece * lotSize + run_lot + run_tbatch * numTbatches
       const runPerLot = (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
 
@@ -278,7 +279,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const assignFraction = op.pct_assigned / 100;
       const numLots = (demand / lotSize) * assignFraction;
 
-      const setupPerLot = (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor;
+      const prodSetupFactor = product.setup_factor || 1;
+      const setupPerLot = (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor;
       const runPerLot = (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor;
 
       totalSetupTime += numLots * setupPerLot;
@@ -359,7 +361,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const numTbatches = Math.ceil(lotSize / tbatchSize);
 
       // Full setup/run time per lot including all components
-      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor;
+      const prodSetupFactor = product.setup_factor || 1;
+      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
       const runPerLot = (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
 
       // Per-piece equivalents for MCT
