@@ -31,6 +31,14 @@ function notifyRunLog() { _runLogListeners.forEach(fn => fn()); }
 function subscribeRunLog(cb: () => void) { _runLogListeners.add(cb); return () => { _runLogListeners.delete(cb); }; }
 function getRunLogSnapshot() { return _runLog; }
 
+// Module-level isRunning so it's shared across hook instances
+let _isRunning = false;
+let _isRunningListeners: Set<() => void> = new Set();
+function notifyIsRunning() { _isRunningListeners.forEach(fn => fn()); }
+function subscribeIsRunning(cb: () => void) { _isRunningListeners.add(cb); return () => { _isRunningListeners.delete(cb); }; }
+function getIsRunningSnapshot() { return _isRunning; }
+function setGlobalIsRunning(v: boolean) { _isRunning = v; notifyIsRunning(); }
+
 export function useRunCalculation(): UseRunCalculationReturn {
   const model = useModelStore(s => s.getActiveModel());
   const setRunStatus = useModelStore(s => s.setRunStatus);
@@ -38,11 +46,11 @@ export function useRunCalculation(): UseRunCalculationReturn {
   const markCalculated = useScenarioStore(s => s.markCalculated);
   const { setResults } = useResultsStore();
 
-  const [isRunning, setIsRunning] = useState(false);
   const [verifyMessages, setVerifyMessages] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
-  // Subscribe to run log changes using proper external store
+  // Subscribe to shared state
   const runLog = useSyncExternalStore(subscribeRunLog, getRunLogSnapshot);
+  const isRunning = useSyncExternalStore(subscribeIsRunning, getIsRunningSnapshot);
 
   const handleRun = useCallback(async (mode: RunMode) => {
     if (!model) return;
