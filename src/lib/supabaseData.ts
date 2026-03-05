@@ -79,6 +79,7 @@ export async function fetchAllModels(): Promise<Model[]> {
         overtime_pct: Number(l.overtime_pct ?? 0),
         unavail_pct: Number(l.unavail_pct ?? 0),
         dept_code: l.dept_code || '',
+        prioritize_use: l.prioritize_use || false,
         setup_factor: Number(l.setup_factor ?? 1),
         run_factor: Number(l.run_factor ?? 1),
         var_factor: Number(l.var_factor ?? 1),
@@ -93,6 +94,8 @@ export async function fetchAllModels(): Promise<Model[]> {
         overtime_pct: Number(e.overtime_pct ?? 0),
         labor_group_id: e.labor_group_id || '',
         dept_code: e.dept_code || '',
+        out_of_area: (e as any).out_of_area || false,
+        unavail_pct: Number((e as any).unavail_pct ?? 0),
         setup_factor: Number(e.setup_factor ?? 1),
         run_factor: Number(e.run_factor ?? 1),
         var_factor: Number(e.var_factor ?? 1),
@@ -106,8 +109,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         demand_factor: Number(p.demand_factor ?? 1),
         lot_factor: Number(p.lot_factor ?? 1),
         var_factor: Number(p.var_factor ?? 1),
+        setup_factor: Number((p as any).setup_factor ?? 1),
         make_to_stock: p.make_to_stock || false,
         gather_tbatches: p.gather_tbatches ?? true,
+        dept_code: (p as any).dept_code || '',
         comments: p.comments || '',
       })),
       operations: ops.map(o => ({
@@ -190,6 +195,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
       model.labor.map(l => ({
         id: l.id, model_id: model.id, name: l.name, count: l.count,
         overtime_pct: l.overtime_pct, unavail_pct: l.unavail_pct, dept_code: l.dept_code || null,
+        prioritize_use: l.prioritize_use,
         setup_factor: l.setup_factor, run_factor: l.run_factor, var_factor: l.var_factor,
         comments: l.comments || null,
       }))
@@ -202,6 +208,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         id: e.id, model_id: model.id, name: e.name, equip_type: e.equip_type, count: e.count,
         mttf: e.mttf || null, mttr: e.mttr || null, overtime_pct: e.overtime_pct,
         labor_group_id: e.labor_group_id || null, dept_code: e.dept_code || null,
+        out_of_area: e.out_of_area, unavail_pct: e.unavail_pct,
         setup_factor: e.setup_factor, run_factor: e.run_factor, var_factor: e.var_factor,
         comments: e.comments || null,
       }))
@@ -214,7 +221,9 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         id: p.id, model_id: model.id, name: p.name, demand: p.demand,
         lot_size: p.lot_size, tbatch_size: p.tbatch_size,
         demand_factor: p.demand_factor, lot_factor: p.lot_factor, var_factor: p.var_factor,
+        setup_factor: p.setup_factor,
         make_to_stock: p.make_to_stock, gather_tbatches: p.gather_tbatches,
+        dept_code: p.dept_code || null,
         comments: p.comments || null,
       }))
     ).select());
@@ -309,6 +318,7 @@ export const db = {
     const { error } = await supabase.from('model_labor').insert({
       id: l.id, model_id: modelId, name: l.name, count: l.count,
       overtime_pct: l.overtime_pct, unavail_pct: l.unavail_pct, dept_code: l.dept_code || null,
+      prioritize_use: l.prioritize_use,
       setup_factor: l.setup_factor, run_factor: l.run_factor, var_factor: l.var_factor,
       comments: l.comments || null,
     });
@@ -331,6 +341,7 @@ export const db = {
       id: e.id, model_id: modelId, name: e.name, equip_type: e.equip_type, count: e.count,
       mttf: e.mttf || null, mttr: e.mttr || null, overtime_pct: e.overtime_pct,
       labor_group_id: e.labor_group_id || null, dept_code: e.dept_code || null,
+      out_of_area: e.out_of_area, unavail_pct: e.unavail_pct,
       setup_factor: e.setup_factor, run_factor: e.run_factor, var_factor: e.var_factor,
       comments: e.comments || null,
     });
@@ -354,7 +365,9 @@ export const db = {
       id: p.id, model_id: modelId, name: p.name, demand: p.demand,
       lot_size: p.lot_size, tbatch_size: p.tbatch_size,
       demand_factor: p.demand_factor, lot_factor: p.lot_factor, var_factor: p.var_factor,
+      setup_factor: p.setup_factor,
       make_to_stock: p.make_to_stock, gather_tbatches: p.gather_tbatches,
+      dept_code: p.dept_code || null,
       comments: p.comments || null,
     });
     if (error) console.error('insertProduct:', error);

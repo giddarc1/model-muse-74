@@ -8,6 +8,7 @@ export interface LaborGroup {
   overtime_pct: number;
   unavail_pct: number;
   dept_code: string;
+  prioritize_use: boolean;
   setup_factor: number;
   run_factor: number;
   var_factor: number;
@@ -24,6 +25,8 @@ export interface EquipmentGroup {
   overtime_pct: number;
   labor_group_id: string;
   dept_code: string;
+  out_of_area: boolean;
+  unavail_pct: number;
   setup_factor: number;
   run_factor: number;
   var_factor: number;
@@ -39,8 +42,10 @@ export interface Product {
   demand_factor: number;
   lot_factor: number;
   var_factor: number;
+  setup_factor: number;
   make_to_stock: boolean;
   gather_tbatches: boolean;
+  dept_code: string;
   comments: string;
 }
 
@@ -201,29 +206,29 @@ export function createDemoModel(): Model {
       comments: 'Based on the Hub Manufacturing Cell example from the MPX manual.',
     },
     labor: [
-      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
-      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
-      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspectors' },
-      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Repair workers' },
+      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
+      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
+      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspectors' },
+      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Repair workers' },
     ],
     equipment: [
-      { id: equipIds.BENCH, name: 'BENCH', equip_type: 'standard', count: 4, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.PREP, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Prep bench' },
-      { id: equipIds.VT_LATHE, name: 'VT_LATHE', equip_type: 'standard', count: 7, mttf: 600, mttr: 60, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Vertical lathes' },
-      { id: equipIds.DEBURR, name: 'DEBURR', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Deburr stations' },
-      { id: equipIds.INSPECT, name: 'INSPECT', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.INSPECTR, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspection stations' },
-      { id: equipIds.REWORK, name: 'REWORK', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Rework area' },
-      { id: equipIds.MILL, name: 'MILL', equip_type: 'standard', count: 3, mttf: 480, mttr: 30, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Milling machines' },
-      { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 8, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Drill presses' },
+      { id: equipIds.BENCH, name: 'BENCH', equip_type: 'standard', count: 4, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.PREP, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Prep bench' },
+      { id: equipIds.VT_LATHE, name: 'VT_LATHE', equip_type: 'standard', count: 7, mttf: 600, mttr: 60, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Vertical lathes' },
+      { id: equipIds.DEBURR, name: 'DEBURR', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Deburr stations' },
+      { id: equipIds.INSPECT, name: 'INSPECT', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.INSPECTR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspection stations' },
+      { id: equipIds.REWORK, name: 'REWORK', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Rework area' },
+      { id: equipIds.MILL, name: 'MILL', equip_type: 'standard', count: 3, mttf: 480, mttr: 30, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Milling machines' },
+      { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 8, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Drill presses' },
     ],
     products: [
-      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 1' },
-      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 2' },
-      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 3' },
-      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Hub variant 4' },
-      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Sleeve component' },
-      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Mount assembly' },
-      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bracket component' },
-      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, make_to_stock: false, gather_tbatches: true, comments: 'Bolt component' },
+      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 1' },
+      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 2' },
+      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 3' },
+      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 4' },
+      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Sleeve component' },
+      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Mount assembly' },
+      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bracket component' },
+      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bolt component' },
     ],
     operations: [
       // HUB1

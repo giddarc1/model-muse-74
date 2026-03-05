@@ -29,7 +29,7 @@ export default function LaborData() {
     if (!newName.trim()) return;
     addLabor(model.id, {
       id: crypto.randomUUID(), name: newName.trim().toUpperCase(), count: 1,
-      overtime_pct: 0, unavail_pct: 0, dept_code: '',
+      overtime_pct: 0, unavail_pct: 0, dept_code: '', prioritize_use: false,
       setup_factor: 1, run_factor: 1, var_factor: 1, comments: '',
     });
     setNewName('');
