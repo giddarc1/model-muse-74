@@ -390,6 +390,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       last_run_at: null, run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
+      param_names: { ...defaultParamNames },
       labor: [], equipment: [], products: [], operations: [], routing: [], ibom: [],
     };
     set((s) => ({ models: [model, ...s.models] }));

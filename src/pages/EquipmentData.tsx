@@ -37,7 +37,8 @@ export default function EquipmentData() {
       id: crypto.randomUUID(), name: newName.trim().toUpperCase(), equip_type: 'standard', count: 1,
       mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: '', dept_code: '',
       out_of_area: false, unavail_pct: 0,
-      setup_factor: 1, run_factor: 1, var_factor: 1, comments: '',
+      setup_factor: 1, run_factor: 1, var_factor: 1,
+      eq1: 0, eq2: 0, eq3: 0, eq4: 0, comments: '',
     });
     setNewName('');
     setShowAdd(false);
