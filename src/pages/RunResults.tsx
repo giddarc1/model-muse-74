@@ -241,6 +241,11 @@ export default function RunResults() {
   const [lsrMax, setLsrMax] = useState(200);
   const [lsrStep, setLsrStep] = useState(10);
   const [lsrResults, setLsrResults] = useState<{lotSize: number; mct: number}[]>([]);
+  const [tbrProduct, setTbrProduct] = useState(model?.products[0]?.id || '');
+  const [tbrMin, setTbrMin] = useState(1);
+  const [tbrMax, setTbrMax] = useState(50);
+  const [tbrStep, setTbrStep] = useState(5);
+  const [tbrResults, setTbrResults] = useState<{tbatch: number; mct: number}[]>([]);
   const [optProducts, setOptProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
   const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
   const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
