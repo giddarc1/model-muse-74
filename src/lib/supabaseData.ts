@@ -365,7 +365,9 @@ export const db = {
       id: p.id, model_id: modelId, name: p.name, demand: p.demand,
       lot_size: p.lot_size, tbatch_size: p.tbatch_size,
       demand_factor: p.demand_factor, lot_factor: p.lot_factor, var_factor: p.var_factor,
+      setup_factor: p.setup_factor,
       make_to_stock: p.make_to_stock, gather_tbatches: p.gather_tbatches,
+      dept_code: p.dept_code || null,
       comments: p.comments || null,
     });
     if (error) console.error('insertProduct:', error);
