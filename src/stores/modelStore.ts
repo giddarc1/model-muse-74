@@ -192,7 +192,7 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
-const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0 };
+const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0, oper1: 0, oper2: 0, oper3: 0, oper4: 0 };
 
 export const defaultParamNames: ParamNames = {
   gen1_name: 'Gen1', gen2_name: 'Gen2', gen3_name: 'Gen3', gen4_name: 'Gen4',
