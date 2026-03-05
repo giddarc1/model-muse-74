@@ -1190,14 +1190,13 @@ function NormalSummary({ results, model, scenarioResults }: {
         )}
         <TableRow className="border-t-2 font-medium">
           <TableCell className="font-mono">TOTAL</TableCell>
-          <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
-          <TableCell />
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.goodMade, 0).toLocaleString()}</TableCell>
+          <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.goodShipped, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.started, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.scrap, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.wip, 0).toFixed(1)}</TableCell>
           <TableCell className="font-mono text-right">—</TableCell>
-          {hasScenarios && scenarioResults.map(sr => <TableCell key={sr.id} className="font-mono text-right">—</TableCell>)}
+          {hasScenarios && scenarioResults.map(sr => <React.Fragment key={sr.id}><TableCell /><TableCell /></React.Fragment>)}
         </TableRow>
       </TableBody>
     </Table>
