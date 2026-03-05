@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
@@ -1127,21 +1127,22 @@ function NormalSummary({ results, model, scenarioResults }: {
   const renderProductRow = (row: ProductResult) => (
     <TableRow key={row.id}>
       <TableCell className="font-mono font-medium">{row.name}</TableCell>
-      <TableCell className="font-mono text-right">{row.demand.toLocaleString()}</TableCell>
-      <TableCell className="font-mono text-right">{row.lotSize}</TableCell>
       <TableCell className="font-mono text-right">{row.goodMade.toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right">{row.goodShipped.toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right">{row.started.toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right">{row.scrap > 0 ? row.scrap.toLocaleString() : '—'}</TableCell>
       <TableCell className="font-mono text-right">{row.wip}</TableCell>
       <TableCell className="font-mono text-right font-medium">{row.mct.toFixed(4)}</TableCell>
       {hasScenarios && scenarioResults.map(sr => {
         const sp = sr.results.products.find(p => p.id === row.id);
-        const diff = sp ? sp.mct - row.mct : 0;
         return (
-          <TableCell key={sr.id} className={`font-mono text-right text-xs ${diff < 0 ? 'text-success' : diff > 0 ? 'text-destructive' : ''}`}>
-            {sp?.mct.toFixed(4) || '—'}
-            {diff !== 0 && <span className="ml-1 text-[10px]">({diff > 0 ? '+' : ''}{diff.toFixed(4)})</span>}
-          </TableCell>
+          <React.Fragment key={sr.id}>
+            <TableCell className="font-mono text-right text-xs">{sp?.wip ?? '—'}</TableCell>
+            <TableCell className={`font-mono text-right text-xs ${sp && sp.mct < row.mct ? 'text-success' : sp && sp.mct > row.mct ? 'text-destructive' : ''}`}>
+              {sp?.mct.toFixed(4) || '—'}
+              {sp && sp.mct !== row.mct && <span className="ml-1 text-[10px]">({(sp.mct - row.mct) > 0 ? '+' : ''}{(sp.mct - row.mct).toFixed(4)})</span>}
+            </TableCell>
+          </React.Fragment>
         );
       })}
     </TableRow>
@@ -1150,14 +1151,13 @@ function NormalSummary({ results, model, scenarioResults }: {
   const renderSubtotal = (label: string, products: ProductResult[]) => (
     <TableRow key={`sub-${label}`} className="bg-muted/50 font-medium">
       <TableCell className="font-mono text-xs">{label} subtotal</TableCell>
-      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
-      <TableCell />
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.goodMade, 0).toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.goodShipped, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.started, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.scrap, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.wip, 0).toFixed(1)}</TableCell>
       <TableCell className="font-mono text-right text-xs">{Math.min(...products.map(p => p.mct)).toFixed(4)}–{Math.max(...products.map(p => p.mct)).toFixed(4)}</TableCell>
-      {hasScenarios && scenarioResults.map(sr => <TableCell key={sr.id} />)}
+      {hasScenarios && scenarioResults.map(sr => <React.Fragment key={sr.id}><TableCell /><TableCell /></React.Fragment>)}
     </TableRow>
   );
 
@@ -1166,17 +1166,17 @@ function NormalSummary({ results, model, scenarioResults }: {
       <TableHeader>
         <TableRow>
           <TableHead className="font-mono text-xs">Product</TableHead>
-          <TableHead className="font-mono text-xs text-right">Demand</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lot Size</TableHead>
           <TableHead className="font-mono text-xs text-right">Good Made</TableHead>
+          <TableHead className="font-mono text-xs text-right">Good Shipped</TableHead>
           <TableHead className="font-mono text-xs text-right">Started</TableHead>
           <TableHead className="font-mono text-xs text-right">Scrap</TableHead>
           <TableHead className="font-mono text-xs text-right">WIP</TableHead>
           <TableHead className="font-mono text-xs text-right">MCT ({model.general.mct_time_unit})</TableHead>
           {hasScenarios && scenarioResults.map(sr => (
-            <TableHead key={sr.id} className="font-mono text-xs text-right text-primary">
-              MCT {sr.scenario.name}
-            </TableHead>
+            <React.Fragment key={sr.id}>
+              <TableHead className="font-mono text-xs text-right text-primary">WIP {sr.scenario.name}</TableHead>
+              <TableHead className="font-mono text-xs text-right text-primary">MCT {sr.scenario.name}</TableHead>
+            </React.Fragment>
           ))}
         </TableRow>
       </TableHeader>
@@ -1190,14 +1190,13 @@ function NormalSummary({ results, model, scenarioResults }: {
         )}
         <TableRow className="border-t-2 font-medium">
           <TableCell className="font-mono">TOTAL</TableCell>
-          <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
-          <TableCell />
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.goodMade, 0).toLocaleString()}</TableCell>
+          <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.goodShipped, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.started, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.scrap, 0).toLocaleString()}</TableCell>
           <TableCell className="font-mono text-right">{results.products.reduce((s, r) => s + r.wip, 0).toFixed(1)}</TableCell>
           <TableCell className="font-mono text-right">—</TableCell>
-          {hasScenarios && scenarioResults.map(sr => <TableCell key={sr.id} className="font-mono text-right">—</TableCell>)}
+          {hasScenarios && scenarioResults.map(sr => <React.Fragment key={sr.id}><TableCell /><TableCell /></React.Fragment>)}
         </TableRow>
       </TableBody>
     </Table>
@@ -1538,11 +1537,71 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const [subTab, setSubTab] = useState<'equipment' | 'labor' | 'product'>('equipment');
   const [selectedId, setSelectedId] = useState('');
 
+  // Compute per-operation metrics
+  const allMetrics = useMemo(() => {
+    const g = model.general;
+    const conv1 = Math.max(g.conv1, 0.001);
+    const conv2 = Math.max(g.conv2, 0.001);
+    const opsPerPeriod = conv1 * conv2;
+
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const eqSetupTime = numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
+      const eqRunTime = numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
+      const eqCount = eq.count > 0 ? eq.count : 1;
+      const eqAvail = eqCount * (1 + eq.overtime_pct / 100) * (1 - (eq.unavail_pct || 0) / 100) * opsPerPeriod;
+      let repairFrac = 0;
+      if (eq.mttf > 0 && eq.mttr > 0) repairFrac = eq.mttr / (eq.mttf + eq.mttr);
+      const eqEffAvail = eqAvail * (1 - repairFrac);
+      const eqSetupUtil = eqEffAvail > 0 ? (eqSetupTime / eqEffAvail) * 100 : 0;
+      const eqRunUtil = eqEffAvail > 0 ? (eqRunTime / eqEffAvail) * 100 : 0;
+      const labSetupTime = lab ? numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor : 0;
+      const labRunTime = lab ? numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor : 0;
+      const labAvail = lab ? lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod : 0;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? (eqSetupTime / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? (eqRunTime / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      const visits = demand > 0 ? (numLots * lotSize / demand) * 100 : 100;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab?.name || '—', laborId: lab?.id || '',
+        pctAssigned: op.pct_assigned,
+        eqSetupUtil: Math.round(eqSetupUtil * 10) / 10,
+        eqRunUtil: Math.round(eqRunUtil * 10) / 10,
+        waitLaborUtil: er?.waitLaborUtil || 0,
+        repairUtil: er?.repairUtil || 0,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+        visits: Math.round(visits * 10) / 10,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results]);
+
   const renderByEquipment = () => {
     const eq = model.equipment.find(e => e.id === selectedId);
     if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
-    const ops = model.operations.filter(o => o.equip_id === eq.id);
-    const eqResult = results.equipment.find(e => e.id === eq.id);
+    const ops = allMetrics.filter((m: any) => m.equipId === eq.id);
     return (
       <Table>
         <TableHeader><TableRow>
@@ -1550,27 +1609,34 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
           <TableHead className="font-mono text-xs">Operation</TableHead>
           <TableHead className="font-mono text-xs text-right">Op #</TableHead>
           <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
-          <TableHead className="font-mono text-xs text-right">Setup Util</TableHead>
-          <TableHead className="font-mono text-xs text-right">Run Util</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Setup</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Run</TableHead>
+          <TableHead className="font-mono text-xs text-right">Wait Labor</TableHead>
+          <TableHead className="font-mono text-xs text-right">Repair</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
           <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
+          <TableHead className="font-mono text-xs text-right">Visits/100</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
-            const prod = model.products.find(p => p.id === op.product_id);
-            const pr = results.products.find(p => p.id === op.product_id);
-            const wipShare = pr && ops.length > 0 ? (pr.wip / model.operations.filter(o => o.product_id === op.product_id).length) : 0;
-            return (
-              <TableRow key={op.id}>
-                <TableCell className="font-mono text-xs">{prod?.name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{op.op_number}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{eqResult ? Math.round(eqResult.setupUtil / Math.max(1, ops.length) * 10) / 10 : '—'}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{eqResult ? Math.round(eqResult.runUtil / Math.max(1, ops.length) * 10) / 10 : '—'}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
-              </TableRow>
-            );
-          })}
+          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => (
+            <TableRow key={m.opId}>
+              <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+              <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.opNumber}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.eqSetupUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.eqRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.repairUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.visits}</TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     );
@@ -1579,8 +1645,7 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const renderByLabor = () => {
     const lab = model.labor.find(l => l.id === selectedId);
     if (!lab) return <p className="text-sm text-muted-foreground text-center py-8">Select a labor group to view operation details.</p>;
-    const equipForLabor = model.equipment.filter(eq => eq.labor_group_id === lab.id);
-    const ops = model.operations.filter(o => equipForLabor.some(eq => eq.id === o.equip_id));
+    const ops = allMetrics.filter((m: any) => m.laborId === lab.id);
     return (
       <Table>
         <TableHeader><TableRow>
@@ -1588,21 +1653,31 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
           <TableHead className="font-mono text-xs">Operation</TableHead>
           <TableHead className="font-mono text-xs">Equipment</TableHead>
           <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Tended</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Waiting</TableHead>
           <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
-            const prod = model.products.find(p => p.id === op.product_id);
-            const eq = model.equipment.find(e => e.id === op.equip_id);
-            const pr = results.products.find(p => p.id === op.product_id);
-            const wipShare = pr ? (pr.wip / Math.max(1, model.operations.filter(o => o.product_id === op.product_id).length)) : 0;
+          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => {
+            const eqResult = results.equipment.find(e => e.name === m.equipName);
+            const eqModel = model.equipment.find(e => e.id === m.equipId);
+            const tended = eqResult ? Math.min(1, (eqResult.setupUtil + eqResult.runUtil) / 100) * (eqModel?.count || 1) : 0;
+            const waiting = eqResult ? (eqResult.waitLaborUtil / 100) * (eqModel?.count || 1) : 0;
             return (
-              <TableRow key={op.id}>
-                <TableCell className="font-mono text-xs">{prod?.name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
-                <TableCell className="font-mono text-xs">{eq?.name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
+              <TableRow key={m.opId}>
+                <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{Math.round(tended * 10) / 10}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{Math.round(waiting * 10) / 10}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
               </TableRow>
             );
           })}
@@ -1614,8 +1689,7 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const renderByProduct = () => {
     const prod = model.products.find(p => p.id === selectedId);
     if (!prod) return <p className="text-sm text-muted-foreground text-center py-8">Select a product to view operation details.</p>;
-    const ops = model.operations.filter(o => o.product_id === prod.id);
-    const pr = results.products.find(p => p.id === prod.id);
+    const ops = allMetrics.filter((m: any) => m.productId === prod.id);
     return (
       <Table>
         <TableHeader><TableRow>
@@ -1623,23 +1697,30 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
           <TableHead className="font-mono text-xs">Equipment</TableHead>
           <TableHead className="font-mono text-xs">Labor</TableHead>
           <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Setup</TableHead>
+          <TableHead className="font-mono text-xs text-right">Eq Run</TableHead>
+          <TableHead className="font-mono text-xs text-right">Wait Labor</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
+          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
           <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
-            const eq = model.equipment.find(e => e.id === op.equip_id);
-            const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
-            const wipShare = pr ? (pr.wip / Math.max(1, ops.length)) : 0;
-            return (
-              <TableRow key={op.id}>
-                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
-                <TableCell className="font-mono text-xs">{eq?.name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs">{lab?.name || '—'}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
-              </TableRow>
-            );
-          })}
+          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => (
+            <TableRow key={m.opId}>
+              <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+              <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
+              <TableCell className="font-mono text-xs">{m.laborName}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.eqSetupUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.eqRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     );
