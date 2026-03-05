@@ -472,6 +472,7 @@ export default function RunResults() {
       return;
     }
 
+    if (extRunMode === 'optimize_lots') {
       setAdvRunning(true);
       const selectedProducts = model.products.filter(p => optProducts.has(p.id));
       if (selectedProducts.length === 0) { setAdvRunning(false); return; }
