@@ -495,54 +495,156 @@ export default function RunResults() {
           <CardDescription>Select a calculation mode and run</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Mode Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {RUN_MODE_OPTIONS.map(opt => {
-              // Novice: hide util-only and product-inclusion entirely
-              if (opt.feature && userLevel === 'novice' && !canAccess(userLevel, opt.feature)) return null;
-              const Icon = opt.icon;
-              const isAdvancedOnly = opt.feature === 'product-inclusion' && userLevel !== 'advanced';
-              const isDisabled = isAdvancedOnly;
-              // Only Full Calculate card highlights when mode is 'full' (not Product Inclusion)
-              const selected = !isDisabled && (
-                (runMode === opt.mode && opt.label !== 'Product Inclusion') ||
-                (opt.label === 'Full Calculate' && runMode === 'full')
-              ) && !(opt.label === 'Full Calculate' && runMode !== 'full');
-              return (
-                <button
-                  key={opt.label}
-                  onClick={() => !isDisabled && setRunMode(opt.mode)}
-                  disabled={isDisabled}
-                  className={`text-left p-3 rounded-lg border-2 transition-all ${
-                    isDisabled
-                      ? 'border-border opacity-50 cursor-not-allowed'
-                      : selected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/40 hover:bg-accent/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
-                    {isAdvancedOnly && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced only</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
-                </button>
-              );
-            })}
+          {/* ── Standard Analysis ── */}
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Standard Analysis</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {STANDARD_MODES.map(opt => {
+                if (opt.mode === 'util_only' && userLevel === 'novice') return null;
+                return renderModeCard(opt);
+              })}
+            </div>
           </div>
+
+          {/* ── Scenario Analysis ── */}
+          {userLevel !== 'novice' && (
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {SCENARIO_MODES.map(opt => renderModeCard(opt, true))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Optimization ── */}
+          {userLevel !== 'novice' && (
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {OPTIMIZATION_MODES.map(opt => renderModeCard(opt, true))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Advanced Mode Config Panels ── */}
+          {isAdvancedMode && extRunMode === 'product_inclusion' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <Label className="text-sm font-medium">Select products to include:</Label>
+              <div className="space-y-1.5">
+                {model.products.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={piSelectedProducts.has(p.id)} onCheckedChange={(v) => {
+                      const next = new Set(piSelectedProducts);
+                      v ? next.add(p.id) : next.delete(p.id);
+                      setPiSelectedProducts(next);
+                    }} />
+                    <span className="font-mono">{p.name}</span>
+                    {p.demand > 0 && <span className="text-xs text-muted-foreground">({p.demand})</span>}
+                  </label>
+                ))}
+              </div>
+              <div><Label className="text-xs">Scenario Name</Label><Input value={piScenarioName} onChange={e => setPiScenarioName(e.target.value)} className="h-8 mt-1" /></div>
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'max_throughput' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Maximize throughput for</Label>
+                <Select value={mtProduct} onValueChange={v => { setMtProduct(v); setMtScenarioName(`Max Throughput — ${model.products.find(p=>p.id===v)?.name||''}`); }}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Scenario Name</Label><Input value={mtScenarioName} onChange={e => setMtScenarioName(e.target.value)} className="h-8 mt-1" /></div>
+              {mtResult && (
+                <div className="p-3 bg-success/10 border border-success/30 rounded-md">
+                  <p className="text-sm font-medium text-success">Max demand: {mtResult.demand} units</p>
+                  <p className="text-xs text-muted-foreground">Limiting: {mtResult.limitingResource}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'lot_size_range' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Product</Label>
+                <Select value={lsrProduct} onValueChange={setLsrProduct}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label className="text-xs">Min</Label><Input type="number" value={lsrMin} onChange={e => setLsrMin(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Max</Label><Input type="number" value={lsrMax} onChange={e => setLsrMax(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Step</Label><Input type="number" value={lsrStep} onChange={e => setLsrStep(+e.target.value)} className="h-8 mt-1" /></div>
+              </div>
+              {lsrResults.length > 0 && (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lsrResults}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="lotSize" label={{value:'Lot Size',position:'bottom'}} style={axisStyle} /><YAxis label={{value:'MCT',angle:-90,position:'insideLeft'}} style={axisStyle} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="mct" stroke="hsl(var(--primary))" strokeWidth={2} dot={{r:3}} /></LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'optimize_lots' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <Label className="text-sm font-medium">Select products to optimize:</Label>
+              <div className="flex gap-2 mb-2">
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setOptProducts(new Set(model.products.map(p=>p.id)))}>Select All</Button>
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setOptProducts(new Set())}>Deselect All</Button>
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {model.products.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={optProducts.has(p.id)} onCheckedChange={v => { const n = new Set(optProducts); v ? n.add(p.id) : n.delete(p.id); setOptProducts(n); }} />
+                    <span className="font-mono text-xs">{p.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">Lot: {p.lot_size}</span>
+                  </label>
+                ))}
+              </div>
+              {optResult && (
+                <div className="p-3 bg-success/10 border border-success/30 rounded-md space-y-2">
+                  <p className="text-sm font-medium text-success">WIP reduced by {optResult.wipReduction}%</p>
+                  <table className="w-full text-xs"><thead><tr className="text-muted-foreground"><th className="text-left">Product</th><th className="text-right">Old Lot</th><th className="text-right">New Lot</th></tr></thead>
+                    <tbody>{optResult.original.map((o,i) => <tr key={o.name}><td className="font-mono">{o.name}</td><td className="text-right">{o.lot}</td><td className="text-right font-semibold text-primary">{optResult.optimized[i]?.lot}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Progress bar for advanced runs */}
+          {advProgress && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{advProgress.label}</span>
+                <span>{advProgress.current}/{advProgress.total}</span>
+              </div>
+              <Progress value={(advProgress.current / advProgress.total) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Run Button */}
           <div className="flex items-center gap-4">
-            <Button size="lg" onClick={() => handleRun(runMode)} disabled={isRunning} className="gap-2 px-8">
-              {isRunning ? (
-                <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Calculating...</>
-              ) : (
-                <><Play className="h-4 w-4" /> {modeLabel}</>
-              )}
-            </Button>
+            {isAdvancedMode ? (
+              <Button size="lg" onClick={handleAdvancedRun} disabled={isRunning || advRunning} className="gap-2 px-8">
+                {advRunning ? (
+                  <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Running...</>
+                ) : (
+                  <><Play className="h-4 w-4" /> {modeLabel}</>
+                )}
+              </Button>
+            ) : (
+              <Button size="lg" onClick={() => handleRun(runMode)} disabled={isRunning} className="gap-2 px-8">
+                {isRunning ? (
+                  <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Calculating...</>
+                ) : (
+                  <><Play className="h-4 w-4" /> {modeLabel}</>
+                )}
+              </Button>
+            )}
             <span className="text-xs text-muted-foreground">on <span className="font-medium">{scenarioLabel}</span></span>
           </div>
 
