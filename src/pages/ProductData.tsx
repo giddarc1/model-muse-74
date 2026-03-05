@@ -69,6 +69,12 @@ export default function ProductData() {
 
   const opsCount = (productId: string) => model.operations.filter((o) => o.product_id === productId).length;
 
+  // Calculate scrap rate: sum of all routing % to SCRAP nodes for a product
+  const getScrapRate = (productId: string) => {
+    const routes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
+    return routes.reduce((sum, r) => sum + r.pct_routed, 0);
+  };
+
   return (
     <div className="p-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
