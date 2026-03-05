@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
-import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
