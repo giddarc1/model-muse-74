@@ -674,11 +674,17 @@ export default function ModelSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Restore Checkpoint</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace all current model data with the checkpoint from{' '}
-              <strong>{restoreVersionId && versions.find(v => v.id === restoreVersionId)
-                ? new Date(versions.find(v => v.id === restoreVersionId)!.created_at).toLocaleString()
-                : '...'}</strong>.
-              This cannot be undone. Are you sure?
+              {(() => {
+                const rv = restoreVersionId ? versions.find(v => v.id === restoreVersionId) : null;
+                return rv ? (
+                  <>
+                    Restore to checkpoint: <strong>"{rv.label || 'Unnamed'}"</strong> — saved on{' '}
+                    <strong>{new Date(rv.created_at).toLocaleString()}</strong>?
+                    <br /><br />
+                    This will replace all current model data. This cannot be undone.
+                  </>
+                ) : 'Loading…';
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -687,7 +693,33 @@ export default function ModelSettings() {
               disabled={isRestoring}
               onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
             >
-              {isRestoring ? 'Restoring...' : 'Restore'}
+              {isRestoring ? 'Restoring…' : 'Restore'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete checkpoint confirmation */}
+      <AlertDialog open={!!deleteVersionId} onOpenChange={(open) => !open && setDeleteVersionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Checkpoint</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const dv = deleteVersionId ? versions.find(v => v.id === deleteVersionId) : null;
+                return dv ? (
+                  <>Delete checkpoint <strong>"{dv.label || 'Unnamed'}"</strong>? This cannot be undone.</>
+                ) : 'Loading…';
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteVersionId && handleDeleteVersion(deleteVersionId)}
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
