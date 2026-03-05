@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, canAccess, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -566,7 +566,7 @@ function ScenarioEditorPanel({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Changes from Basecase ({scenario.changes.length})</h3>
           {/* 2C: Direct Edits Toggle - Advanced only */}
-          {canAccess(userLevel, 'inline-change-edit') && (
+          {canAccess(userLevel as UserLevel, 'inline-change-edit') && (
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Direct Edits</Label>
               <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
@@ -656,7 +656,7 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   activeScenarioId: string | null;
   model: any;
   onClose: () => void;
-  userLevel: string;
+  userLevel: UserLevel;
 }) {
   const [directEdits, setDirectEdits] = useState(false);
   const { updateChange, markNeedsRecalc } = useScenarioStore();

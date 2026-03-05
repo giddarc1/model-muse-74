@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { useSortableTable, type SortDir } from '@/hooks/useSortableTable';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { type CalcResults, type ProductResult, type EquipmentResult, calculate } from '@/lib/calculationEngine';
+import { type CalcResults, type ProductResult, type EquipmentResult, type LaborResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
-  TrendingUp, BarChart3, Settings2, Square, ChevronRight,
+  TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -139,6 +141,56 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
 
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
+
+/* ─── Sortable Table Header ─── */
+function SortHead({ label, sortKey, current, onSort, align = 'right' }: {
+  label: string; sortKey: string; current: { key: string; dir: SortDir };
+  onSort: (k: string) => void; align?: 'left' | 'right';
+}) {
+  const active = current.key === sortKey && current.dir !== 'default';
+  return (
+    <TableHead
+      className={`font-mono text-xs cursor-pointer select-none hover:text-foreground transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
+      onClick={() => onSort(sortKey)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active ? (
+          current.dir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-30" />
+        )}
+      </span>
+    </TableHead>
+  );
+}
+
+/* ─── Production Chart Data Builder ─── */
+function buildProductionData(results: CalcResults, model: any) {
+  return results.products.map(pr => {
+    const prod = model.products.find((p: any) => p.id === pr.id);
+    // Pieces used as components in other products
+    const usedInAssembly = model.ibom
+      .filter((e: any) => e.component_product_id === pr.id)
+      .reduce((sum: number, e: any) => {
+        const parent = results.products.find((p: any) => p.id === e.parent_product_id);
+        return sum + (parent ? parent.goodMade * (e.units_per_assy || 1) : 0);
+      }, 0);
+    // Shipped in assembly = demand fulfilled through parent assembly shipments
+    const shippedInAssembly = usedInAssembly > 0 ? usedInAssembly : 0;
+    const shipped = pr.goodShipped;
+    const scrapInProd = pr.scrap;
+    const total = shipped + usedInAssembly + scrapInProd;
+    return {
+      name: pr.name,
+      shipped: Math.round(shipped),
+      usedInAssembly: Math.round(usedInAssembly),
+      shippedInAssembly: Math.round(shippedInAssembly),
+      scrapInProduction: Math.round(scrapInProd),
+      total: Math.round(total),
+    };
+  });
+}
 
 // Extended run mode type for advanced modes
 type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'optimize_lots';
@@ -802,41 +854,7 @@ export default function RunResults() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Equipment Results Table</CardTitle></CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-mono text-xs">Equipment</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Count</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Setup %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Run %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Repair %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Wait Labor %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Total %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Idle %</TableHead>
-                      <TableHead className="font-mono text-xs">Labor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results!.equipment.map(eq => (
-                      <TableRow key={eq.id}>
-                        <TableCell className="font-mono font-medium">{eq.name}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.count}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.setupUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.runUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.repairUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{eq.waitLaborUtil}</TableCell>
-                        <TableCell className={`font-mono text-right font-medium ${eq.totalUtil > model.general.util_limit ? 'text-destructive' : ''}`}>{eq.totalUtil}</TableCell>
-                        <TableCell className="font-mono text-right text-muted-foreground">{eq.idle}</TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">{eq.laborGroup}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
 
             {/* Equipment WIP Chart */}
             {canAccess(userLevel, 'equip-wip-chart') && (
@@ -892,37 +910,7 @@ export default function RunResults() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Labor Results Table</CardTitle></CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-mono text-xs">Labor Group</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Count</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Setup %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Run %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Unavail %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Total %</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Idle %</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results!.labor.map(l => (
-                      <TableRow key={l.id}>
-                        <TableCell className="font-mono font-medium">{l.name}</TableCell>
-                        <TableCell className="font-mono text-right">{l.count}</TableCell>
-                        <TableCell className="font-mono text-right">{l.setupUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{l.runUtil}</TableCell>
-                        <TableCell className="font-mono text-right">{l.unavailPct}</TableCell>
-                        <TableCell className={`font-mono text-right font-medium ${l.totalUtil > model.general.util_limit ? 'text-destructive' : ''}`}>{l.totalUtil}</TableCell>
-                        <TableCell className="font-mono text-right text-muted-foreground">{l.idle}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
 
             {/* Labor Equipment Wait Chart */}
             {canAccess(userLevel, 'labor-wait-chart') && (
@@ -1014,6 +1002,9 @@ export default function RunResults() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            {/* Production Chart (2G) */}
+            <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
           </TabsContent>
 
           {/* Enhanced Summary Tab */}
@@ -1536,14 +1527,15 @@ function LaborWaitChart({ results, model }: { results: CalcResults; model: Model
 function OperDetailsTab({ model, results }: { model: Model; results: CalcResults }) {
   const [subTab, setSubTab] = useState<'equipment' | 'labor' | 'product'>('equipment');
   const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
 
   // Compute per-operation metrics
   const allMetrics = useMemo(() => {
-    const g = model.general;
-    const conv1 = Math.max(g.conv1, 0.001);
-    const conv2 = Math.max(g.conv2, 0.001);
-    const opsPerPeriod = conv1 * conv2;
-
     return model.operations.map(op => {
       const eq = model.equipment.find(e => e.id === op.equip_id);
       const prod = model.products.find(p => p.id === op.product_id);
@@ -1587,51 +1579,58 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
         pctAssigned: op.pct_assigned,
         eqSetupUtil: Math.round(eqSetupUtil * 10) / 10,
         eqRunUtil: Math.round(eqRunUtil * 10) / 10,
+        eqSetupTime: Math.round(eqSetupTime * 1000) / 1000,
+        eqRunTime: Math.round(eqRunTime * 1000) / 1000,
         waitLaborUtil: er?.waitLaborUtil || 0,
         repairUtil: er?.repairUtil || 0,
         labSetupUtil: Math.round(labSetupUtil * 10) / 10,
         labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
         wip: Math.round(wipShare * 10) / 10,
         mctAtOp: Math.round(mctAtOp * 10000) / 10000,
         visits: Math.round(visits * 10) / 10,
       };
     }).filter(Boolean) as any[];
-  }, [model, results]);
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
 
   const renderByEquipment = () => {
     const eq = model.equipment.find(e => e.id === selectedId);
     if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
-    const ops = allMetrics.filter((m: any) => m.equipId === eq.id);
+    const ops = allMetrics.filter((m: any) => m.equipId === eq.id).sort((a: any, b: any) => a.opNumber - b.opNumber);
     return (
       <Table>
         <TableHeader><TableRow>
-          <TableHead className="font-mono text-xs">Product</TableHead>
-          <TableHead className="font-mono text-xs">Operation</TableHead>
-          <TableHead className="font-mono text-xs text-right">Op #</TableHead>
-          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Setup</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Run</TableHead>
-          <TableHead className="font-mono text-xs text-right">Wait Labor</TableHead>
-          <TableHead className="font-mono text-xs text-right">Repair</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
-          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
-          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
-          <TableHead className="font-mono text-xs text-right">Visits/100</TableHead>
+          <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+          <SortHead label="Operation" sortKey="opName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+          <SortHead label="Op #" sortKey="opNumber" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label="% Assign" sortKey="pctAssigned" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Repair${unitSuffix}`} sortKey="repairUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label="WIP" sortKey="wip" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label="MCT at Op" sortKey="mctAtOp" current={eqSort.sort} onSort={eqSort.handleSort} />
+          <SortHead label="Visits/100" sortKey="visits" current={eqSort.sort} onSort={eqSort.handleSort} />
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => (
+          {eqSort.sorted.map((m: any) => (
             <TableRow key={m.opId}>
               <TableCell className="font-mono text-xs">{m.productName}</TableCell>
               <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.opNumber}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.eqSetupUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.eqRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.repairUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.visits}</TableCell>
@@ -1642,26 +1641,32 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
     );
   };
 
+  const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
+  const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
+  const prodOps = useMemo(() => allMetrics.filter((m: any) => m.productId === selectedId), [allMetrics, selectedId]);
+  const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
+  const labSort = useSortableTable(labOps, 'opNumber', 'asc');
+  const prodSort = useSortableTable(prodOps, 'opNumber', 'asc');
+
   const renderByLabor = () => {
     const lab = model.labor.find(l => l.id === selectedId);
     if (!lab) return <p className="text-sm text-muted-foreground text-center py-8">Select a labor group to view operation details.</p>;
-    const ops = allMetrics.filter((m: any) => m.laborId === lab.id);
     return (
       <Table>
         <TableHeader><TableRow>
-          <TableHead className="font-mono text-xs">Product</TableHead>
-          <TableHead className="font-mono text-xs">Operation</TableHead>
-          <TableHead className="font-mono text-xs">Equipment</TableHead>
-          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Tended</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Waiting</TableHead>
-          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
-          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
+          <SortHead label="Product" sortKey="productName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+          <SortHead label="Operation" sortKey="opName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+          <SortHead label="Equipment" sortKey="equipName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+          <SortHead label="% Assign" sortKey="pctAssigned" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label="Eq Tended" sortKey="eqRunUtil" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label="Eq Waiting" sortKey="waitLaborUtil" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label="WIP" sortKey="wip" current={labSort.sort} onSort={labSort.handleSort} />
+          <SortHead label="MCT at Op" sortKey="mctAtOp" current={labSort.sort} onSort={labSort.handleSort} />
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => {
+          {labSort.sorted.map((m: any) => {
             const eqResult = results.equipment.find(e => e.name === m.equipName);
             const eqModel = model.equipment.find(e => e.id === m.equipId);
             const tended = eqResult ? Math.min(1, (eqResult.setupUtil + eqResult.runUtil) / 100) * (eqModel?.count || 1) : 0;
@@ -1672,8 +1677,8 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
                 <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
                 <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
-                <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{Math.round(tended * 10) / 10}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{Math.round(waiting * 10) / 10}</TableCell>
                 <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
@@ -1689,34 +1694,33 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const renderByProduct = () => {
     const prod = model.products.find(p => p.id === selectedId);
     if (!prod) return <p className="text-sm text-muted-foreground text-center py-8">Select a product to view operation details.</p>;
-    const ops = allMetrics.filter((m: any) => m.productId === prod.id);
     return (
       <Table>
         <TableHeader><TableRow>
-          <TableHead className="font-mono text-xs">Operation</TableHead>
-          <TableHead className="font-mono text-xs">Equipment</TableHead>
-          <TableHead className="font-mono text-xs">Labor</TableHead>
-          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Setup</TableHead>
-          <TableHead className="font-mono text-xs text-right">Eq Run</TableHead>
-          <TableHead className="font-mono text-xs text-right">Wait Labor</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Setup</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lab Run</TableHead>
-          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
-          <TableHead className="font-mono text-xs text-right">MCT at Op</TableHead>
+          <SortHead label="Operation" sortKey="opName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+          <SortHead label="Equipment" sortKey="equipName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+          <SortHead label="Labor" sortKey="laborName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+          <SortHead label="% Assign" sortKey="pctAssigned" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label="WIP" sortKey="wip" current={prodSort.sort} onSort={prodSort.handleSort} />
+          <SortHead label="MCT at Op" sortKey="mctAtOp" current={prodSort.sort} onSort={prodSort.handleSort} />
         </TableRow></TableHeader>
         <TableBody>
-          {ops.sort((a: any, b: any) => a.opNumber - b.opNumber).map((m: any) => (
+          {prodSort.sorted.map((m: any) => (
             <TableRow key={m.opId}>
               <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
               <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
               <TableCell className="font-mono text-xs">{m.laborName}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.eqSetupUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.eqRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.labSetupUtil}</TableCell>
-              <TableCell className="font-mono text-xs text-right">{m.labRunUtil}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+              <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
               <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
             </TableRow>
@@ -1733,26 +1737,189 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
         <CardDescription>Per-operation breakdown by resource or product</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={subTab} onValueChange={(v) => { setSubTab(v as any); setSelectedId(''); }}>
+        <Tabs value={subTab} onValueChange={(v) => { setSubTab(v as any); setSelectedId(''); eqSort.reset(); labSort.reset(); prodSort.reset(); }}>
           <div className="flex items-center justify-between mb-4">
             <TabsList className="h-8">
               <TabsTrigger value="equipment" className="text-xs h-6">By Equipment</TabsTrigger>
               <TabsTrigger value="labor" className="text-xs h-6">By Labor</TabsTrigger>
               <TabsTrigger value="product" className="text-xs h-6">By Product</TabsTrigger>
             </TabsList>
-            <Select value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder={`Select ${subTab}...`} /></SelectTrigger>
-              <SelectContent>
-                {subTab === 'equipment' && model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
-                {subTab === 'labor' && model.labor.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
-                {subTab === 'product' && model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3">
+              <Button
+                variant={showTimeUnits ? 'secondary' : 'outline'}
+                size="sm"
+                className="text-xs gap-1 h-7"
+                onClick={() => setShowTimeUnits(!showTimeUnits)}
+              >
+                <Clock className="h-3 w-3" />
+                {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+              </Button>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder={`Select ${subTab}...`} /></SelectTrigger>
+                <SelectContent>
+                  {subTab === 'equipment' && model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+                  {subTab === 'labor' && model.labor.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                  {subTab === 'product' && model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <TabsContent value="equipment" className="p-0 overflow-x-auto">{renderByEquipment()}</TabsContent>
           <TabsContent value="labor" className="p-0 overflow-x-auto">{renderByLabor()}</TabsContent>
           <TabsContent value="product" className="p-0 overflow-x-auto">{renderByProduct()}</TabsContent>
         </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Equipment Results Table (sortable) ─── */
+function EquipmentResultsTable({ equipment, utilLimit }: { equipment: EquipmentResult[]; utilLimit: number }) {
+  const { sorted, sort, handleSort } = useSortableTable(equipment, 'totalUtil', 'desc');
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Equipment Results Table</CardTitle></CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader><TableRow>
+            <SortHead label="Equipment" sortKey="name" current={sort} onSort={handleSort} align="left" />
+            <SortHead label="Count" sortKey="count" current={sort} onSort={handleSort} />
+            <SortHead label="Setup %" sortKey="setupUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Run %" sortKey="runUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Repair %" sortKey="repairUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Wait Labor %" sortKey="waitLaborUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Total %" sortKey="totalUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Idle %" sortKey="idle" current={sort} onSort={handleSort} />
+            <SortHead label="Labor" sortKey="laborGroup" current={sort} onSort={handleSort} align="left" />
+          </TableRow></TableHeader>
+          <TableBody>
+            {sorted.map(eq => (
+              <TableRow key={eq.id}>
+                <TableCell className="font-mono font-medium">{eq.name}</TableCell>
+                <TableCell className="font-mono text-right">{eq.count}</TableCell>
+                <TableCell className="font-mono text-right">{eq.setupUtil}</TableCell>
+                <TableCell className="font-mono text-right">{eq.runUtil}</TableCell>
+                <TableCell className="font-mono text-right">{eq.repairUtil}</TableCell>
+                <TableCell className="font-mono text-right">{eq.waitLaborUtil}</TableCell>
+                <TableCell className={`font-mono text-right font-medium ${eq.totalUtil > utilLimit ? 'text-destructive' : ''}`}>{eq.totalUtil}</TableCell>
+                <TableCell className="font-mono text-right text-muted-foreground">{eq.idle}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">{eq.laborGroup}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Labor Results Table (sortable) ─── */
+function LaborResultsTable({ labor, utilLimit }: { labor: LaborResult[]; utilLimit: number }) {
+  const { sorted, sort, handleSort } = useSortableTable(labor, 'totalUtil', 'desc');
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Labor Results Table</CardTitle></CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader><TableRow>
+            <SortHead label="Labor Group" sortKey="name" current={sort} onSort={handleSort} align="left" />
+            <SortHead label="Count" sortKey="count" current={sort} onSort={handleSort} />
+            <SortHead label="Setup %" sortKey="setupUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Run %" sortKey="runUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Unavail %" sortKey="unavailPct" current={sort} onSort={handleSort} />
+            <SortHead label="Total %" sortKey="totalUtil" current={sort} onSort={handleSort} />
+            <SortHead label="Idle %" sortKey="idle" current={sort} onSort={handleSort} />
+          </TableRow></TableHeader>
+          <TableBody>
+            {sorted.map(l => (
+              <TableRow key={l.id}>
+                <TableCell className="font-mono font-medium">{l.name}</TableCell>
+                <TableCell className="font-mono text-right">{l.count}</TableCell>
+                <TableCell className="font-mono text-right">{l.setupUtil}</TableCell>
+                <TableCell className="font-mono text-right">{l.runUtil}</TableCell>
+                <TableCell className="font-mono text-right">{l.unavailPct}</TableCell>
+                <TableCell className={`font-mono text-right font-medium ${l.totalUtil > utilLimit ? 'text-destructive' : ''}`}>{l.totalUtil}</TableCell>
+                <TableCell className="font-mono text-right text-muted-foreground">{l.idle}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Production Chart (2G) ─── */
+const prodChartColors = {
+  shipped: 'hsl(217, 91%, 60%)',
+  usedInAssembly: 'hsl(142, 71%, 45%)',
+  shippedInAssembly: 'hsl(38, 92%, 50%)',
+  scrapInProduction: 'hsl(0, 72%, 51%)',
+};
+
+function ProductionChart({ results, model, isMultiScenario, chartScenarios }: {
+  results: CalcResults; model: any; isMultiScenario: boolean; chartScenarios: ScenarioEntry[];
+}) {
+  const [showTable, setShowTable] = useState(false);
+  const data = useMemo(() => buildProductionData(results, model), [results, model]);
+  const { sorted, sort, handleSort } = useSortableTable(data, 'total', 'desc');
+
+  if (data.length === 0) return (
+    <Card><CardContent className="py-12 text-center"><BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" /><p className="text-sm text-muted-foreground">Run the model to see production breakdown.</p></CardContent></Card>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Production Chart</CardTitle>
+            <CardDescription>Breakdown of production by disposition</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setShowTable(!showTable)}>
+            {showTable ? 'Show Chart' : 'Show as Table'}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {showTable ? (
+          <Table>
+            <TableHeader><TableRow>
+              <SortHead label="Product" sortKey="name" current={sort} onSort={handleSort} align="left" />
+              <SortHead label="Shipped" sortKey="shipped" current={sort} onSort={handleSort} />
+              <SortHead label="Used in Assy" sortKey="usedInAssembly" current={sort} onSort={handleSort} />
+              <SortHead label="Shipped in Assy" sortKey="shippedInAssembly" current={sort} onSort={handleSort} />
+              <SortHead label="Scrap" sortKey="scrapInProduction" current={sort} onSort={handleSort} />
+              <SortHead label="Total" sortKey="total" current={sort} onSort={handleSort} />
+            </TableRow></TableHeader>
+            <TableBody>
+              {sorted.map(d => (
+                <TableRow key={d.name}>
+                  <TableCell className="font-mono font-medium">{d.name}</TableCell>
+                  <TableCell className="font-mono text-right">{d.shipped.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-right">{d.usedInAssembly.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-right">{d.shippedInAssembly.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-right">{d.scrapInProduction.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-right font-medium">{d.total.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="shipped" stackId="a" fill={prodChartColors.shipped} name="Shipped Production" />
+              <Bar dataKey="usedInAssembly" stackId="a" fill={prodChartColors.usedInAssembly} name="Used in Assembly" />
+              <Bar dataKey="shippedInAssembly" stackId="a" fill={prodChartColors.shippedInAssembly} name="Shipped in Assembly" />
+              <Bar dataKey="scrapInProduction" stackId="a" fill={prodChartColors.scrapInProduction} name="Scrap in Production" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );
