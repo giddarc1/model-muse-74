@@ -225,7 +225,7 @@ export function createDemoModel(): Model {
     ],
     operations: [
       // HUB1
-      { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8 },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3 },
