@@ -134,8 +134,26 @@ export default function OperationsRouting() {
     return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
   };
 
+  // Helper to track routing changes in active scenario
+  const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
+    updateRouting(model.id, routeId, { [field]: value });
+    if (activeScenarioId && activeScenario) {
+      const productName = selectedProduct?.name || '';
+      const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
+      applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
+    }
+  };
+
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Operations & Routing</h1>
