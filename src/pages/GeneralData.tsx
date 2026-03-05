@@ -10,7 +10,13 @@ export default function GeneralData() {
   const model = useModelStore((s) => s.getActiveModel());
   const updateGeneral = useModelStore((s) => s.updateGeneral);
 
-  if (!model) return null;
+  if (!model) return (
+    <div className="p-6 max-w-3xl space-y-4">
+      <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-72 bg-muted animate-pulse rounded" />
+      <div className="h-48 bg-muted animate-pulse rounded-lg mt-6" />
+    </div>
+  );
 
   const g = model.general;
   const update = (data: Partial<typeof g>) => updateGeneral(model.id, data);

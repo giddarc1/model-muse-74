@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users } from 'lucide-react';
 
 export default function LaborData() {
   const model = useModelStore((s) => s.getActiveModel());
@@ -17,7 +17,13 @@ export default function LaborData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
 
-  if (!model) return null;
+  if (!model) return (
+    <div className="p-6 space-y-4">
+      <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+      <div className="h-64 bg-muted animate-pulse rounded-lg" />
+    </div>
+  );
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -58,9 +64,11 @@ export default function LaborData() {
 
       {model.labor.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <p>No labor groups defined yet.</p>
-            <Button className="mt-4" onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-1" /> Add First Labor Group</Button>
+          <CardContent className="py-16 text-center">
+            <Users className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-muted-foreground font-medium mb-1">No labor groups defined</p>
+            <p className="text-sm text-muted-foreground/70 mb-4">Add labor groups to define worker pools for your operations.</p>
+            <Button onClick={() => setShowAdd(true)} className="gap-1"><Plus className="h-4 w-4" /> Add First Labor Group</Button>
           </CardContent>
         </Card>
       ) : viewMode === 'table' ? (

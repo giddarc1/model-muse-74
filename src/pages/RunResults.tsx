@@ -203,7 +203,13 @@ export default function RunResults() {
 
   const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
 
-  if (!model) return null;
+  if (!model) return (
+    <div className="p-6 space-y-4">
+      <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+      <div className="h-48 bg-muted animate-pulse rounded-lg mt-4" />
+    </div>
+  );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
   const modeLabel = runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization';
@@ -381,6 +387,16 @@ export default function RunResults() {
       )}
 
       {/* Results Area */}
+      {!hasRun && (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Play className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-muted-foreground font-medium mb-1">No results yet</p>
+            <p className="text-sm text-muted-foreground/70 mb-4">Select a run mode above and click Run to calculate model results.</p>
+          </CardContent>
+        </Card>
+      )}
+
       {hasRun && (
         <Tabs defaultValue="equipment">
           <TabsList>
