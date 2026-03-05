@@ -566,7 +566,7 @@ function ScenarioEditorPanel({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Changes from Basecase ({scenario.changes.length})</h3>
           {/* 2C: Direct Edits Toggle - Advanced only */}
-          {canAccess(userLevel, 'inline-change-edit') && (
+          {canAccess(userLevel as UserLevel, 'inline-change-edit') && (
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Direct Edits</Label>
               <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
