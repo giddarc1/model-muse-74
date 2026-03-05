@@ -673,6 +673,30 @@ export default function RunResults() {
             </div>
           )}
 
+          {isAdvancedMode && extRunMode === 'tbatch_range' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Product</Label>
+                <Select value={tbrProduct} onValueChange={setTbrProduct}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} (Lot: {p.lot_size})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label className="text-xs">Min</Label><Input type="number" value={tbrMin} onChange={e => setTbrMin(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Max</Label><Input type="number" value={tbrMax} onChange={e => setTbrMax(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Step</Label><Input type="number" value={tbrStep} onChange={e => setTbrStep(+e.target.value)} className="h-8 mt-1" /></div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Use -1 for full lot (no transfer batching). Values ≥ 1 enable overlapping operations.</p>
+              {tbrResults.length > 0 && (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={tbrResults}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="tbatch" label={{value:'Transfer Batch Size',position:'bottom'}} style={axisStyle} /><YAxis label={{value:'MCT',angle:-90,position:'insideLeft'}} style={axisStyle} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="mct" stroke="hsl(var(--primary))" strokeWidth={2} dot={{r:3}} /></LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
           {isAdvancedMode && extRunMode === 'optimize_lots' && model && (
             <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
               <Label className="text-sm font-medium">Select products to optimize:</Label>
