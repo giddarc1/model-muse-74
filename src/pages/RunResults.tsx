@@ -1127,21 +1127,22 @@ function NormalSummary({ results, model, scenarioResults }: {
   const renderProductRow = (row: ProductResult) => (
     <TableRow key={row.id}>
       <TableCell className="font-mono font-medium">{row.name}</TableCell>
-      <TableCell className="font-mono text-right">{row.demand.toLocaleString()}</TableCell>
-      <TableCell className="font-mono text-right">{row.lotSize}</TableCell>
       <TableCell className="font-mono text-right">{row.goodMade.toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right">{row.goodShipped.toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right">{row.started.toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right">{row.scrap > 0 ? row.scrap.toLocaleString() : '—'}</TableCell>
       <TableCell className="font-mono text-right">{row.wip}</TableCell>
       <TableCell className="font-mono text-right font-medium">{row.mct.toFixed(4)}</TableCell>
       {hasScenarios && scenarioResults.map(sr => {
         const sp = sr.results.products.find(p => p.id === row.id);
-        const diff = sp ? sp.mct - row.mct : 0;
         return (
-          <TableCell key={sr.id} className={`font-mono text-right text-xs ${diff < 0 ? 'text-success' : diff > 0 ? 'text-destructive' : ''}`}>
-            {sp?.mct.toFixed(4) || '—'}
-            {diff !== 0 && <span className="ml-1 text-[10px]">({diff > 0 ? '+' : ''}{diff.toFixed(4)})</span>}
-          </TableCell>
+          <React.Fragment key={sr.id}>
+            <TableCell className="font-mono text-right text-xs">{sp?.wip ?? '—'}</TableCell>
+            <TableCell className={`font-mono text-right text-xs ${sp && sp.mct < row.mct ? 'text-success' : sp && sp.mct > row.mct ? 'text-destructive' : ''}`}>
+              {sp?.mct.toFixed(4) || '—'}
+              {sp && sp.mct !== row.mct && <span className="ml-1 text-[10px]">({(sp.mct - row.mct) > 0 ? '+' : ''}{(sp.mct - row.mct).toFixed(4)})</span>}
+            </TableCell>
+          </React.Fragment>
         );
       })}
     </TableRow>
