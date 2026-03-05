@@ -687,34 +687,40 @@ export type Database = {
           created_at: string | null
           description: string | null
           family_id: string | null
+          family_position: number | null
           id: string
           is_basecase: boolean | null
           model_id: string
           name: string
           status: string | null
           updated_at: string | null
+          whatif_family_id: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          family_position?: number | null
           id?: string
           is_basecase?: boolean | null
           model_id: string
           name: string
           status?: string | null
           updated_at?: string | null
+          whatif_family_id?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
           family_id?: string | null
+          family_position?: number | null
           id?: string
           is_basecase?: boolean | null
           model_id?: string
           name?: string
           status?: string | null
           updated_at?: string | null
+          whatif_family_id?: string | null
         }
         Relationships: [
           {
