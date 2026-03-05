@@ -229,11 +229,26 @@ export default function ProductData() {
                       <>
                         <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
                         <div>
+                          <Label className="text-xs">Variability Factor</Label>
+                          <Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} />
+                          <span className="text-[10px] text-muted-foreground">Effective: {model.general.var_prod}% × {p.var_factor} = {(model.general.var_prod * p.var_factor).toFixed(1)}%</span>
+                        </div>
+                        <div>
                           <div className="flex items-center gap-1">
                             <Label className="text-xs">Group / Dept / Area</Label>
                             <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Products with the same Group label will be subtotalled together in the Output Summary.</TooltipContent></Tooltip></TooltipProvider>
                           </div>
                           <Input className="h-8" value={p.dept_code} placeholder="e.g. Hubs, Components" onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} />
+                        </div>
+                        {/* Prod1-4 parameter variables */}
+                        <div className="pt-2 border-t border-border">
+                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
+                          <div className="grid grid-cols-4 gap-3 mt-1.5">
+                            <div><Label className="text-xs">{model.param_names.prod1_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod1} onChange={(e) => handleCellChange(p.id, 'prod1', +e.target.value)} /></div>
+                            <div><Label className="text-xs">{model.param_names.prod2_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod2} onChange={(e) => handleCellChange(p.id, 'prod2', +e.target.value)} /></div>
+                            <div><Label className="text-xs">{model.param_names.prod3_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod3} onChange={(e) => handleCellChange(p.id, 'prod3', +e.target.value)} /></div>
+                            <div><Label className="text-xs">{model.param_names.prod4_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod4} onChange={(e) => handleCellChange(p.id, 'prod4', +e.target.value)} /></div>
+                          </div>
                         </div>
                       </>
                     )}
