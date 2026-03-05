@@ -12,8 +12,8 @@ import { Check, X } from 'lucide-react';
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs">
-      {met ? <Check className="h-3.5 w-3.5 text-green-500" /> : <X className="h-3.5 w-3.5 text-destructive" />}
-      <span className={met ? 'text-green-600' : 'text-muted-foreground'}>{label}</span>
+      {met ? <Check className="h-3.5 w-3.5 text-primary" /> : <X className="h-3.5 w-3.5 text-destructive" />}
+      <span className={met ? 'text-primary' : 'text-muted-foreground'}>{label}</span>
     </div>
   );
 }
