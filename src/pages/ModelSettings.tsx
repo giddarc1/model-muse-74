@@ -89,9 +89,25 @@ export default function ModelSettings() {
       .from('model_versions')
       .select('id, label, created_at')
       .eq('model_id', model.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('created_at', { ascending: false });
     setVersions((data as Version[]) || []);
+  };
+
+  const handleRenameVersion = async (versionId: string) => {
+    if (!editingVersionName.trim()) return;
+    const { error } = await supabase.from('model_versions').update({ label: editingVersionName.trim() }).eq('id', versionId);
+    if (error) { toast.error('Failed to rename checkpoint'); return; }
+    toast.success('Checkpoint renamed');
+    setEditingVersionId(null);
+    loadVersions();
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    const { error } = await supabase.from('model_versions').delete().eq('id', versionId);
+    if (error) { toast.error('Failed to delete checkpoint'); return; }
+    toast.success('Checkpoint deleted');
+    setDeleteVersionId(null);
+    loadVersions();
   };
 
   if (!model) return null;
