@@ -243,22 +243,35 @@ export default function RunResults() {
           {/* Mode Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {RUN_MODE_OPTIONS.map(opt => {
-              if (opt.feature && !canAccess(userLevel, opt.feature)) return null;
+              // Novice: hide util-only and product-inclusion entirely
+              if (opt.feature && userLevel === 'novice' && !canAccess(userLevel, opt.feature)) return null;
               const Icon = opt.icon;
-              const isSelected = runMode === opt.mode && (opt.label !== 'Product Inclusion' || runMode === 'full');
+              const isAdvancedOnly = opt.feature === 'product-inclusion' && userLevel !== 'advanced';
+              const isDisabled = isAdvancedOnly;
+              // Only Full Calculate card highlights when mode is 'full' (not Product Inclusion)
+              const selected = !isDisabled && (
+                (runMode === opt.mode && opt.label !== 'Product Inclusion') ||
+                (opt.label === 'Full Calculate' && runMode === 'full')
+              ) && !(opt.label === 'Full Calculate' && runMode !== 'full');
               return (
                 <button
                   key={opt.label}
-                  onClick={() => setRunMode(opt.mode)}
+                  onClick={() => !isDisabled && setRunMode(opt.mode)}
+                  disabled={isDisabled}
                   className={`text-left p-3 rounded-lg border-2 transition-all ${
-                    isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/40 hover:bg-accent/30'
+                    isDisabled
+                      ? 'border-border opacity-50 cursor-not-allowed'
+                      : selected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/40 hover:bg-accent/30'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className={`text-sm font-medium ${isSelected ? 'text-primary' : ''}`}>{opt.label}</span>
+                    <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
+                    {isAdvancedOnly && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced only</Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
                 </button>
