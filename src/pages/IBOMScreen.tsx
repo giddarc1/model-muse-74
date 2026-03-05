@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -30,7 +31,6 @@ export default function IBOMScreen() {
   const [selectedAllowable, setSelectedAllowable] = useState('');
   const [selectedComponent, setSelectedComponent] = useState('');
 
-  // Build tree from ibom entries
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
     if (!model || visited.has(parentId)) return [];
     const entries = model.ibom.filter((e) => e.parent_product_id === parentId);
@@ -48,7 +48,6 @@ export default function IBOMScreen() {
     });
   }, [model]);
 
-  // Get all descendants of a product (for circular reference prevention)
   const getDescendants = useCallback((productId: string, visited: Set<string> = new Set()): Set<string> => {
     if (!model || visited.has(productId)) return visited;
     visited.add(productId);
@@ -57,7 +56,6 @@ export default function IBOMScreen() {
     return visited;
   }, [model]);
 
-  // Get all ancestors of a product
   const getAncestors = useCallback((productId: string, visited: Set<string> = new Set()): Set<string> => {
     if (!model || visited.has(productId)) return visited;
     visited.add(productId);
@@ -71,21 +69,41 @@ export default function IBOMScreen() {
     return buildTree(viewAssemblyId, 0, new Set());
   }, [viewAssemblyId, buildTree]);
 
-  // Current components of editParent
+  // 2E: Compute Units / Final Assembly for each component
+  const unitsPerFinalAssy = useMemo(() => {
+    if (!model || !viewAssemblyId) return new Map<string, number>();
+    const result = new Map<string, number>();
+    
+    function traverse(parentId: string, multiplier: number, visited: Set<string>) {
+      if (visited.has(parentId)) return;
+      const nextVisited = new Set(visited);
+      nextVisited.add(parentId);
+      const entries = model!.ibom.filter(e => e.parent_product_id === parentId);
+      entries.forEach(e => {
+        const cumulative = multiplier * e.units_per_assy;
+        const existing = result.get(e.component_product_id) || 0;
+        result.set(e.component_product_id, existing + cumulative);
+        traverse(e.component_product_id, cumulative, nextVisited);
+      });
+    }
+    
+    traverse(viewAssemblyId, 1, new Set());
+    return result;
+  }, [model, viewAssemblyId]);
+
   const currentComponents = useMemo(() => {
     if (!model || !editParentId) return [];
     return model.ibom.filter((e) => e.parent_product_id === editParentId);
   }, [model, editParentId]);
 
-  // Allowable components (excludes: self, ancestors, anything already added, anything that would cause circular ref)
   const allowableProducts = useMemo(() => {
     if (!model || !editParentId) return [];
     const currentCompIds = new Set(currentComponents.map((c) => c.component_product_id));
     const ancestors = getAncestors(editParentId);
     return model.products.filter((p) => {
-      if (p.id === editParentId) return false; // can't be own component
-      if (currentCompIds.has(p.id)) return false; // already a component
-      if (ancestors.has(p.id)) return false; // would create circular ref
+      if (p.id === editParentId) return false;
+      if (currentCompIds.has(p.id)) return false;
+      if (ancestors.has(p.id)) return false;
       return true;
     });
   }, [model, editParentId, currentComponents, getAncestors]);
@@ -146,11 +164,12 @@ export default function IBOMScreen() {
     const key = `${parentKey}-${node.productId}-${index}`;
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedNodes.has(key);
+    const ufa = unitsPerFinalAssy.get(node.productId);
 
     return (
       <div key={key}>
         <div
-          className={`flex items-center gap-2 py-1.5 px-2 hover:bg-muted/50 rounded cursor-pointer text-sm`}
+          className="flex items-center gap-2 py-1.5 px-2 hover:bg-muted/50 rounded cursor-pointer text-sm"
           style={{ paddingLeft: `${node.depth * 20 + 8}px` }}
           onClick={() => hasChildren && toggleExpand(key)}
         >
@@ -163,15 +182,17 @@ export default function IBOMScreen() {
           <Badge variant="secondary" className="text-xs font-mono h-5 px-1.5">
             ×{node.unitsPerAssy}
           </Badge>
+          {ufa !== undefined && (
+            <span className="text-[10px] text-muted-foreground italic ml-auto font-mono" title="Units / Final Assembly">
+              {ufa} / final
+            </span>
+          )}
         </div>
         {hasChildren && isExpanded && node.children.map((child, i) => renderTreeNode(child, key, i))}
       </div>
     );
   };
 
-  // Products that are assemblies (have components)
-  const assemblies = model.products.filter((p) => model.ibom.some((e) => e.parent_product_id === p.id));
-  // All products can be parents
   const allProducts = model.products;
 
   return (
@@ -212,13 +233,22 @@ export default function IBOMScreen() {
                   <Network className="h-4 w-4 text-primary" />
                   <span className="font-mono">{prodName(viewAssemblyId)}</span>
                   <Badge className="text-xs h-5">Assembly</Badge>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground ml-auto cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs text-xs">
+                        <p>"Units / Final Assy" shows total units of each component needed per 1 good final assembly across all IBOM levels. Scrap is excluded.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 {tree.length === 0 ? (
                   <p className="text-sm text-muted-foreground px-2 py-4">No components defined for this product.</p>
                 ) : (
                   <>
                     <Button variant="ghost" size="sm" className="text-xs mb-1" onClick={() => {
-                      // Expand all
                       const allKeys = new Set<string>();
                       const collectKeys = (nodes: TreeNode[], parentKey: string) => {
                         nodes.forEach((n, i) => {
@@ -232,6 +262,48 @@ export default function IBOMScreen() {
                     {tree.map((node, i) => renderTreeNode(node, 'root', i))}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Units / Final Assembly Table */}
+            {viewAssemblyId && unitsPerFinalAssy.size > 0 && (
+              <div className="mt-4">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                  Units / Final Assembly
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3 w-3 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs">
+                        Read-only. Units of this component needed per 1 good final assembly, accounting for all IBOM levels. Scrap is excluded.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-mono text-xs">Component</TableHead>
+                      <TableHead className="font-mono text-xs text-right">Units/Assy</TableHead>
+                      <TableHead className="font-mono text-xs text-right">
+                        Units / Final Assy
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...unitsPerFinalAssy.entries()].map(([prodId, qty]) => {
+                      const ibomEntry = model.ibom.find(e => e.component_product_id === prodId);
+                      return (
+                        <TableRow key={prodId}>
+                          <TableCell className="font-mono text-xs">{prodName(prodId)}</TableCell>
+                          <TableCell className="font-mono text-xs text-right">{ibomEntry?.units_per_assy ?? '—'}</TableCell>
+                          <TableCell className="font-mono text-xs text-right italic text-muted-foreground bg-muted/30">{qty}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
@@ -256,7 +328,6 @@ export default function IBOMScreen() {
 
             {editParentId && (
               <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
-                {/* Current Components */}
                 <div>
                   <Label className="text-xs mb-1.5 block">Current Components</Label>
                   <div className="border rounded-md min-h-[200px] max-h-[320px] overflow-y-auto">
@@ -296,7 +367,6 @@ export default function IBOMScreen() {
                   </div>
                 </div>
 
-                {/* Arrow Buttons */}
                 <div className="flex flex-col gap-1.5 pt-8">
                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleAddOne} disabled={!selectedAllowable} title="Add one">
                     <ChevronLeft className="h-4 w-4" />
@@ -312,7 +382,6 @@ export default function IBOMScreen() {
                   </Button>
                 </div>
 
-                {/* Allowable Components */}
                 <div>
                   <Label className="text-xs mb-1.5 block">Allowable Components</Label>
                   <div className="border rounded-md min-h-[200px] max-h-[320px] overflow-y-auto">

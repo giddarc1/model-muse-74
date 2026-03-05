@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -17,15 +21,20 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw,
-  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, ChevronRight,
-  Users, Wrench, Package,
+  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, ChevronRight, ChevronDown,
+  Users, Wrench, Package, AlertTriangle, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { scenarioDb } from '@/lib/scenarioDb';
 
 export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
   const model = useModelStore(s => s.models.find(m => m.id === modelId));
+  const { userLevel } = useUserLevelStore();
 
   const allScenarios = useScenarioStore(s => s.scenarios);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
@@ -33,12 +42,11 @@ export default function WhatIfStudio() {
   const {
     setActiveScenario, createScenario, duplicateScenario, renameScenario,
     updateScenarioDescription, deleteScenario, toggleDisplayScenario,
-    applyScenarioChange, removeChange, promoteToBasecase, getScenariosForModel,
-    markCalculated,
+    applyScenarioChange, removeChange, promoteToBasecase, markCalculated,
+    updateChange,
   } = useScenarioStore();
   const { setResults } = useResultsStore();
 
-  // Lazy-init demo scenarios
   const [initialized, setInitialized] = useState(false);
   const loadScenariosFromDb = useScenarioStore(s => s.loadScenariosFromDb);
   useEffect(() => {
@@ -51,13 +59,19 @@ export default function WhatIfStudio() {
   const scenarios = allScenarios.filter(sc => sc.modelId === modelId);
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
 
-
-
   const [newName, setNewName] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [showFamilyModal, setShowFamilyModal] = useState(false);
+  const [familyParentId, setFamilyParentId] = useState('');
+  const [familyCount, setFamilyCount] = useState(11);
+  const [familyTemplate, setFamilyTemplate] = useState('{N}');
+  const [familyStartYear, setFamilyStartYear] = useState(2025);
+  const [familyStartMonth, setFamilyStartMonth] = useState(0);
+  const [showFamilyRecords, setShowFamilyRecords] = useState(false);
+  const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
 
   if (!model || !modelId) return null;
 
@@ -71,7 +85,6 @@ export default function WhatIfStudio() {
   };
 
   const handleRunScenario = (scenario: Scenario) => {
-    // Calculate basecase first if not already done
     const basecaseResults = useResultsStore.getState().getResults('basecase');
     if (!basecaseResults) {
       const bcResults = calculate(model, null);
@@ -84,10 +97,8 @@ export default function WhatIfStudio() {
   };
 
   const handleRecalcAll = () => {
-    // Calculate basecase
     const bcResults = calculate(model, null);
     setResults('basecase', bcResults);
-    // Calculate all scenarios for this model
     let count = 0;
     scenarios.forEach(sc => {
       const results = calculate(model, sc);
@@ -112,6 +123,164 @@ export default function WhatIfStudio() {
     toast.success('Scenario renamed');
   };
 
+  // Family helpers
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const needsStartValue = familyTemplate.includes('{YYYY}') || familyTemplate.includes('{MMM}');
+
+  const familyPreview = useMemo(() => {
+    const names: string[] = [];
+    for (let i = 0; i < Math.min(3, familyCount); i++) {
+      let name = familyTemplate;
+      name = name.replace(/{N}/g, String(i + 1));
+      const monthIdx = (familyStartMonth + i) % 12;
+      const yearOffset = Math.floor((familyStartMonth + i) / 12);
+      name = name.replace(/{MMM}/g, months[monthIdx]);
+      name = name.replace(/{YYYY}/g, String(familyStartYear + yearOffset));
+      names.push(name);
+    }
+    if (familyCount > 3) names.push('...');
+    return names;
+  }, [familyTemplate, familyCount, familyStartYear, familyStartMonth]);
+
+  const handleCreateFamily = async () => {
+    if (!familyParentId) return;
+    const parentSc = scenarios.find(s => s.id === familyParentId);
+    if (!parentSc) return;
+    const familyId = crypto.randomUUID();
+    // Update parent scenario with family info
+    // Note: we store familyId in the scenario's familyId field via store
+    useScenarioStore.getState().setScenarios(
+      allScenarios.map(s => s.id === familyParentId ? { ...s, familyId, } : s)
+    );
+    // Create child scenarios
+    for (let i = 0; i < familyCount; i++) {
+      let name = familyTemplate;
+      name = name.replace(/{N}/g, String(i + 1));
+      const monthIdx = (familyStartMonth + i) % 12;
+      const yearOffset = Math.floor((familyStartMonth + i) / 12);
+      name = name.replace(/{MMM}/g, months[monthIdx]);
+      name = name.replace(/{YYYY}/g, String(familyStartYear + yearOffset));
+      const newId = await createScenario(modelId, name);
+      // Copy changes from parent
+      parentSc.changes.forEach(c => {
+        applyScenarioChange(newId, c.dataType, c.entityId, c.entityName, c.field, c.fieldLabel, c.whatIfValue);
+      });
+      // Set family id
+      useScenarioStore.getState().setScenarios(
+        useScenarioStore.getState().scenarios.map(s => s.id === newId ? { ...s, familyId } : s)
+      );
+    }
+    // Also set parent's familyId
+    useScenarioStore.getState().setScenarios(
+      useScenarioStore.getState().scenarios.map(s => s.id === familyParentId ? { ...s, familyId } : s)
+    );
+    setShowFamilyModal(false);
+    toast.success(`Created family with ${familyCount} scenarios`);
+  };
+
+  // Group scenarios by family
+  const familyGroups = useMemo(() => {
+    const groups = new Map<string, Scenario[]>();
+    const ungrouped: Scenario[] = [];
+    scenarios.forEach(sc => {
+      if (sc.familyId) {
+        if (!groups.has(sc.familyId)) groups.set(sc.familyId, []);
+        groups.get(sc.familyId)!.push(sc);
+      } else {
+        ungrouped.push(sc);
+      }
+    });
+    return { groups, ungrouped };
+  }, [scenarios]);
+
+  const toggleFamilyCollapse = (familyId: string) => {
+    setCollapsedFamilies(prev => {
+      const next = new Set(prev);
+      if (next.has(familyId)) next.delete(familyId); else next.add(familyId);
+      return next;
+    });
+  };
+
+  // Get active scenario's family
+  const activeFamilyId = activeScenario?.familyId || null;
+  const activeFamilyMembers = activeFamilyId
+    ? scenarios.filter(s => s.familyId === activeFamilyId)
+    : [];
+
+  const renderScenarioItem = (sc: Scenario, indent = false) => (
+    <div key={sc.id}>
+      {renamingId === sc.id ? (
+        <div className="p-2 flex gap-1">
+          <Input
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleRename(sc.id); if (e.key === 'Escape') setRenamingId(null); }}
+            className="h-7 text-xs"
+            autoFocus
+          />
+          <Button size="sm" className="h-7 text-xs" onClick={() => handleRename(sc.id)}>OK</Button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setActiveScenario(sc.id)}
+          className={`w-full text-left rounded-md p-2.5 transition-colors group ${indent ? 'ml-4 w-[calc(100%-16px)]' : ''} ${
+            activeScenarioId === sc.id
+              ? 'bg-primary/10 border border-primary/30'
+              : 'hover:bg-muted border border-transparent'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <FlaskConical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium truncate flex-1">{sc.name}</span>
+            <Badge className={`text-[10px] border-0 shrink-0 ${
+              sc.status === 'calculated' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'
+            }`}>
+              {sc.status === 'calculated' ? 'Calc' : 'Recalc'}
+            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => setActiveScenario(sc.id)}>
+                  <Play className="h-3.5 w-3.5 mr-2" /> Activate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => duplicateScenario(sc.id)}>
+                  <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setRenamingId(sc.id); setRenameValue(sc.name); }}>
+                  <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
+                </DropdownMenuItem>
+                {canAccess(userLevel, 'whatif-families') && !sc.familyId && (
+                  <DropdownMenuItem onClick={() => { setFamilyParentId(sc.id); setShowFamilyModal(true); }}>
+                    <Layers className="h-3.5 w-3.5 mr-2" /> Create Family
+                  </DropdownMenuItem>
+                )}
+                {canAccess(userLevel, 'whatif-families') && sc.familyId && (
+                  <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); setShowFamilyRecords(true); }}>
+                    <Layers className="h-3.5 w-3.5 mr-2" /> View Family Records
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); setShowPromoteModal(true); }}>
+                  <ArrowUpCircle className="h-3.5 w-3.5 mr-2" /> Promote to Basecase
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => { deleteScenario(sc.id); toast.success('Scenario deleted'); }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1 truncate">
+            {sc.changes.length} change{sc.changes.length !== 1 ? 's' : ''}
+          </p>
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex h-full overflow-hidden">
       {/* LEFT PANEL — Scenario Library */}
@@ -128,11 +297,9 @@ export default function WhatIfStudio() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {/* Basecase */}
           <button
-            onClick={() => setActiveScenario(null)}
+            onClick={() => { setActiveScenario(null); setShowFamilyRecords(false); }}
             className={`w-full text-left rounded-md p-2.5 transition-colors ${
-              activeScenarioId === null
-                ? 'bg-primary/10 border border-primary/30'
-                : 'hover:bg-muted border border-transparent'
+              activeScenarioId === null ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted border border-transparent'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -143,75 +310,32 @@ export default function WhatIfStudio() {
             <p className="text-[11px] text-muted-foreground mt-1">Reference model data</p>
           </button>
 
-          {/* Scenarios */}
-          {scenarios.map(sc => (
-            <div key={sc.id}>
-              {renamingId === sc.id ? (
-                <div className="p-2 flex gap-1">
-                  <Input
-                    value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleRename(sc.id); if (e.key === 'Escape') setRenamingId(null); }}
-                    className="h-7 text-xs"
-                    autoFocus
-                  />
-                  <Button size="sm" className="h-7 text-xs" onClick={() => handleRename(sc.id)}>OK</Button>
-                </div>
-              ) : (
+          {/* Ungrouped scenarios */}
+          {familyGroups.ungrouped.map(sc => renderScenarioItem(sc))}
+
+          {/* Family groups */}
+          {[...familyGroups.groups.entries()].map(([familyId, members]) => {
+            const isCollapsed = collapsedFamilies.has(familyId);
+            const familyName = members[0]?.name || 'Family';
+            return (
+              <div key={familyId} className="border border-border/50 rounded-md overflow-hidden">
                 <button
-                  onClick={() => setActiveScenario(sc.id)}
-                  className={`w-full text-left rounded-md p-2.5 transition-colors group ${
-                    activeScenarioId === sc.id
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'hover:bg-muted border border-transparent'
-                  }`}
+                  onClick={() => toggleFamilyCollapse(familyId)}
+                  className="w-full text-left p-2 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium truncate flex-1">{sc.name}</span>
-                    <Badge className={`text-[10px] border-0 ${
-                      sc.status === 'calculated'
-                        ? 'bg-success/20 text-success'
-                        : 'bg-warning/20 text-warning'
-                    }`}>
-                      {sc.status === 'calculated' ? 'Calculated' : 'Recalc'}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                          <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                        </span>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem onClick={() => setActiveScenario(sc.id)}>
-                          <Play className="h-3.5 w-3.5 mr-2" /> Activate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => duplicateScenario(sc.id)}>
-                          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setRenamingId(sc.id); setRenameValue(sc.name); }}>
-                          <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); }}>
-                          <Eye className="h-3.5 w-3.5 mr-2" /> View Changes
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); setShowPromoteModal(true); }}>
-                          <ArrowUpCircle className="h-3.5 w-3.5 mr-2" /> Promote to Basecase
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => { deleteScenario(sc.id); toast.success('Scenario deleted'); }}>
-                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1 truncate">
-                    {sc.changes.length} change{sc.changes.length !== 1 ? 's' : ''}
-                  </p>
+                  {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                  <Layers className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold truncate flex-1">{familyName}</span>
+                  <Badge variant="secondary" className="text-[10px] shrink-0">{members.length} scenarios</Badge>
                 </button>
-              )}
-            </div>
-          ))}
+                {!isCollapsed && (
+                  <div className="border-l-2 border-primary/20 ml-2 space-y-0.5 py-0.5">
+                    {members.map(sc => renderScenarioItem(sc, true))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Display Control */}
@@ -223,10 +347,7 @@ export default function WhatIfStudio() {
             </label>
             {scenarios.map(sc => (
               <label key={sc.id} className="flex items-center gap-2 text-xs cursor-pointer">
-                <Checkbox
-                  checked={displayIds.includes(sc.id)}
-                  onCheckedChange={() => toggleDisplayScenario(sc.id)}
-                />
+                <Checkbox checked={displayIds.includes(sc.id)} onCheckedChange={() => toggleDisplayScenario(sc.id)} />
                 {sc.name}
               </label>
             ))}
@@ -237,9 +358,17 @@ export default function WhatIfStudio() {
         </div>
       </div>
 
-      {/* CENTER PANEL — Scenario Editor */}
+      {/* CENTER PANEL */}
       <div className="flex-1 overflow-y-auto bg-background">
-        {activeScenarioId === null ? (
+        {showFamilyRecords && activeFamilyId ? (
+          <FamilyRecordsView
+            familyMembers={activeFamilyMembers}
+            activeScenarioId={activeScenarioId}
+            model={model}
+            onClose={() => setShowFamilyRecords(false)}
+            userLevel={userLevel}
+          />
+        ) : activeScenarioId === null ? (
           <BasecaseView />
         ) : activeScenario ? (
           <ScenarioEditorPanel
@@ -250,6 +379,7 @@ export default function WhatIfStudio() {
             onRemoveChange={removeChange}
             onPromote={() => setShowPromoteModal(true)}
             onRunScenario={handleRunScenario}
+            userLevel={userLevel}
           />
         ) : (
           <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
@@ -296,6 +426,55 @@ export default function WhatIfStudio() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Family Creation Modal */}
+      <Dialog open={showFamilyModal} onOpenChange={setShowFamilyModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create What-If Family</DialogTitle>
+            <DialogDescription>
+              Group related scenarios for bulk editing and side-by-side comparison.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Number of additional scenarios</Label>
+              <Input type="number" min={1} max={24} value={familyCount} onChange={e => setFamilyCount(Math.min(24, Math.max(1, +e.target.value)))} className="h-8 mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Naming template</Label>
+              <Input value={familyTemplate} onChange={e => setFamilyTemplate(e.target.value)} className="h-8 mt-1" placeholder="e.g. Month-{MMM}-{YYYY}" />
+              <p className="text-[10px] text-muted-foreground mt-1">Use {'{N}'} for number, {'{YYYY}'} for year, {'{MMM}'} for month.</p>
+            </div>
+            {needsStartValue && (
+              <div className="grid grid-cols-2 gap-2">
+                {familyTemplate.includes('{YYYY}') && (
+                  <div>
+                    <Label className="text-xs">Start Year</Label>
+                    <Input type="number" value={familyStartYear} onChange={e => setFamilyStartYear(+e.target.value)} className="h-8 mt-1" />
+                  </div>
+                )}
+                {familyTemplate.includes('{MMM}') && (
+                  <div>
+                    <Label className="text-xs">Start Month</Label>
+                    <select className="w-full h-8 border rounded px-2 text-xs bg-background mt-1" value={familyStartMonth} onChange={e => setFamilyStartMonth(+e.target.value)}>
+                      {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="bg-muted/30 rounded-md p-2">
+              <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">Preview</p>
+              <p className="text-xs font-mono">{familyPreview.join(', ')}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFamilyModal(false)}>Cancel</Button>
+            <Button onClick={handleCreateFamily}>Create Family</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -312,8 +491,9 @@ function BasecaseView() {
   );
 }
 
+// 2C: Scenario Editor with Direct Edits
 function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario,
+  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, userLevel,
 }: {
   scenario: Scenario;
   model: any;
@@ -322,9 +502,32 @@ function ScenarioEditorPanel({
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
+  userLevel: string;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
+  const [directEdits, setDirectEdits] = useState(false);
+  const { updateChange, markNeedsRecalc } = useScenarioStore();
+  const { updateLabor, updateEquipment, updateProduct, updateRouting } = useModelStore();
+
+  const handleWhatIfEdit = (changeId: string, value: string) => {
+    const numVal = Number(value);
+    if (!isNaN(numVal)) {
+      updateChange(scenario.id, changeId, numVal);
+      markNeedsRecalc(scenario.id);
+    }
+  };
+
+  const handleBasecaseEdit = (change: ScenarioChange, value: string) => {
+    const numVal = Number(value);
+    if (isNaN(numVal)) return;
+    // Update basecase model directly
+    if (change.dataType === 'Labor') updateLabor(model.id, change.entityId, { [change.field]: numVal });
+    else if (change.dataType === 'Equipment') updateEquipment(model.id, change.entityId, { [change.field]: numVal });
+    else if (change.dataType === 'Product') updateProduct(model.id, change.entityId, { [change.field]: numVal });
+    else if (change.dataType === 'Routing') updateRouting(model.id, change.entityId, { [change.field]: numVal });
+    markNeedsRecalc(scenario.id);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -333,40 +536,23 @@ function ScenarioEditorPanel({
         <div className="flex-1">
           {editingName ? (
             <div className="flex items-center gap-2">
-              <Input
-                value={nameVal}
-                onChange={e => setNameVal(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') { onRename(scenario.id, nameVal); setEditingName(false); }
-                  if (e.key === 'Escape') setEditingName(false);
-                }}
-                className="h-8 text-lg font-semibold"
-                autoFocus
-              />
+              <Input value={nameVal} onChange={e => setNameVal(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { onRename(scenario.id, nameVal); setEditingName(false); } if (e.key === 'Escape') setEditingName(false); }}
+                className="h-8 text-lg font-semibold" autoFocus />
               <Button size="sm" className="h-8" onClick={() => { onRename(scenario.id, nameVal); setEditingName(false); }}>Save</Button>
             </div>
           ) : (
-            <h1
-              className="text-xl font-bold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
-              onClick={() => { setNameVal(scenario.name); setEditingName(true); }}
-            >
+            <h1 className="text-xl font-bold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
+              onClick={() => { setNameVal(scenario.name); setEditingName(true); }}>
               <FlaskConical className="h-5 w-5 text-primary" />
               {scenario.name}
               <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </h1>
           )}
-          <Textarea
-            value={scenario.description}
-            onChange={e => onUpdateDescription(scenario.id, e.target.value)}
-            placeholder="Add a description…"
-            className="mt-2 text-sm min-h-[48px] resize-none"
-          />
+          <Textarea value={scenario.description} onChange={e => onUpdateDescription(scenario.id, e.target.value)}
+            placeholder="Add a description…" className="mt-2 text-sm min-h-[48px] resize-none" />
         </div>
-        <Badge className={`ml-4 shrink-0 text-xs border-0 ${
-          scenario.status === 'calculated'
-            ? 'bg-success/20 text-success'
-            : 'bg-warning/20 text-warning'
-        }`}>
+        <Badge className={`ml-4 shrink-0 text-xs border-0 ${scenario.status === 'calculated' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
           {scenario.status === 'calculated' ? 'Calculated' : 'Needs Recalc'}
         </Badge>
       </div>
@@ -376,9 +562,6 @@ function ScenarioEditorPanel({
         <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
           <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
         </Button>
-        <Button size="sm" variant="outline" className="h-8 text-xs">
-          <Save className="h-3.5 w-3.5 mr-1" /> Save
-        </Button>
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onPromote}>
           <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
         </Button>
@@ -386,7 +569,16 @@ function ScenarioEditorPanel({
 
       {/* Changes List */}
       <div>
-        <h3 className="text-sm font-semibold mb-3">Changes from Basecase ({scenario.changes.length})</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">Changes from Basecase ({scenario.changes.length})</h3>
+          {/* 2C: Direct Edits Toggle - Advanced only */}
+          {canAccess(userLevel, 'inline-change-edit') && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Direct Edits</Label>
+              <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
+            </div>
+          )}
+        </div>
         {scenario.changes.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             No changes yet. Use the Quick Input panel on the right to make edits.
@@ -412,13 +604,44 @@ function ScenarioEditorPanel({
                     </td>
                     <td className="p-2.5 font-mono text-xs">{c.entityName}</td>
                     <td className="p-2.5 text-xs">{c.fieldLabel}</td>
-                    <td className="p-2.5 text-right font-mono text-xs text-muted-foreground">{c.basecaseValue}</td>
-                    <td className="p-2.5 text-right font-mono text-xs font-semibold text-primary">{c.whatIfValue}</td>
+                    <td className="p-2.5 text-right font-mono text-xs text-muted-foreground">
+                      {directEdits ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <input
+                                type="number"
+                                defaultValue={c.basecaseValue}
+                                onBlur={e => handleBasecaseEdit(c, e.target.value)}
+                                className="w-20 text-right bg-warning/5 border border-warning/30 rounded px-1 py-0.5 text-xs font-mono focus:border-warning focus:outline-none"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs max-w-xs">
+                              <div className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 text-warning" />
+                                Editing this permanently changes the Basecase model data.
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        c.basecaseValue
+                      )}
+                    </td>
+                    <td className="p-2.5 text-right font-mono text-xs font-semibold text-primary">
+                      {directEdits ? (
+                        <input
+                          type="number"
+                          defaultValue={c.whatIfValue}
+                          onBlur={e => handleWhatIfEdit(c.id, e.target.value)}
+                          className="w-20 text-right bg-primary/5 border border-primary/30 rounded px-1 py-0.5 text-xs font-mono font-semibold text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        c.whatIfValue
+                      )}
+                    </td>
                     <td className="p-2.5">
-                      <button
-                        onClick={() => onRemoveChange(scenario.id, c.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                      >
+                      <button onClick={() => onRemoveChange(scenario.id, c.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </td>
@@ -429,6 +652,136 @@ function ScenarioEditorPanel({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// 2D: Family Records View
+function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, userLevel }: {
+  familyMembers: Scenario[];
+  activeScenarioId: string | null;
+  model: any;
+  onClose: () => void;
+  userLevel: string;
+}) {
+  const [directEdits, setDirectEdits] = useState(false);
+  const { updateChange, markNeedsRecalc } = useScenarioStore();
+
+  // Collect all unique parameter keys across all family members
+  const allParams = useMemo(() => {
+    const paramMap = new Map<string, { dataType: string; entityId: string; entityName: string; field: string; fieldLabel: string }>();
+    familyMembers.forEach(sc => {
+      sc.changes.forEach(c => {
+        const key = `${c.dataType}|${c.entityId}|${c.field}`;
+        if (!paramMap.has(key)) {
+          paramMap.set(key, { dataType: c.dataType, entityId: c.entityId, entityName: c.entityName, field: c.field, fieldLabel: c.fieldLabel });
+        }
+      });
+    });
+    return [...paramMap.entries()];
+  }, [familyMembers]);
+
+  const handleEdit = (scenarioId: string, changeId: string, value: string) => {
+    const numVal = Number(value);
+    if (!isNaN(numVal)) {
+      updateChange(scenarioId, changeId, numVal);
+      markNeedsRecalc(scenarioId);
+    }
+  };
+
+  const handleCopyRow = (paramKey: string) => {
+    // Copy the active scenario's value to all other members for this param
+    const activeScenario = familyMembers.find(s => s.id === activeScenarioId);
+    if (!activeScenario) return;
+    const activeChange = activeScenario.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
+    if (!activeChange) return;
+    familyMembers.forEach(sc => {
+      if (sc.id === activeScenarioId) return;
+      const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
+      if (change) {
+        updateChange(sc.id, change.id, activeChange.whatIfValue);
+        markNeedsRecalc(sc.id);
+      }
+    });
+    toast.success('Value copied to all family members');
+  };
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <Layers className="h-5 w-5 text-primary" /> Family Records
+          </h2>
+          <p className="text-sm text-muted-foreground">{familyMembers.length} scenarios in this family</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {canAccess(userLevel, 'inline-change-edit') && (
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Direct Edits</Label>
+              <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
+            </div>
+          )}
+          <Button variant="outline" size="sm" className="text-xs" onClick={onClose}>Close</Button>
+        </div>
+      </div>
+
+      {allParams.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          No changes have been recorded in this family yet. Make changes to any scenario to see them here.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-muted/50 text-muted-foreground">
+                <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 z-10">Parameter</th>
+                {familyMembers.map(sc => (
+                  <th key={sc.id} className={`text-right p-2 font-medium min-w-[100px] ${sc.id === activeScenarioId ? 'bg-primary/10 text-primary' : ''}`}>
+                    {sc.name}
+                  </th>
+                ))}
+                <th className="p-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {allParams.map(([key, param]) => (
+                <tr key={key} className="border-t border-border hover:bg-muted/20">
+                  <td className="p-2 font-mono sticky left-0 bg-background z-10">
+                    <span className="text-muted-foreground">{param.entityName}</span>
+                    <span className="mx-1">·</span>
+                    <span>{param.fieldLabel}</span>
+                  </td>
+                  {familyMembers.map(sc => {
+                    const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === key);
+                    return (
+                      <td key={sc.id} className={`p-2 text-right font-mono ${sc.id === activeScenarioId ? 'bg-primary/5' : ''}`}>
+                        {directEdits && change ? (
+                          <input
+                            type="number"
+                            defaultValue={change.whatIfValue}
+                            onBlur={e => handleEdit(sc.id, change.id, e.target.value)}
+                            className="w-full text-right bg-transparent border border-border rounded px-1 py-0.5 font-mono focus:border-primary focus:outline-none"
+                          />
+                        ) : (
+                          <span className={change ? 'font-semibold text-primary' : 'text-muted-foreground'}>
+                            {change ? change.whatIfValue : '—'}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td className="p-2">
+                    <button onClick={() => handleCopyRow(key)} className="text-muted-foreground hover:text-primary transition-colors" title="Copy active value to all">
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -444,17 +797,12 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
   if (!model) return null;
 
   const handleEdit = (
-    dataType: ScenarioChange['dataType'],
-    entityId: string,
-    entityName: string,
-    field: string,
-    fieldLabel: string,
-    value: number | string,
+    dataType: ScenarioChange['dataType'], entityId: string, entityName: string,
+    field: string, fieldLabel: string, value: number | string,
   ) => {
     if (activeScenarioId) {
       applyScenarioChange(activeScenarioId, dataType, entityId, entityName, field, fieldLabel, value);
     } else {
-      // Direct basecase edit
       if (dataType === 'Labor') updateLabor(modelId, entityId, { [field]: value });
       else if (dataType === 'Equipment') updateEquipment(modelId, entityId, { [field]: value });
       else if (dataType === 'Product') updateProduct(modelId, entityId, { [field]: value });
@@ -462,26 +810,18 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
     }
   };
 
-  // Compute scrap rate per product (sum of routing % to SCRAP)
   const getScrapRate = (productId: string) => {
-    return model.routing
-      .filter(r => r.product_id === productId && r.to_op_name === 'SCRAP')
-      .reduce((sum, r) => sum + r.pct_routed, 0);
+    return model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP').reduce((sum, r) => sum + r.pct_routed, 0);
   };
 
-  // Handle scrap rate edit: adjust routing to SCRAP proportionally
   const handleScrapRateEdit = (productId: string, productName: string, newRate: number) => {
     const scrapRoutes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
-    if (scrapRoutes.length === 0) {
-      toast.error(`No SCRAP routing exists for ${productName}. Add one on the Operations screen first.`);
-      return;
-    }
+    if (scrapRoutes.length === 0) { toast.error(`No SCRAP routing exists for ${productName}.`); return; }
     const currentTotal = scrapRoutes.reduce((s, r) => s + r.pct_routed, 0);
     const scale = currentTotal > 0 ? newRate / currentTotal : 1;
     scrapRoutes.forEach(r => {
       const newPct = Math.round(r.pct_routed * scale * 10) / 10;
-      const entityName = `${productName}: ${r.from_op_name}→SCRAP`;
-      handleEdit('Routing', r.id, entityName, 'pct_routed', 'Routing %', newPct);
+      handleEdit('Routing', r.id, `${productName}: ${r.from_op_name}→SCRAP`, 'pct_routed', 'Routing %', newPct);
     });
   };
 
@@ -550,32 +890,18 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
           onEdit={handleEdit}
           activeScenarioId={activeScenarioId}
         />
-        {/* Scrap Rate section */}
         <div className="mt-3 pt-3 border-t border-border">
           <h4 className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">Scrap Rate</h4>
           <div className="rounded border border-border overflow-hidden text-xs">
             <table className="w-full">
-              <thead>
-                <tr className="bg-muted/50 text-muted-foreground">
-                  <th className="text-left p-1.5 font-medium">Product</th>
-                  <th className="text-right p-1.5 font-medium">Scrap %</th>
-                </tr>
-              </thead>
+              <thead><tr className="bg-muted/50 text-muted-foreground"><th className="text-left p-1.5 font-medium">Product</th><th className="text-right p-1.5 font-medium">Scrap %</th></tr></thead>
               <tbody>
-                {model.products.filter(p => {
-                  // Only show products that have SCRAP routes
-                  return model.routing.some(r => r.product_id === p.id && r.to_op_name === 'SCRAP');
-                }).map(p => (
+                {model.products.filter(p => model.routing.some(r => r.product_id === p.id && r.to_op_name === 'SCRAP')).map(p => (
                   <tr key={p.id} className="border-t border-border">
                     <td className="p-1.5 font-mono font-medium truncate max-w-[80px]">{p.name}</td>
                     <td className="p-1 text-right">
-                      <input
-                        type="number"
-                        value={getScrapRate(p.id)}
-                        onChange={e => handleScrapRateEdit(p.id, p.name, Number(e.target.value))}
-                        className="w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono border-transparent hover:border-border focus:border-primary focus:outline-none"
-                        step="0.1"
-                      />
+                      <input type="number" value={getScrapRate(p.id)} onChange={e => handleScrapRateEdit(p.id, p.name, Number(e.target.value))}
+                        className="w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono border-transparent hover:border-border focus:border-primary focus:outline-none" step="0.1" />
                     </td>
                   </tr>
                 ))}
@@ -590,11 +916,7 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
 
       <TabsContent value="routing" className="flex-1 overflow-y-auto p-2 mt-0">
         <div className="mb-2">
-          <select
-            className="w-full text-xs border rounded px-2 py-1 bg-background"
-            value={routingProductId}
-            onChange={e => setSelectedRoutingProduct(e.target.value)}
-          >
+          <select className="w-full text-xs border rounded px-2 py-1 bg-background" value={routingProductId} onChange={e => setSelectedRoutingProduct(e.target.value)}>
             {model.products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -603,12 +925,7 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
         ) : (
           <div className="rounded border border-border overflow-hidden text-xs">
             <table className="w-full">
-              <thead>
-                <tr className="bg-muted/50 text-muted-foreground">
-                  <th className="text-left p-1.5 font-medium">From→To</th>
-                  <th className="text-right p-1.5 font-medium">%</th>
-                </tr>
-              </thead>
+              <thead><tr className="bg-muted/50 text-muted-foreground"><th className="text-left p-1.5 font-medium">From→To</th><th className="text-right p-1.5 font-medium">%</th></tr></thead>
               <tbody>
                 {routingEntries.map(r => {
                   const entityName = `${routingProduct?.name}: ${r.from_op_name}→${r.to_op_name}`;
@@ -620,14 +937,8 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
                     <tr key={r.id} className="border-t border-border">
                       <td className="p-1.5 font-mono truncate max-w-[120px]">{r.from_op_name}→{r.to_op_name}</td>
                       <td className="p-1 text-right">
-                        <input
-                          type="number"
-                          value={displayVal}
-                          onChange={e => handleEdit('Routing', r.id, entityName, 'pct_routed', 'Routing %', Number(e.target.value))}
-                          className={`w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono
-                            ${changed ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-transparent hover:border-border'}
-                            focus:border-primary focus:outline-none`}
-                        />
+                        <input type="number" value={displayVal} onChange={e => handleEdit('Routing', r.id, entityName, 'pct_routed', 'Routing %', Number(e.target.value))}
+                          className={`w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono ${changed ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-transparent hover:border-border'} focus:border-primary focus:outline-none`} />
                       </td>
                     </tr>
                   );
@@ -647,9 +958,7 @@ interface QuickRow {
   fields: { key: string; label: string; value: number }[];
 }
 
-function QuickTable({
-  rows, dataType, onEdit, activeScenarioId,
-}: {
+function QuickTable({ rows, dataType, onEdit, activeScenarioId }: {
   rows: QuickRow[];
   dataType: ScenarioChange['dataType'];
   onEdit: (dataType: ScenarioChange['dataType'], entityId: string, entityName: string, field: string, fieldLabel: string, value: number) => void;
@@ -668,9 +977,7 @@ function QuickTable({
     return scenario.changes.some(c => c.entityId === entityId && c.field === field);
   };
 
-  if (rows.length === 0) {
-    return <p className="text-xs text-muted-foreground p-2">No data</p>;
-  }
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground p-2">No data</p>;
 
   const allFields = rows[0].fields;
 
@@ -680,9 +987,7 @@ function QuickTable({
         <thead>
           <tr className="bg-muted/50 text-muted-foreground">
             <th className="text-left p-1.5 font-medium">Name</th>
-            {allFields.map(f => (
-              <th key={f.key} className="text-right p-1.5 font-medium">{f.label}</th>
-            ))}
+            {allFields.map(f => <th key={f.key} className="text-right p-1.5 font-medium">{f.label}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -694,14 +999,8 @@ function QuickTable({
                 const changed = isChanged(row.id, f.key);
                 return (
                   <td key={f.key} className="p-1 text-right">
-                    <input
-                      type="number"
-                      value={displayVal}
-                      onChange={e => onEdit(dataType, row.id, row.name, f.key, f.label, Number(e.target.value))}
-                      className={`w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono
-                        ${changed ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-transparent hover:border-border'}
-                        focus:border-primary focus:outline-none`}
-                    />
+                    <input type="number" value={displayVal} onChange={e => onEdit(dataType, row.id, row.name, f.key, f.label, Number(e.target.value))}
+                      className={`w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono ${changed ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-transparent hover:border-border'} focus:border-primary focus:outline-none`} />
                   </td>
                 );
               })}
