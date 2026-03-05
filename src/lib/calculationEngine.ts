@@ -205,16 +205,18 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       if (demand <= 0) return;
 
       const lotSize = Math.max(1, product.lot_size * product.lot_factor);
+      const tbatchSize = product.tbatch_size === -1 ? lotSize : Math.max(1, product.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
       const assignFraction = op.pct_assigned / 100;
       const numLots = (demand / lotSize) * assignFraction;
 
-      // Setup time per lot (in ops time units)
-      const setupPerLot = op.equip_setup_lot * eq.setup_factor;
-      // Run time per piece (in ops time units)  
-      const runPerPiece = op.equip_run_piece * eq.run_factor;
+      // Full setup time per lot = setup_lot + setup_piece * lotSize + setup_tbatch * numTbatches
+      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor;
+      // Full run time per lot = run_piece * lotSize + run_lot + run_tbatch * numTbatches
+      const runPerLot = (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
 
       totalSetupTime += numLots * setupPerLot;
-      totalRunTime += demand * assignFraction * runPerPiece;
+      totalRunTime += numLots * runPerLot;
     });
 
     const setupUtil = effectiveAvailTime > 0 ? (totalSetupTime / effectiveAvailTime) * 100 : 0;
