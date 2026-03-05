@@ -162,6 +162,7 @@ interface ModelStore {
   archiveModel: (id: string) => void;
   setRunStatus: (id: string, status: Model['run_status']) => void;
   updateGeneral: (modelId: string, data: Partial<GeneralData>) => void;
+  updateParamNames: (modelId: string, data: Partial<ParamNames>) => void;
   addLabor: (modelId: string, labor: LaborGroup) => void;
   updateLabor: (modelId: string, laborId: string, data: Partial<LaborGroup>) => void;
   deleteLabor: (modelId: string, laborId: string) => void;
