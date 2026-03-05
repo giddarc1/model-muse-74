@@ -32,9 +32,8 @@ export function ModelContextBar() {
   const setRunStatus = useModelStore((s) => s.setRunStatus);
   const activeScenario = useScenarioStore((s) => s.getActiveScenario());
   const markCalculated = useScenarioStore((s) => s.markCalculated);
-  const { setResults } = useResultsStore();
   const navigate = useNavigate();
-  const [isRunning, setIsRunning] = useState(false);
+  const { isRunning, handleRun: sharedRun } = useRunCalculation();
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [checkpointName, setCheckpointName] = useState('');
   const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
