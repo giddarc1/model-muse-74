@@ -158,7 +158,7 @@ export default function ModelLibrary() {
         updated_at: new Date().toISOString(),
         last_run_at: null, run_status: 'never_run',
         is_archived: false, is_demo: false, is_starred: false,
-        general: snap.general, labor, equipment, products, operations, routing, ibom,
+        general: snap.general, param_names: snap.param_names || { ...defaultParamNames }, labor, equipment, products, operations, routing, ibom,
       };
 
       await saveFullModelToDB(importedModel);
