@@ -1177,7 +1177,7 @@ function NormalSummary({ results, model, scenarioResults }: {
       <TableBody>
         {hasGroups ? (
           [...groups.entries()].map(([group, products]) => (
-            <>{products.map(renderProductRow)}{group && renderSubtotal(group, products)}</>
+            <React.Fragment key={`grp-${group}`}>{products.map(renderProductRow)}{group && renderSubtotal(group, products)}</React.Fragment>
           ))
         ) : (
           results.products.map(renderProductRow)
