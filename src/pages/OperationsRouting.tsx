@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
