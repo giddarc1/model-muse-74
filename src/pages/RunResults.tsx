@@ -1151,14 +1151,13 @@ function NormalSummary({ results, model, scenarioResults }: {
   const renderSubtotal = (label: string, products: ProductResult[]) => (
     <TableRow key={`sub-${label}`} className="bg-muted/50 font-medium">
       <TableCell className="font-mono text-xs">{label} subtotal</TableCell>
-      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.demand, 0).toLocaleString()}</TableCell>
-      <TableCell />
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.goodMade, 0).toLocaleString()}</TableCell>
+      <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.goodShipped, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.started, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.scrap, 0).toLocaleString()}</TableCell>
       <TableCell className="font-mono text-right text-xs">{products.reduce((s, r) => s + r.wip, 0).toFixed(1)}</TableCell>
       <TableCell className="font-mono text-right text-xs">{Math.min(...products.map(p => p.mct)).toFixed(4)}–{Math.max(...products.map(p => p.mct)).toFixed(4)}</TableCell>
-      {hasScenarios && scenarioResults.map(sr => <TableCell key={sr.id} />)}
+      {hasScenarios && scenarioResults.map(sr => <React.Fragment key={sr.id}><TableCell /><TableCell /></React.Fragment>)}
     </TableRow>
   );
 
