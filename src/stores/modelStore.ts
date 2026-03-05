@@ -261,14 +261,14 @@ export function createDemoModel(): Model {
       { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 8, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Drill presses' },
     ],
     products: [
-      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 1' },
-      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 2' },
-      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 3' },
-      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 4' },
-      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Sleeve component' },
-      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Mount assembly' },
-      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bracket component' },
-      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bolt component' },
+      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 1' },
+      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 2' },
+      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 3' },
+      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 4' },
+      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Sleeve component' },
+      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Mount assembly' },
+      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Bracket component' },
+      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Bolt component' },
     ],
     operations: [
       // HUB1
