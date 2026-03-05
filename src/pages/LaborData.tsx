@@ -6,7 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 
 export default function LaborData() {
   const model = useModelStore((s) => s.getActiveModel());
