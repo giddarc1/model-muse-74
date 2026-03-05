@@ -34,6 +34,10 @@ export interface EquipmentGroup {
   setup_factor: number;
   run_factor: number;
   var_factor: number;
+  eq1: number;
+  eq2: number;
+  eq3: number;
+  eq4: number;
   comments: string;
 }
 
