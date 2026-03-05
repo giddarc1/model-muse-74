@@ -656,7 +656,7 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   activeScenarioId: string | null;
   model: any;
   onClose: () => void;
-  userLevel: string;
+  userLevel: UserLevel;
 }) {
   const [directEdits, setDirectEdits] = useState(false);
   const { updateChange, markNeedsRecalc } = useScenarioStore();
