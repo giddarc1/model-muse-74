@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical, Calculator, FunctionSquare, Eye, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { FormulaBuilder } from '@/components/FormulaBuilder';
+import { InterpolateCalculator } from '@/components/InterpolateCalculator';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
 
@@ -31,6 +35,9 @@ export default function OperationsRouting() {
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
+  const { userLevel } = useUserLevelStore();
+  const showFormulaBuilder = canAccess(userLevel, 'formula-builder');
+
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProductId = searchParams.get('product') || '';
   const [showAddOp, setShowAddOp] = useState(false);
@@ -42,6 +49,11 @@ export default function OperationsRouting() {
   const [routeToOp, setRouteToOp] = useState('');
   const [routePct, setRoutePct] = useState(100);
   const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
+  const [viewActualTimes, setViewActualTimes] = useState(false);
+
+  // Formula Builder state
+  const [formulaTarget, setFormulaTarget] = useState<{ op: Operation; field: string; label: string; value: number } | null>(null);
+  const [showInterpolator, setShowInterpolator] = useState(false);
 
   const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
   const productOps = useMemo(
@@ -58,7 +70,6 @@ export default function OperationsRouting() {
     return ['DOCK', ...userOps, 'STOCK', 'SCRAP'];
   }, [productOps]);
 
-  // Per-from-op routing sum with status
   const routingSums = useMemo(() => {
     const sums: Record<string, number> = {};
     productRouting.forEach((r) => {
@@ -76,6 +87,25 @@ export default function OperationsRouting() {
     });
     return warnings;
   }, [routingSums]);
+
+  // Compute actual times (after applying equipment/labor/product factors)
+  const getActualTimes = (op: Operation) => {
+    if (!model) return null;
+    const eq = model.equipment.find(e => e.id === op.equip_id);
+    const prod = model.products.find(p => p.id === op.product_id);
+    const eqSetupF = eq?.setup_factor ?? 1;
+    const eqRunF = eq?.run_factor ?? 1;
+    const labGroup = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+    const labSetupF = labGroup?.setup_factor ?? 1;
+    const labRunF = labGroup?.run_factor ?? 1;
+    const prodSetupF = prod?.setup_factor ?? 1;
+    return {
+      equip_setup_lot: Math.round(op.equip_setup_lot * eqSetupF * prodSetupF * 1000) / 1000,
+      equip_run_piece: Math.round(op.equip_run_piece * eqRunF * 1000) / 1000,
+      labor_setup_lot: Math.round(op.labor_setup_lot * labSetupF * prodSetupF * 1000) / 1000,
+      labor_run_piece: Math.round(op.labor_run_piece * labRunF * 1000) / 1000,
+    };
+  };
 
   if (!model) return null;
 
@@ -139,7 +169,6 @@ export default function OperationsRouting() {
     return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
   };
 
-  // Helper to track routing changes in active scenario
   const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
     updateRouting(model.id, routeId, { [field]: value });
     if (activeScenarioId && activeScenario) {
@@ -148,6 +177,26 @@ export default function OperationsRouting() {
       applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
     }
   };
+
+  const openFormulaBuilder = (op: Operation, field: string, label: string) => {
+    setFormulaTarget({ op, field, label, value: (op as any)[field] || 0 });
+  };
+
+  const handleFormulaApply = (value: number, _formula: string) => {
+    if (!formulaTarget) return;
+    updateOperation(model.id, formulaTarget.op.id, { [formulaTarget.field]: value });
+    toast.success(`Formula applied: ${formulaTarget.label} = ${value}`);
+  };
+
+  const pn = model.param_names;
+
+  // Time fields for the formula builder context menu
+  const timeFields = [
+    { field: 'equip_setup_lot', label: 'E.Setup/Lot' },
+    { field: 'equip_run_piece', label: 'E.Run/Pc' },
+    { field: 'labor_setup_lot', label: 'L.Setup/Lot' },
+    { field: 'labor_run_piece', label: 'L.Run/Pc' },
+  ];
 
   return (
     <div className="p-6 animate-fade-in">
@@ -163,6 +212,13 @@ export default function OperationsRouting() {
         <div>
           <h1 className="text-xl font-bold">Operations & Routing</h1>
           <p className="text-sm text-muted-foreground">Define operations and routing flow per product</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {showFormulaBuilder && (
+            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowInterpolator(true)}>
+              <Calculator className="h-3.5 w-3.5" /> Interpolate
+            </Button>
+          )}
         </div>
       </div>
 
@@ -196,7 +252,16 @@ export default function OperationsRouting() {
                   <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{selectedProduct.name}</span></CardTitle>
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                  {/* View Actual Times / Edit Times toggle */}
+                  <div className="flex items-center gap-1.5 border border-border rounded-md px-2 py-1">
+                    <Edit className="h-3 w-3 text-muted-foreground" />
+                    <Label className="text-[10px] text-muted-foreground cursor-pointer" htmlFor="actual-toggle">
+                      {viewActualTimes ? 'Actual' : 'Input'}
+                    </Label>
+                    <Switch id="actual-toggle" checked={viewActualTimes} onCheckedChange={setViewActualTimes} className="scale-75" />
+                    <Eye className="h-3 w-3 text-muted-foreground" />
+                  </div>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
                     {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
                   </Button>
@@ -222,10 +287,22 @@ export default function OperationsRouting() {
                       <TableHead className="font-mono text-xs">Op Name</TableHead>
                       <TableHead className="font-mono text-xs">Equipment</TableHead>
                       <TableHead className="font-mono text-xs w-20">% Assign</TableHead>
-                      <TableHead className="font-mono text-xs">E.Setup/Lot</TableHead>
-                      <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
-                      <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
-                      <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
+                      <TableHead className="font-mono text-xs">
+                        E.Setup/Lot
+                        {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
+                      </TableHead>
+                      <TableHead className="font-mono text-xs">
+                        E.Run/Pc
+                        {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
+                      </TableHead>
+                      <TableHead className="font-mono text-xs">
+                        L.Setup/Lot
+                        {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
+                      </TableHead>
+                      <TableHead className="font-mono text-xs">
+                        L.Run/Pc
+                        {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
+                      </TableHead>
                       {showAdvancedTimes && <>
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
                         <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
@@ -235,42 +312,88 @@ export default function OperationsRouting() {
                         <TableHead className="font-mono text-xs">L.Setup/TB</TableHead>
                         <TableHead className="font-mono text-xs">L.Run/Lot</TableHead>
                         <TableHead className="font-mono text-xs">L.Run/TB</TableHead>
+                        <TableHead className="font-mono text-xs">{pn.oper1_name}</TableHead>
+                        <TableHead className="font-mono text-xs">{pn.oper2_name}</TableHead>
+                        <TableHead className="font-mono text-xs">{pn.oper3_name}</TableHead>
+                        <TableHead className="font-mono text-xs">{pn.oper4_name}</TableHead>
                       </>}
+                      {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {productOps.map((op) => (
-                      <TableRow key={op.id}>
-                        <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => updateOperation(model.id, op.id, { op_number: +e.target.value })} /></TableCell>
-                        <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
-                        <TableCell>
-                          <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
-                            <SelectTrigger className="h-8 w-32 font-mono text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => updateOperation(model.id, op.id, { pct_assigned: +e.target.value })} /></TableCell>
-                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_lot: +e.target.value })} /></TableCell>
-                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
-                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
-                        <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
-                        {showAdvancedTimes && <>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_run_lot: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_run_lot: +e.target.value })} /></TableCell>
-                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
-                        </>}
-                        <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
-                      </TableRow>
-                    ))}
+                    {productOps.map((op) => {
+                      const actual = viewActualTimes ? getActualTimes(op) : null;
+                      return (
+                        <TableRow key={op.id}>
+                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => updateOperation(model.id, op.id, { op_number: +e.target.value })} /></TableCell>
+                          <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
+                          <TableCell>
+                            <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
+                              <SelectTrigger className="h-8 w-32 font-mono text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => updateOperation(model.id, op.id, { pct_assigned: +e.target.value })} /></TableCell>
+
+                          {/* Main time fields — show actual or input */}
+                          {viewActualTimes && actual ? (
+                            <>
+                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_setup_lot}</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_run_piece}</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_setup_lot}</TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_run_piece}</TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_lot: +e.target.value })} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
+                            </>
+                          )}
+
+                          {showAdvancedTimes && <>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_run_lot: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_run_lot: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper1} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper1: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper2} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper2: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper3} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper3: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper4} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper4: +e.target.value })} /></TableCell>
+                          </>}
+
+                          {/* Formula Builder trigger */}
+                          {showFormulaBuilder && (
+                            <TableCell>
+                              <Select onValueChange={(field) => {
+                                const tf = timeFields.find(f => f.field === field);
+                                if (tf) openFormulaBuilder(op, tf.field, tf.label);
+                              }}>
+                                <SelectTrigger className="h-7 w-9 px-1 border-none">
+                                  <FunctionSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {timeFields.map(f => (
+                                    <SelectItem key={f.field} value={f.field} className="text-xs">{f.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          )}
+
+                          <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -418,6 +541,27 @@ export default function OperationsRouting() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Formula Builder Modal */}
+      {formulaTarget && (
+        <FormulaBuilder
+          open={!!formulaTarget}
+          onClose={() => setFormulaTarget(null)}
+          model={model}
+          operation={formulaTarget.op}
+          field={formulaTarget.field}
+          fieldLabel={formulaTarget.label}
+          currentValue={formulaTarget.value}
+          onApply={handleFormulaApply}
+        />
+      )}
+
+      {/* Interpolate Calculator */}
+      <InterpolateCalculator
+        open={showInterpolator}
+        onClose={() => setShowInterpolator(false)}
+        onApply={(value) => toast.success(`Interpolated value: ${value} — use it in a time field`)}
+      />
     </div>
   );
 }
