@@ -27,6 +27,10 @@ export default function OperationsRouting() {
   const deleteRouting = useModelStore((s) => s.deleteRouting);
   const setRouting = useModelStore((s) => s.setRouting);
 
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProductId = searchParams.get('product') || '';
   const [showAddOp, setShowAddOp] = useState(false);
