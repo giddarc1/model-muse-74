@@ -361,7 +361,8 @@ export function calculate(model: Model, scenario: Scenario | null = null): CalcR
       const numTbatches = Math.ceil(lotSize / tbatchSize);
 
       // Full setup/run time per lot including all components
-      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor;
+      const prodSetupFactor = product.setup_factor || 1;
+      const setupPerLot = (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
       const runPerLot = (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
 
       // Per-piece equivalents for MCT

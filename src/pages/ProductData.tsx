@@ -218,9 +218,24 @@ export default function ProductData() {
                       <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Gather Transfer Batches</Label>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-xs">Gather Transfer Batches</Label>
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">When checked, the first transfer batch waits for the full lot to complete before moving to STOCK. Affects MCT calculation.</TooltipContent></Tooltip></TooltipProvider>
+                      </div>
                       <Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} />
                     </div>
+                    {showAdvancedParams && (
+                      <>
+                        <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs">Group / Dept / Area</Label>
+                            <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Products with the same Group label will be subtotalled together in the Output Summary.</TooltipContent></Tooltip></TooltipProvider>
+                          </div>
+                          <Input className="h-8" value={p.dept_code} placeholder="e.g. Hubs, Components" onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} />
+                        </div>
+                      </>
+                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>

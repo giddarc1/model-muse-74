@@ -150,14 +150,40 @@ export default function EquipmentData() {
                     </Select>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-border">
-                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Scaling Factors</Label>
-                  <div className="grid grid-cols-3 gap-3 mt-1.5">
-                    <div><Label className="text-xs">Setup</Label><Input type="number" className="h-8 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.setup_factor} = {Math.round(eq.setup_factor * 100)}%</span></div>
-                    <div><Label className="text-xs">Run</Label><Input type="number" className="h-8 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.run_factor} = {Math.round(eq.run_factor * 100)}%</span></div>
-                    <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.var_factor} = {Math.round(eq.var_factor * 100)}%</span></div>
-                  </div>
-                </div>
+                {showAdvanced && (
+                  <>
+                    <div className="pt-2 border-t border-border">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Scaling Factors</Label>
+                      <div className="grid grid-cols-3 gap-3 mt-1.5">
+                        <div><Label className="text-xs">Setup</Label><Input type="number" className="h-8 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.setup_factor} = {Math.round(eq.setup_factor * 100)}%</span></div>
+                        <div><Label className="text-xs">Run</Label><Input type="number" className="h-8 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.run_factor} = {Math.round(eq.run_factor * 100)}%</span></div>
+                        <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.var_factor} = {Math.round(eq.var_factor * 100)}%</span></div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-border space-y-3">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
+                      <div><Label className="text-xs">% Time Unavailable</Label><Input type="number" className="h-8 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs">Group / Dept / Area</Label>
+                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">Optional label for this equipment group. Type 'Out of Area' to show this equipment's MCT contribution in a distinct color on IBOM charts.</TooltipContent></Tooltip></TooltipProvider>
+                        </div>
+                        <Input className="h-8" value={eq.dept_code} placeholder="e.g. Cell 1, Out of Area" onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs">Out of Area</Label>
+                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Mark this equipment as out-of-area for IBOM chart highlighting.</TooltipContent></Tooltip></TooltipProvider>
+                        </div>
+                        <Switch checked={eq.out_of_area} onCheckedChange={(v) => {
+                          handleCellChange(eq.id, 'out_of_area', v);
+                          if (v) handleCellChange(eq.id, 'dept_code', 'Out of Area');
+                          else if (eq.dept_code === 'Out of Area') handleCellChange(eq.id, 'dept_code', '');
+                        }} />
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
