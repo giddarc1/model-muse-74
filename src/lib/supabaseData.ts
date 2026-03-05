@@ -169,6 +169,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         labor_run_piece: Number(o.labor_run_piece ?? 0),
         labor_run_lot: Number(o.labor_run_lot ?? 0),
         labor_run_tbatch: Number(o.labor_run_tbatch ?? 0),
+        oper1: Number(o.oper1 ?? 0),
+        oper2: Number(o.oper2 ?? 0),
+        oper3: Number(o.oper3 ?? 0),
+        oper4: Number(o.oper4 ?? 0),
       })),
       routing,
       ibom: (ibomByModel[m.id] || []).map(i => ({

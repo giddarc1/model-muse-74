@@ -81,6 +81,10 @@ export interface Operation {
   labor_run_piece: number;
   labor_run_lot: number;
   labor_run_tbatch: number;
+  oper1: number;
+  oper2: number;
+  oper3: number;
+  oper4: number;
 }
 
 export interface RoutingEntry {
@@ -188,7 +192,7 @@ interface ModelStore {
 
 const uid = () => crypto.randomUUID();
 
-const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0 };
+const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0, oper1: 0, oper2: 0, oper3: 0, oper4: 0 };
 
 export const defaultParamNames: ParamNames = {
   gen1_name: 'Gen1', gen2_name: 'Gen2', gen3_name: 'Gen3', gen4_name: 'Gen4',
@@ -273,7 +277,7 @@ export function createDemoModel(): Model {
     ],
     operations: [
       // HUB1
-      { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0 },
+      { id: uid(), product_id: prodIds.HUB1, op_name: 'DOCK', op_number: 10, equip_id: '', pct_assigned: 100, equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0, ...defaultOpTimes },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'BENCH', op_number: 20, equip_id: equipIds.BENCH, pct_assigned: 100, equip_setup_lot: 30, equip_run_piece: 5, labor_setup_lot: 30, labor_run_piece: 5, ...defaultOpTimes },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'RFTURN', op_number: 30, equip_id: equipIds.VT_LATHE, pct_assigned: 100, equip_setup_lot: 45, equip_run_piece: 8, labor_setup_lot: 45, labor_run_piece: 8, ...defaultOpTimes },
       { id: uid(), product_id: prodIds.HUB1, op_name: 'DEBURR', op_number: 40, equip_id: equipIds.DEBURR, pct_assigned: 100, equip_setup_lot: 10, equip_run_piece: 3, labor_setup_lot: 10, labor_run_piece: 3, ...defaultOpTimes },

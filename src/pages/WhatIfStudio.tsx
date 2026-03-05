@@ -164,6 +164,12 @@ export default function WhatIfStudio() {
     toast.success('Scenario promoted to Basecase');
   };
 
+  const handleSaveAs = async (scenario: Scenario) => {
+    const newId = await duplicateScenario(scenario.id);
+    setActiveScenario(newId);
+    toast.success(`Saved as copy of "${scenario.name}"`);
+  };
+
   const handleRename = (id: string) => {
     if (!renameValue.trim()) return;
     renameScenario(id, renameValue.trim());
@@ -388,6 +394,7 @@ export default function WhatIfStudio() {
             onRemoveChange={removeChange}
             onPromote={() => setShowPromoteModal(true)}
             onRunScenario={handleRunScenario}
+            onSaveAs={handleSaveAs}
             userLevel={userLevel}
           />
         ) : (
@@ -502,7 +509,7 @@ function BasecaseView() {
 
 // 2C: Scenario Editor with Direct Edits
 function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, userLevel,
+  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, onSaveAs, userLevel,
 }: {
   scenario: Scenario;
   model: any;
@@ -511,6 +518,7 @@ function ScenarioEditorPanel({
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
+  onSaveAs: (scenario: Scenario) => void;
   userLevel: string;
 }) {
   const [editingName, setEditingName] = useState(false);
@@ -571,8 +579,11 @@ function ScenarioEditorPanel({
         <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
           <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
         </Button>
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onSaveAs(scenario)}>
+          <Save className="h-3.5 w-3.5 mr-1" /> Save As
+        </Button>
         <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onPromote}>
-          <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
+          <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Replace Basecase
         </Button>
       </div>
 
