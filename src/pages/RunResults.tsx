@@ -1080,6 +1080,13 @@ export default function RunResults() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Oper Details Tab */}
+          {canAccess(userLevel, 'oper-details') && (
+            <TabsContent value="operdetails" className="mt-4">
+              <OperDetailsTab model={model} results={results!} />
+            </TabsContent>
+          )}
         </Tabs>
       )}
 
