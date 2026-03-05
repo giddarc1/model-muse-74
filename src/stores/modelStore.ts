@@ -189,6 +189,18 @@ const uid = () => crypto.randomUUID();
 
 const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0 };
 
+export const defaultParamNames: ParamNames = {
+  gen1_name: 'Gen1', gen2_name: 'Gen2', gen3_name: 'Gen3', gen4_name: 'Gen4',
+  lab1_name: 'Lab1', lab2_name: 'Lab2', lab3_name: 'Lab3', lab4_name: 'Lab4',
+  eq1_name: 'Eq1', eq2_name: 'Eq2', eq3_name: 'Eq3', eq4_name: 'Eq4',
+  prod1_name: 'Prod1', prod2_name: 'Prod2', prod3_name: 'Prod3', prod4_name: 'Prod4',
+  oper1_name: 'Oper1', oper2_name: 'Oper2', oper3_name: 'Oper3', oper4_name: 'Oper4',
+};
+
+const defaultParamVals = { lab1: 0, lab2: 0, lab3: 0, lab4: 0 };
+const defaultEqParams = { eq1: 0, eq2: 0, eq3: 0, eq4: 0 };
+const defaultProdParams = { prod1: 0, prod2: 0, prod3: 0, prod4: 0 };
+
 // ─── Hub routing helper ─────────────────────────────────────────────
 function createHubRouting(productId: string): RoutingEntry[] {
   return [
