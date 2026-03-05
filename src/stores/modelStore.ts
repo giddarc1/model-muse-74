@@ -137,6 +137,7 @@ export interface Model {
   is_demo: boolean;
   is_starred: boolean;
   general: GeneralData;
+  param_names: ParamNames;
   labor: LaborGroup[];
   equipment: EquipmentGroup[];
   products: Product[];
