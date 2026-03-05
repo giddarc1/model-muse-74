@@ -17,7 +17,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock } from 'lucide-react';
+import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock, Pencil, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -61,6 +61,10 @@ export default function ModelSettings() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [restoreVersionId, setRestoreVersionId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
+  const [editingVersionName, setEditingVersionName] = useState('');
+  const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     if (!model) return;
@@ -85,9 +89,25 @@ export default function ModelSettings() {
       .from('model_versions')
       .select('id, label, created_at')
       .eq('model_id', model.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .order('created_at', { ascending: false });
     setVersions((data as Version[]) || []);
+  };
+
+  const handleRenameVersion = async (versionId: string) => {
+    if (!editingVersionName.trim()) return;
+    const { error } = await supabase.from('model_versions').update({ label: editingVersionName.trim() }).eq('id', versionId);
+    if (error) { toast.error('Failed to rename checkpoint'); return; }
+    toast.success('Checkpoint renamed');
+    setEditingVersionId(null);
+    loadVersions();
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    const { error } = await supabase.from('model_versions').delete().eq('id', versionId);
+    if (error) { toast.error('Failed to delete checkpoint'); return; }
+    toast.success('Checkpoint deleted');
+    setDeleteVersionId(null);
+    loadVersions();
   };
 
   if (!model) return null;
@@ -511,34 +531,76 @@ export default function ModelSettings() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Version History</CardTitle>
-                  <CardDescription>Save and restore model checkpoints.</CardDescription>
+                  <CardDescription>Save and restore model checkpoints. {versions.length > 0 && `${versions.length} checkpoint${versions.length !== 1 ? 's' : ''} saved.`}</CardDescription>
                 </div>
-                <Button size="sm" onClick={handleSaveCheckpoint}>
-                  <Save className="h-3.5 w-3.5 mr-1" /> Save Checkpoint
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
               {versions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No checkpoints saved yet.</p>
+                <p className="text-sm text-muted-foreground text-center py-6">No checkpoints saved yet. Use the Checkpoint button in the context bar to save one.</p>
               ) : (
                 <div className="space-y-2">
-                  {versions.map(v => (
-                    <div key={v.id} className="flex items-center justify-between p-3 rounded-md border border-border">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <span className="text-sm font-medium">{v.label}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {new Date(v.created_at).toLocaleString()}
-                          </span>
+                  {versions.slice(0, visibleCount).map(v => (
+                    <div key={v.id} className="flex items-center justify-between p-3 rounded-md border border-border group">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          {editingVersionId === v.id ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                className="h-7 text-sm w-48"
+                                value={editingVersionName}
+                                onChange={e => setEditingVersionName(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && handleRenameVersion(v.id)}
+                                autoFocus
+                              />
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => handleRenameVersion(v.id)}>
+                                <Save className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingVersionId(null)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className={`text-sm font-semibold ${!v.label ? 'italic text-muted-foreground' : ''}`}>
+                                {v.label || 'Unnamed Checkpoint'}
+                              </span>
+                              <p className="text-[11px] text-muted-foreground">
+                                {new Date(v.created_at).toLocaleString()}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => setRestoreVersionId(v.id)}>
-                        <RotateCcw className="h-3 w-3 mr-1" /> Restore
-                      </Button>
+                      {editingVersionId !== v.id && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            size="sm" variant="ghost"
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => { setEditingVersionId(v.id); setEditingVersionName(v.label || ''); }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm" variant="ghost"
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                            onClick={() => setDeleteVersionId(v.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-xs ml-1" onClick={() => setRestoreVersionId(v.id)}>
+                            <RotateCcw className="h-3 w-3 mr-1" /> Restore
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  {versions.length > visibleCount && (
+                    <Button variant="ghost" className="w-full text-xs" onClick={() => setVisibleCount(c => c + 10)}>
+                      <ChevronDown className="h-3.5 w-3.5 mr-1" /> Load more ({versions.length - visibleCount} remaining)
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -612,11 +674,17 @@ export default function ModelSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Restore Checkpoint</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace all current model data with the checkpoint from{' '}
-              <strong>{restoreVersionId && versions.find(v => v.id === restoreVersionId)
-                ? new Date(versions.find(v => v.id === restoreVersionId)!.created_at).toLocaleString()
-                : '...'}</strong>.
-              This cannot be undone. Are you sure?
+              {(() => {
+                const rv = restoreVersionId ? versions.find(v => v.id === restoreVersionId) : null;
+                return rv ? (
+                  <>
+                    Restore to checkpoint: <strong>"{rv.label || 'Unnamed'}"</strong> — saved on{' '}
+                    <strong>{new Date(rv.created_at).toLocaleString()}</strong>?
+                    <br /><br />
+                    This will replace all current model data. This cannot be undone.
+                  </>
+                ) : 'Loading…';
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -625,7 +693,33 @@ export default function ModelSettings() {
               disabled={isRestoring}
               onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
             >
-              {isRestoring ? 'Restoring...' : 'Restore'}
+              {isRestoring ? 'Restoring…' : 'Restore'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete checkpoint confirmation */}
+      <AlertDialog open={!!deleteVersionId} onOpenChange={(open) => !open && setDeleteVersionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Checkpoint</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const dv = deleteVersionId ? versions.find(v => v.id === deleteVersionId) : null;
+                return dv ? (
+                  <>Delete checkpoint <strong>"{dv.label || 'Unnamed'}"</strong>? This cannot be undone.</>
+                ) : 'Loading…';
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteVersionId && handleDeleteVersion(deleteVersionId)}
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
