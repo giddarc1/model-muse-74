@@ -106,6 +106,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         setup_factor: Number(l.setup_factor ?? 1),
         run_factor: Number(l.run_factor ?? 1),
         var_factor: Number(l.var_factor ?? 1),
+        lab1: Number(l.lab1 ?? 0),
+        lab2: Number(l.lab2 ?? 0),
+        lab3: Number(l.lab3 ?? 0),
+        lab4: Number(l.lab4 ?? 0),
         comments: l.comments || '',
       })),
       equipment: (equipByModel[m.id] || []).map(e => ({
