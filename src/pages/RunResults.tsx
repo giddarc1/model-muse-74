@@ -1,22 +1,31 @@
-import { useState, useMemo } from 'react';
-import { useModelStore } from '@/stores/modelStore';
+import { useState, useMemo, useCallback } from 'react';
+import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { type CalcResults, type ProductResult, type EquipmentResult } from '@/lib/calculationEngine';
+import { type CalcResults, type ProductResult, type EquipmentResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import {
+  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
+  TrendingUp, BarChart3, Settings2, Square, ChevronRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { scenarioDb } from '@/lib/scenarioDb';
 
 // ── Scenario color palettes for grouped charts ──
 const SCENARIO_PALETTES = [
@@ -131,11 +140,23 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
 
-const RUN_MODE_OPTIONS: { mode: RunMode; icon: typeof Play; label: string; description: string; feature?: string }[] = [
-  { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis. Calculates utilization, MCT, WIP, and queue times for all products and resources.' },
-  { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates all input data for errors and inconsistencies without running calculations. Use this to check your model before a full run.' },
-  { mode: 'util_only', icon: Gauge, label: 'Calculate Utilization Only', description: 'Calculates equipment and labor utilization only. Faster than Full Calculate — useful when exploring capacity balance.', feature: 'util-only-mode' },
-  { mode: 'full', icon: ListChecks, label: 'Product Inclusion', description: 'Select a subset of products to include in this run. Useful for cell design analysis.', feature: 'product-inclusion' },
+// Extended run mode type for advanced modes
+type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'optimize_lots';
+
+const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis with utilization, MCT, WIP, and queue times.' },
+  { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates input data for errors without running calculations.' },
+  { mode: 'util_only', icon: Gauge, label: 'Utilization Only', description: 'Equipment and labor utilization only — faster for capacity exploration.' },
+];
+
+const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'product_inclusion', icon: ListChecks, label: 'Product Inclusion', description: 'Select which products to include. Saves as a What-If scenario.' },
+  { mode: 'max_throughput', icon: TrendingUp, label: 'Max Throughput', description: 'Find the maximum achievable demand for a selected product.' },
+];
+
+const OPTIMIZATION_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'lot_size_range', icon: BarChart3, label: 'Lot Size Range', description: 'Run a range of lot sizes and chart MCT vs lot size curve.' },
+  { mode: 'optimize_lots', icon: Settings2, label: 'Optimize Lot Sizes', description: 'Minimize total WIP by iteratively adjusting lot sizes and transfer batches.' },
 ];
 
 export default function RunResults() {
@@ -148,9 +169,29 @@ export default function RunResults() {
 
   const { isRunning, runLog, verifyMessages, handleRun } = useRunCalculation();
 
-  const [runMode, setRunMode] = useState<RunMode>('full');
+  const [extRunMode, setExtRunMode] = useState<ExtendedRunMode>('full');
+  const runMode: RunMode = (extRunMode === 'full' || extRunMode === 'verify' || extRunMode === 'util_only') ? extRunMode : 'full';
   const [transposed, setTransposed] = useState(false);
   const [ibomProduct, setIbomProduct] = useState('');
+
+  // Advanced mode state — must be before early return
+  const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
+  const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
+  const [mtScenarioName, setMtScenarioName] = useState('');
+  const [mtResult, setMtResult] = useState<{demand: number; limitingResource: string} | null>(null);
+  const [lsrProduct, setLsrProduct] = useState(model?.products[0]?.id || '');
+  const [lsrMin, setLsrMin] = useState(10);
+  const [lsrMax, setLsrMax] = useState(200);
+  const [lsrStep, setLsrStep] = useState(10);
+  const [lsrResults, setLsrResults] = useState<{lotSize: number; mct: number}[]>([]);
+  const [optProducts, setOptProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
+  const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
+  const [advRunning, setAdvRunning] = useState(false);
+
+  const { createScenario } = useScenarioStore();
+  const { setResults: setStoreResults } = useResultsStore();
 
   const activeScenario = model ? (allScenarios.find(s => s.id === activeScenarioId) || null) : null;
   const modelScenarios = model ? allScenarios.filter(s => s.modelId === model.id) : [];
@@ -203,6 +244,205 @@ export default function RunResults() {
 
   const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
 
+  // Render a mode card
+  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}, isAdvancedOnly = false) => {
+    const Icon = opt.icon;
+    const isDisabled = isAdvancedOnly && userLevel !== 'advanced';
+    const selected = !isDisabled && extRunMode === opt.mode;
+    return (
+      <button
+        key={opt.label}
+        onClick={() => !isDisabled && setExtRunMode(opt.mode)}
+        disabled={isDisabled}
+        className={`text-left p-3 rounded-lg border-2 transition-all ${
+          isDisabled ? 'border-border opacity-50 cursor-not-allowed'
+          : selected ? 'border-primary bg-primary/5'
+          : 'border-border hover:border-primary/40 hover:bg-accent/30'
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
+          {isAdvancedOnly && userLevel !== 'advanced' && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced</Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
+      </button>
+    );
+  };
+
+  // Advanced run handlers
+  const handleAdvancedRun = useCallback(async () => {
+    if (!model || advRunning) return;
+
+    if (extRunMode === 'product_inclusion') {
+      const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
+      if (excluded.length === 0) { handleRun('full'); return; }
+      const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
+      excluded.forEach(p => {
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
+      });
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const calcResults = calculate(model, scenario);
+        setStoreResults(scenarioId, calcResults);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, calcResults);
+      }
+      toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
+      return;
+    }
+
+    if (extRunMode === 'max_throughput') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === mtProduct);
+      if (!product) { setAdvRunning(false); return; }
+      let demand = product.demand > 0 ? product.demand : 100;
+      let lastValidDemand = demand;
+      let limitingResource = '';
+      const step = Math.max(1, Math.round(demand * 0.1));
+      let iterations = 0;
+      const maxIter = 200;
+
+      while (iterations < maxIter) {
+        iterations++;
+        setAdvProgress({ current: iterations, total: maxIter, label: `Testing demand: ${Math.round(demand)}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand } : p) };
+        const r = calculate(testModel);
+        if (r.overLimitResources.length > 0) {
+          limitingResource = r.overLimitResources[0];
+          // Binary search refinement
+          let lo = lastValidDemand, hi = demand;
+          for (let i = 0; i < 20; i++) {
+            const mid = Math.round((lo + hi) / 2);
+            const tr = calculate({ ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand: mid } : p) });
+            if (tr.overLimitResources.length > 0) { hi = mid; limitingResource = tr.overLimitResources[0]; }
+            else { lo = mid; lastValidDemand = mid; }
+            if (hi - lo <= 1) break;
+          }
+          break;
+        }
+        lastValidDemand = demand;
+        demand += step;
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      const name = mtScenarioName || `Max Throughput — ${product.name}`;
+      const scenarioId = await createScenario(model.id, name);
+      useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtProduct, product.name, 'demand', 'Demand', lastValidDemand);
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+      }
+      setMtResult({ demand: lastValidDemand, limitingResource });
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Max throughput for ${product.name}: ${lastValidDemand} units`);
+      return;
+    }
+
+    if (extRunMode === 'lot_size_range') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === lsrProduct);
+      if (!product) { setAdvRunning(false); return; }
+      const steps: number[] = [];
+      for (let ls = lsrMin; ls <= lsrMax; ls += lsrStep) steps.push(ls);
+      const curResults: {lotSize: number; mct: number}[] = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAdvProgress({ current: i + 1, total: steps.length, label: `Lot size: ${steps[i]}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === lsrProduct ? { ...p, lot_size: steps[i] } : p) };
+        const r = calculate(testModel);
+        const pr = r.products.find(p => p.id === lsrProduct);
+        curResults.push({ lotSize: steps[i], mct: pr?.mct || 0 });
+
+        const scName = `${product.name}-LotSize-${steps[i]}`;
+        const scenarioId = await createScenario(model.id, scName);
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', lsrProduct, product.name, 'lot_size', 'Lot Size', steps[i]);
+        const sc = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+        if (sc) {
+          setStoreResults(scenarioId, r);
+          useScenarioStore.getState().markCalculated(scenarioId);
+          scenarioDb.saveResults(scenarioId, r);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      setLsrResults(curResults);
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Created ${steps.length} lot size scenarios for ${product.name}`);
+      return;
+    }
+
+    if (extRunMode === 'optimize_lots') {
+      setAdvRunning(true);
+      const selectedProducts = model.products.filter(p => optProducts.has(p.id));
+      if (selectedProducts.length === 0) { setAdvRunning(false); return; }
+
+      const baseCalc = calculate(model);
+      const original = selectedProducts.map(p => {
+        const pr = baseCalc.products.find(pp => pp.id === p.id);
+        return { name: p.name, lot: p.lot_size, wip: pr?.wip || 0 };
+      });
+      const baseWip = baseCalc.products.reduce((s, p) => s + p.wip, 0);
+
+      let bestLots: Record<string,number> = {};
+      selectedProducts.forEach(p => { bestLots[p.id] = p.lot_size; });
+      let bestWip = baseWip;
+      const maxIter = 50;
+
+      for (let iter = 0; iter < maxIter; iter++) {
+        setAdvProgress({ current: iter + 1, total: maxIter, label: `WIP: ${Math.round(bestWip)} (iter ${iter + 1})` });
+        let improved = false;
+        for (const p of selectedProducts) {
+          for (const delta of [-Math.max(1, Math.round(bestLots[p.id] * 0.1)), Math.max(1, Math.round(bestLots[p.id] * 0.1))]) {
+            const newLot = Math.max(1, bestLots[p.id] + delta);
+            if (newLot === bestLots[p.id]) continue;
+            const testModel = { ...model, products: model.products.map(pp => ({ ...pp, lot_size: bestLots[pp.id] !== undefined ? (pp.id === p.id ? newLot : bestLots[pp.id]) : pp.lot_size })) };
+            const r = calculate(testModel);
+            const totalWip = r.products.reduce((s, pp) => s + pp.wip, 0);
+            if (totalWip < bestWip && r.overLimitResources.length === 0) {
+              bestLots[p.id] = newLot;
+              bestWip = totalWip;
+              improved = true;
+            }
+          }
+        }
+        if (!improved) break;
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      const scenarioId = await createScenario(model.id, 'Optimized Lot Sizes');
+      for (const p of selectedProducts) {
+        if (bestLots[p.id] !== p.lot_size) {
+          useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', p.id, p.name, 'lot_size', 'Lot Size', bestLots[p.id]);
+        }
+      }
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+        const optimized = selectedProducts.map(p => {
+          const pr = r.products.find(pp => pp.id === p.id);
+          return { name: p.name, lot: bestLots[p.id], wip: pr?.wip || 0 };
+        });
+        setOptResult({ original, optimized, wipReduction: Math.round((1 - bestWip / baseWip) * 1000) / 10 });
+      }
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
+      return;
+    }
+  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, optProducts, createScenario, setStoreResults, handleRun]);
+
+  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'optimize_lots'].includes(extRunMode);
+
   if (!model) return (
     <div className="p-6 space-y-4">
       <div className="h-7 w-48 bg-muted animate-pulse rounded" />
@@ -212,7 +452,234 @@ export default function RunResults() {
   );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const modeLabel = runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization';
+  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : 'Run Optimize';
+
+  // Advanced mode state
+  const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
+  const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
+  const [mtScenarioName, setMtScenarioName] = useState('');
+  const [mtResult, setMtResult] = useState<{demand: number; limitingResource: string} | null>(null);
+  const [lsrProduct, setLsrProduct] = useState(model?.products[0]?.id || '');
+  const [lsrMin, setLsrMin] = useState(10);
+  const [lsrMax, setLsrMax] = useState(200);
+  const [lsrStep, setLsrStep] = useState(10);
+  const [lsrResults, setLsrResults] = useState<{lotSize: number; mct: number}[]>([]);
+  const [optProducts, setOptProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
+  const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
+  const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
+  const [advRunning, setAdvRunning] = useState(false);
+
+  const { createScenario } = useScenarioStore();
+  const { setResults: setStoreResults } = useResultsStore();
+
+  // Render a mode card
+  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}, isAdvancedOnly = false) => {
+    const Icon = opt.icon;
+    const isDisabled = isAdvancedOnly && userLevel !== 'advanced';
+    const selected = !isDisabled && extRunMode === opt.mode;
+    return (
+      <button
+        key={opt.label}
+        onClick={() => !isDisabled && setExtRunMode(opt.mode)}
+        disabled={isDisabled}
+        className={`text-left p-3 rounded-lg border-2 transition-all ${
+          isDisabled ? 'border-border opacity-50 cursor-not-allowed'
+          : selected ? 'border-primary bg-primary/5'
+          : 'border-border hover:border-primary/40 hover:bg-accent/30'
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
+          <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
+          {isAdvancedOnly && userLevel !== 'advanced' && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced</Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
+      </button>
+    );
+  };
+
+  // Advanced run handlers
+  const handleAdvancedRun = useCallback(async () => {
+    if (!model || advRunning) return;
+
+    if (extRunMode === 'product_inclusion') {
+      // Save product inclusion as What-If
+      const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
+      if (excluded.length === 0) { handleRun('full'); return; }
+      const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
+      excluded.forEach(p => {
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
+      });
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const calcResults = calculate(model, scenario);
+        setStoreResults(scenarioId, calcResults);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, calcResults);
+      }
+      toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
+      return;
+    }
+
+    if (extRunMode === 'max_throughput') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === mtProduct);
+      if (!product) { setAdvRunning(false); return; }
+      let demand = product.demand > 0 ? product.demand : 100;
+      let lastValidDemand = demand;
+      let limitingResource = '';
+      const step = Math.max(1, Math.round(demand * 0.1));
+      let iterations = 0;
+      const maxIter = 200;
+
+      while (iterations < maxIter) {
+        iterations++;
+        setAdvProgress({ current: iterations, total: maxIter, label: `Testing demand: ${Math.round(demand)}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand } : p) };
+        const r = calculate(testModel);
+        const overLimit = r.overLimitResources;
+        if (overLimit.length > 0) {
+          limitingResource = overLimit[0];
+          if (step <= 1) break;
+          demand = lastValidDemand;
+          // Binary search refinement
+          let lo = lastValidDemand, hi = demand + step;
+          for (let i = 0; i < 20; i++) {
+            const mid = Math.round((lo + hi) / 2);
+            const tr = calculate({ ...model, products: model.products.map(p => p.id === mtProduct ? { ...p, demand: mid } : p) });
+            if (tr.overLimitResources.length > 0) { hi = mid; limitingResource = tr.overLimitResources[0]; }
+            else { lo = mid; lastValidDemand = mid; }
+            if (hi - lo <= 1) break;
+          }
+          break;
+        }
+        lastValidDemand = demand;
+        demand += step;
+        await new Promise(r => setTimeout(r, 0)); // yield
+      }
+
+      // Save as scenario
+      const name = mtScenarioName || `Max Throughput — ${product.name}`;
+      const scenarioId = await createScenario(model.id, name);
+      useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtProduct, product.name, 'demand', 'Demand', lastValidDemand);
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+      }
+      setMtResult({ demand: lastValidDemand, limitingResource });
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Max throughput for ${product.name}: ${lastValidDemand} units`);
+      return;
+    }
+
+    if (extRunMode === 'lot_size_range') {
+      setAdvRunning(true);
+      const product = model.products.find(p => p.id === lsrProduct);
+      if (!product) { setAdvRunning(false); return; }
+      const steps: number[] = [];
+      for (let ls = lsrMin; ls <= lsrMax; ls += lsrStep) steps.push(ls);
+      const results: {lotSize: number; mct: number}[] = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        setAdvProgress({ current: i + 1, total: steps.length, label: `Lot size: ${steps[i]}` });
+        const testModel = { ...model, products: model.products.map(p => p.id === lsrProduct ? { ...p, lot_size: steps[i] } : p) };
+        const r = calculate(testModel);
+        const pr = r.products.find(p => p.id === lsrProduct);
+        results.push({ lotSize: steps[i], mct: pr?.mct || 0 });
+
+        // Save as scenario
+        const name = `${product.name}-LotSize-${steps[i]}`;
+        const scenarioId = await createScenario(model.id, name);
+        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', lsrProduct, product.name, 'lot_size', 'Lot Size', steps[i]);
+        const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+        if (scenario) {
+          setStoreResults(scenarioId, r);
+          useScenarioStore.getState().markCalculated(scenarioId);
+          scenarioDb.saveResults(scenarioId, r);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+      setLsrResults(results);
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Created ${steps.length} lot size scenarios for ${product.name}`);
+      return;
+    }
+
+    if (extRunMode === 'optimize_lots') {
+      setAdvRunning(true);
+      const selectedProducts = model.products.filter(p => optProducts.has(p.id));
+      if (selectedProducts.length === 0) { setAdvRunning(false); return; }
+
+      // Record original values
+      const original = selectedProducts.map(p => {
+        const r = calculate(model);
+        const pr = r.products.find(pp => pp.id === p.id);
+        return { name: p.name, lot: p.lot_size, wip: pr?.wip || 0 };
+      });
+      const baseWip = calculate(model).products.reduce((s, p) => s + p.wip, 0);
+
+      // Simple hill-climbing: try reducing each product's lot size
+      let bestLots = Object.fromEntries(selectedProducts.map(p => [p.id, p.lot_size]));
+      let bestWip = baseWip;
+      const maxIter = 50;
+
+      for (let iter = 0; iter < maxIter; iter++) {
+        setAdvProgress({ current: iter + 1, total: maxIter, label: `WIP: ${Math.round(bestWip)} (iter ${iter + 1})` });
+        let improved = false;
+        for (const p of selectedProducts) {
+          for (const delta of [-Math.max(1, Math.round(bestLots[p.id] * 0.1)), Math.max(1, Math.round(bestLots[p.id] * 0.1))]) {
+            const newLot = Math.max(1, bestLots[p.id] + delta);
+            if (newLot === bestLots[p.id]) continue;
+            const testModel = { ...model, products: model.products.map(pp => pp.id === p.id ? { ...pp, lot_size: newLot } : bestLots[pp.id] !== undefined ? { ...pp, lot_size: bestLots[pp.id] } : pp) };
+            const r = calculate(testModel);
+            const totalWip = r.products.reduce((s, pp) => s + pp.wip, 0);
+            if (totalWip < bestWip && r.overLimitResources.length === 0) {
+              bestLots[p.id] = newLot;
+              bestWip = totalWip;
+              improved = true;
+            }
+          }
+        }
+        if (!improved) break;
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      // Save as scenario
+      const scenarioId = await createScenario(model.id, 'Optimized Lot Sizes');
+      for (const p of selectedProducts) {
+        if (bestLots[p.id] !== p.lot_size) {
+          useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', p.id, p.name, 'lot_size', 'Lot Size', bestLots[p.id]);
+        }
+      }
+      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        const r = calculate(model, scenario);
+        setStoreResults(scenarioId, r);
+        useScenarioStore.getState().markCalculated(scenarioId);
+        scenarioDb.saveResults(scenarioId, r);
+
+        const optimized = selectedProducts.map(p => {
+          const pr = r.products.find(pp => pp.id === p.id);
+          return { name: p.name, lot: bestLots[p.id], wip: pr?.wip || 0 };
+        });
+        setOptResult({ original, optimized, wipReduction: Math.round((1 - bestWip / baseWip) * 1000) / 10 });
+      }
+      setAdvProgress(null);
+      setAdvRunning(false);
+      toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
+      return;
+    }
+  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, optProducts, createScenario, setStoreResults, handleRun]);
+
+  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'optimize_lots'].includes(extRunMode);
 
   return (
     <div className="p-6 animate-fade-in">
@@ -246,54 +713,156 @@ export default function RunResults() {
           <CardDescription>Select a calculation mode and run</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Mode Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {RUN_MODE_OPTIONS.map(opt => {
-              // Novice: hide util-only and product-inclusion entirely
-              if (opt.feature && userLevel === 'novice' && !canAccess(userLevel, opt.feature)) return null;
-              const Icon = opt.icon;
-              const isAdvancedOnly = opt.feature === 'product-inclusion' && userLevel !== 'advanced';
-              const isDisabled = isAdvancedOnly;
-              // Only Full Calculate card highlights when mode is 'full' (not Product Inclusion)
-              const selected = !isDisabled && (
-                (runMode === opt.mode && opt.label !== 'Product Inclusion') ||
-                (opt.label === 'Full Calculate' && runMode === 'full')
-              ) && !(opt.label === 'Full Calculate' && runMode !== 'full');
-              return (
-                <button
-                  key={opt.label}
-                  onClick={() => !isDisabled && setRunMode(opt.mode)}
-                  disabled={isDisabled}
-                  className={`text-left p-3 rounded-lg border-2 transition-all ${
-                    isDisabled
-                      ? 'border-border opacity-50 cursor-not-allowed'
-                      : selected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/40 hover:bg-accent/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
-                    {isAdvancedOnly && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced only</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
-                </button>
-              );
-            })}
+          {/* ── Standard Analysis ── */}
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Standard Analysis</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {STANDARD_MODES.map(opt => {
+                if (opt.mode === 'util_only' && userLevel === 'novice') return null;
+                return renderModeCard(opt);
+              })}
+            </div>
           </div>
+
+          {/* ── Scenario Analysis ── */}
+          {userLevel !== 'novice' && (
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {SCENARIO_MODES.map(opt => renderModeCard(opt, true))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Optimization ── */}
+          {userLevel !== 'novice' && (
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {OPTIMIZATION_MODES.map(opt => renderModeCard(opt, true))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Advanced Mode Config Panels ── */}
+          {isAdvancedMode && extRunMode === 'product_inclusion' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <Label className="text-sm font-medium">Select products to include:</Label>
+              <div className="space-y-1.5">
+                {model.products.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={piSelectedProducts.has(p.id)} onCheckedChange={(v) => {
+                      const next = new Set(piSelectedProducts);
+                      v ? next.add(p.id) : next.delete(p.id);
+                      setPiSelectedProducts(next);
+                    }} />
+                    <span className="font-mono">{p.name}</span>
+                    {p.demand > 0 && <span className="text-xs text-muted-foreground">({p.demand})</span>}
+                  </label>
+                ))}
+              </div>
+              <div><Label className="text-xs">Scenario Name</Label><Input value={piScenarioName} onChange={e => setPiScenarioName(e.target.value)} className="h-8 mt-1" /></div>
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'max_throughput' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Maximize throughput for</Label>
+                <Select value={mtProduct} onValueChange={v => { setMtProduct(v); setMtScenarioName(`Max Throughput — ${model.products.find(p=>p.id===v)?.name||''}`); }}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Scenario Name</Label><Input value={mtScenarioName} onChange={e => setMtScenarioName(e.target.value)} className="h-8 mt-1" /></div>
+              {mtResult && (
+                <div className="p-3 bg-success/10 border border-success/30 rounded-md">
+                  <p className="text-sm font-medium text-success">Max demand: {mtResult.demand} units</p>
+                  <p className="text-xs text-muted-foreground">Limiting: {mtResult.limitingResource}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'lot_size_range' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <div><Label className="text-xs">Product</Label>
+                <Select value={lsrProduct} onValueChange={setLsrProduct}>
+                  <SelectTrigger className="h-8 mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label className="text-xs">Min</Label><Input type="number" value={lsrMin} onChange={e => setLsrMin(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Max</Label><Input type="number" value={lsrMax} onChange={e => setLsrMax(+e.target.value)} className="h-8 mt-1" /></div>
+                <div><Label className="text-xs">Step</Label><Input type="number" value={lsrStep} onChange={e => setLsrStep(+e.target.value)} className="h-8 mt-1" /></div>
+              </div>
+              {lsrResults.length > 0 && (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lsrResults}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="lotSize" label={{value:'Lot Size',position:'bottom'}} style={axisStyle} /><YAxis label={{value:'MCT',angle:-90,position:'insideLeft'}} style={axisStyle} /><Tooltip contentStyle={tooltipStyle} /><Line type="monotone" dataKey="mct" stroke="hsl(var(--primary))" strokeWidth={2} dot={{r:3}} /></LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isAdvancedMode && extRunMode === 'optimize_lots' && model && (
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <Label className="text-sm font-medium">Select products to optimize:</Label>
+              <div className="flex gap-2 mb-2">
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setOptProducts(new Set(model.products.map(p=>p.id)))}>Select All</Button>
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setOptProducts(new Set())}>Deselect All</Button>
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {model.products.map(p => (
+                  <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={optProducts.has(p.id)} onCheckedChange={v => { const n = new Set(optProducts); v ? n.add(p.id) : n.delete(p.id); setOptProducts(n); }} />
+                    <span className="font-mono text-xs">{p.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">Lot: {p.lot_size}</span>
+                  </label>
+                ))}
+              </div>
+              {optResult && (
+                <div className="p-3 bg-success/10 border border-success/30 rounded-md space-y-2">
+                  <p className="text-sm font-medium text-success">WIP reduced by {optResult.wipReduction}%</p>
+                  <table className="w-full text-xs"><thead><tr className="text-muted-foreground"><th className="text-left">Product</th><th className="text-right">Old Lot</th><th className="text-right">New Lot</th></tr></thead>
+                    <tbody>{optResult.original.map((o,i) => <tr key={o.name}><td className="font-mono">{o.name}</td><td className="text-right">{o.lot}</td><td className="text-right font-semibold text-primary">{optResult.optimized[i]?.lot}</td></tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Progress bar for advanced runs */}
+          {advProgress && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{advProgress.label}</span>
+                <span>{advProgress.current}/{advProgress.total}</span>
+              </div>
+              <Progress value={(advProgress.current / advProgress.total) * 100} className="h-2" />
+            </div>
+          )}
 
           {/* Run Button */}
           <div className="flex items-center gap-4">
-            <Button size="lg" onClick={() => handleRun(runMode)} disabled={isRunning} className="gap-2 px-8">
-              {isRunning ? (
-                <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Calculating...</>
-              ) : (
-                <><Play className="h-4 w-4" /> {modeLabel}</>
-              )}
-            </Button>
+            {isAdvancedMode ? (
+              <Button size="lg" onClick={handleAdvancedRun} disabled={isRunning || advRunning} className="gap-2 px-8">
+                {advRunning ? (
+                  <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Running...</>
+                ) : (
+                  <><Play className="h-4 w-4" /> {modeLabel}</>
+                )}
+              </Button>
+            ) : (
+              <Button size="lg" onClick={() => handleRun(runMode)} disabled={isRunning} className="gap-2 px-8">
+                {isRunning ? (
+                  <><span className="animate-spin h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full" /> Calculating...</>
+                ) : (
+                  <><Play className="h-4 w-4" /> {modeLabel}</>
+                )}
+              </Button>
+            )}
             <span className="text-xs text-muted-foreground">on <span className="font-medium">{scenarioLabel}</span></span>
           </div>
 

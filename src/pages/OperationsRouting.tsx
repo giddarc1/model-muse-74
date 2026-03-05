@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
@@ -25,6 +26,10 @@ export default function OperationsRouting() {
   const updateRouting = useModelStore((s) => s.updateRouting);
   const deleteRouting = useModelStore((s) => s.deleteRouting);
   const setRouting = useModelStore((s) => s.setRouting);
+
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProductId = searchParams.get('product') || '';
@@ -129,8 +134,26 @@ export default function OperationsRouting() {
     return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
   };
 
+  // Helper to track routing changes in active scenario
+  const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
+    updateRouting(model.id, routeId, { [field]: value });
+    if (activeScenarioId && activeScenario) {
+      const productName = selectedProduct?.name || '';
+      const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
+      applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
+    }
+  };
+
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Operations & Routing</h1>
@@ -293,7 +316,7 @@ export default function OperationsRouting() {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => updateRouting(model.id, r.id, { pct_routed: +e.target.value })} />
+                              <Input type="number" className="h-8 w-20 font-mono" value={r.pct_routed} onChange={(e) => handleRoutingChange(r.id, 'pct_routed', +e.target.value, r)} />
                             </TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteRouting(model.id, r.id)}>

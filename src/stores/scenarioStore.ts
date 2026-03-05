@@ -4,7 +4,8 @@ import { scenarioDb } from '@/lib/scenarioDb';
 
 export interface ScenarioChange {
   id: string;
-  dataType: 'Labor' | 'Equipment' | 'Product' | 'General';
+  // Extended data types for routing and product inclusion
+  dataType: 'Labor' | 'Equipment' | 'Product' | 'General' | 'Routing' | 'Product Inclusion';
   entityId: string;
   entityName: string;
   field: string;
@@ -219,9 +220,9 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     const scenario = get().scenarios.find(s => s.id === scenarioId);
     if (!scenario) return;
 
-    const existing = scenario.changes.find(c => c.entityId === entityId && c.field === field);
+    const existing = scenario.changes.find(c => c.entityId === entityId && c.field === field && c.dataType === dataType);
     if (existing) {
-      if (existing.basecaseValue === whatIfValue) {
+      if (String(existing.basecaseValue) === String(whatIfValue)) {
         get().removeChange(scenarioId, existing.id);
       } else {
         get().updateChange(scenarioId, existing.id, whatIfValue);
@@ -239,8 +240,13 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       } else if (dataType === 'Product') {
         const entity = model.products.find(p => p.id === entityId);
         if (entity) basecaseValue = (entity as any)[field];
+      } else if (dataType === 'Routing') {
+        const entry = model.routing.find(r => r.id === entityId);
+        if (entry) basecaseValue = (entry as any)[field];
+      } else if (dataType === 'Product Inclusion') {
+        basecaseValue = 'Yes'; // default: all products included
       }
-      if (basecaseValue === whatIfValue) return;
+      if (String(basecaseValue) === String(whatIfValue)) return;
       get().addChange(scenarioId, { dataType, entityId, entityName, field, fieldLabel, basecaseValue, whatIfValue });
     }
   },
@@ -279,6 +285,8 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
         modelStore.updateEquipment(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
       } else if (change.dataType === 'Product') {
         modelStore.updateProduct(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
+      } else if (change.dataType === 'Routing') {
+        modelStore.updateRouting(scenario.modelId, change.entityId, { [change.field]: change.whatIfValue });
       }
     });
 

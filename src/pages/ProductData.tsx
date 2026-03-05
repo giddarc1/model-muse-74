@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Product } from '@/stores/modelStore';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProductData() {
@@ -68,6 +69,12 @@ export default function ProductData() {
 
   const opsCount = (productId: string) => model.operations.filter((o) => o.product_id === productId).length;
 
+  // Calculate scrap rate: sum of all routing % to SCRAP nodes for a product
+  const getScrapRate = (productId: string) => {
+    const routes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
+    return routes.reduce((sum, r) => sum + r.pct_routed, 0);
+  };
+
   return (
     <div className="p-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -107,6 +114,7 @@ export default function ProductData() {
                     <TableHead className="font-mono text-xs">MTS</TableHead>
                     <TableHead className="font-mono text-xs">Gather</TableHead>
                   </>}
+                  <TableHead className="font-mono text-xs">Scrap %</TableHead>
                   <TableHead className="font-mono text-xs">Ops</TableHead>
                   <TableHead className="font-mono text-xs">Comments</TableHead>
                   <TableHead className="w-24"></TableHead>
@@ -129,6 +137,19 @@ export default function ProductData() {
                       <TableCell><Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} /></TableCell>
                       <TableCell><Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} /></TableCell>
                     </>}
+                    <TableCell>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
+                              {getScrapRate(p.id) > 0 ? `${getScrapRate(p.id)}%` : '—'}
+                              <ExternalLink className="h-3 w-3 ml-0.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit routing to change scrap rate</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
                         <GitBranch className="h-3 w-3" />{opsCount(p.id)}
@@ -172,6 +193,12 @@ export default function ProductData() {
                       <div><Label className="text-xs">Lot Size</Label><Input type="number" className="h-8 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></div>
                     </div>
                     <div><Label className="text-xs">Comments</Label><Input className="h-8" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Scrap Rate</Label>
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
+                        {getScrapRate(p.id) > 0 ? `${getScrapRate(p.id)}%` : '—'} <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                     <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => goToOps(p.id)}>
                       <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
                     </Button>

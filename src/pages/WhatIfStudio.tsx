@@ -437,8 +437,9 @@ function ScenarioEditorPanel({
 
 function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activeScenarioId: string | null }) {
   const model = useModelStore(s => s.models.find(m => m.id === modelId));
-  const { updateLabor, updateEquipment, updateProduct } = useModelStore();
+  const { updateLabor, updateEquipment, updateProduct, updateRouting } = useModelStore();
   const { applyScenarioChange } = useScenarioStore();
+  const [selectedRoutingProduct, setSelectedRoutingProduct] = useState('');
 
   if (!model) return null;
 
@@ -448,7 +449,7 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
     entityName: string,
     field: string,
     fieldLabel: string,
-    value: number,
+    value: number | string,
   ) => {
     if (activeScenarioId) {
       applyScenarioChange(activeScenarioId, dataType, entityId, entityName, field, fieldLabel, value);
@@ -457,15 +458,44 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
       if (dataType === 'Labor') updateLabor(modelId, entityId, { [field]: value });
       else if (dataType === 'Equipment') updateEquipment(modelId, entityId, { [field]: value });
       else if (dataType === 'Product') updateProduct(modelId, entityId, { [field]: value });
+      else if (dataType === 'Routing') updateRouting(modelId, entityId, { [field]: value });
     }
   };
 
+  // Compute scrap rate per product (sum of routing % to SCRAP)
+  const getScrapRate = (productId: string) => {
+    return model.routing
+      .filter(r => r.product_id === productId && r.to_op_name === 'SCRAP')
+      .reduce((sum, r) => sum + r.pct_routed, 0);
+  };
+
+  // Handle scrap rate edit: adjust routing to SCRAP proportionally
+  const handleScrapRateEdit = (productId: string, productName: string, newRate: number) => {
+    const scrapRoutes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
+    if (scrapRoutes.length === 0) {
+      toast.error(`No SCRAP routing exists for ${productName}. Add one on the Operations screen first.`);
+      return;
+    }
+    const currentTotal = scrapRoutes.reduce((s, r) => s + r.pct_routed, 0);
+    const scale = currentTotal > 0 ? newRate / currentTotal : 1;
+    scrapRoutes.forEach(r => {
+      const newPct = Math.round(r.pct_routed * scale * 10) / 10;
+      const entityName = `${productName}: ${r.from_op_name}→SCRAP`;
+      handleEdit('Routing', r.id, entityName, 'pct_routed', 'Routing %', newPct);
+    });
+  };
+
+  const routingProductId = selectedRoutingProduct || model.products[0]?.id || '';
+  const routingProduct = model.products.find(p => p.id === routingProductId);
+  const routingEntries = model.routing.filter(r => r.product_id === routingProductId);
+
   return (
     <Tabs defaultValue="labor" className="flex-1 flex flex-col overflow-hidden">
-      <TabsList className="mx-3 mt-2 grid grid-cols-3 h-8">
+      <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8">
         <TabsTrigger value="labor" className="text-xs gap-1"><Users className="h-3 w-3" /> Labor</TabsTrigger>
         <TabsTrigger value="equipment" className="text-xs gap-1"><Wrench className="h-3 w-3" /> Equip</TabsTrigger>
         <TabsTrigger value="products" className="text-xs gap-1"><Package className="h-3 w-3" /> Products</TabsTrigger>
+        <TabsTrigger value="routing" className="text-xs gap-1"><ChevronRight className="h-3 w-3" /> Routing</TabsTrigger>
       </TabsList>
 
       <TabsContent value="labor" className="flex-1 overflow-y-auto p-2 mt-0">
@@ -515,6 +545,92 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
           onEdit={handleEdit}
           activeScenarioId={activeScenarioId}
         />
+        {/* Scrap Rate section */}
+        <div className="mt-3 pt-3 border-t border-border">
+          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">Scrap Rate</h4>
+          <div className="rounded border border-border overflow-hidden text-xs">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50 text-muted-foreground">
+                  <th className="text-left p-1.5 font-medium">Product</th>
+                  <th className="text-right p-1.5 font-medium">Scrap %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {model.products.filter(p => {
+                  // Only show products that have SCRAP routes
+                  return model.routing.some(r => r.product_id === p.id && r.to_op_name === 'SCRAP');
+                }).map(p => (
+                  <tr key={p.id} className="border-t border-border">
+                    <td className="p-1.5 font-mono font-medium truncate max-w-[80px]">{p.name}</td>
+                    <td className="p-1 text-right">
+                      <input
+                        type="number"
+                        value={getScrapRate(p.id)}
+                        onChange={e => handleScrapRateEdit(p.id, p.name, Number(e.target.value))}
+                        className="w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono border-transparent hover:border-border focus:border-primary focus:outline-none"
+                        step="0.1"
+                      />
+                    </td>
+                  </tr>
+                ))}
+                {!model.products.some(p => model.routing.some(r => r.product_id === p.id && r.to_op_name === 'SCRAP')) && (
+                  <tr><td colSpan={2} className="p-2 text-muted-foreground text-center">No products with SCRAP routing</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="routing" className="flex-1 overflow-y-auto p-2 mt-0">
+        <div className="mb-2">
+          <select
+            className="w-full text-xs border rounded px-2 py-1 bg-background"
+            value={routingProductId}
+            onChange={e => setSelectedRoutingProduct(e.target.value)}
+          >
+            {model.products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        {routingEntries.length === 0 ? (
+          <p className="text-xs text-muted-foreground p-2 text-center">No routing defined for {routingProduct?.name}</p>
+        ) : (
+          <div className="rounded border border-border overflow-hidden text-xs">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50 text-muted-foreground">
+                  <th className="text-left p-1.5 font-medium">From→To</th>
+                  <th className="text-right p-1.5 font-medium">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {routingEntries.map(r => {
+                  const entityName = `${routingProduct?.name}: ${r.from_op_name}→${r.to_op_name}`;
+                  const scenario = activeScenarioId ? useScenarioStore.getState().scenarios.find(s => s.id === activeScenarioId) : null;
+                  const change = scenario?.changes.find(c => c.entityId === r.id && c.field === 'pct_routed');
+                  const displayVal = change ? Number(change.whatIfValue) : r.pct_routed;
+                  const changed = !!change;
+                  return (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="p-1.5 font-mono truncate max-w-[120px]">{r.from_op_name}→{r.to_op_name}</td>
+                      <td className="p-1 text-right">
+                        <input
+                          type="number"
+                          value={displayVal}
+                          onChange={e => handleEdit('Routing', r.id, entityName, 'pct_routed', 'Routing %', Number(e.target.value))}
+                          className={`w-full text-right bg-transparent border rounded px-1 py-0.5 text-xs font-mono
+                            ${changed ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-transparent hover:border-border'}
+                            focus:border-primary focus:outline-none`}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </TabsContent>
     </Tabs>
   );
