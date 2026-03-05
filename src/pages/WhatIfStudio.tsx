@@ -73,6 +73,40 @@ export default function WhatIfStudio() {
   const [showFamilyRecords, setShowFamilyRecords] = useState(false);
   const [collapsedFamilies, setCollapsedFamilies] = useState<Set<string>>(new Set());
 
+  // Family helpers
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const needsStartValue = familyTemplate.includes('{YYYY}') || familyTemplate.includes('{MMM}');
+
+  const familyPreview = useMemo(() => {
+    const names: string[] = [];
+    for (let i = 0; i < Math.min(3, familyCount); i++) {
+      let name = familyTemplate;
+      name = name.replace(/{N}/g, String(i + 1));
+      const monthIdx = (familyStartMonth + i) % 12;
+      const yearOffset = Math.floor((familyStartMonth + i) / 12);
+      name = name.replace(/{MMM}/g, months[monthIdx]);
+      name = name.replace(/{YYYY}/g, String(familyStartYear + yearOffset));
+      names.push(name);
+    }
+    if (familyCount > 3) names.push('...');
+    return names;
+  }, [familyTemplate, familyCount, familyStartYear, familyStartMonth]);
+
+  // Group scenarios by family
+  const familyGroups = useMemo(() => {
+    const groups = new Map<string, Scenario[]>();
+    const ungrouped: Scenario[] = [];
+    scenarios.forEach(sc => {
+      if (sc.familyId) {
+        if (!groups.has(sc.familyId)) groups.set(sc.familyId, []);
+        groups.get(sc.familyId)!.push(sc);
+      } else {
+        ungrouped.push(sc);
+      }
+    });
+    return { groups, ungrouped };
+  }, [scenarios]);
+
   if (!model || !modelId) return null;
 
   const handleCreate = async () => {
