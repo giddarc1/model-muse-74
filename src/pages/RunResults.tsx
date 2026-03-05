@@ -203,7 +203,13 @@ export default function RunResults() {
 
   const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
 
-  if (!model) return null;
+  if (!model) return (
+    <div className="p-6 space-y-4">
+      <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+      <div className="h-48 bg-muted animate-pulse rounded-lg mt-4" />
+    </div>
+  );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
   const modeLabel = runMode === 'full' ? 'Run Full Calculate' : runMode === 'verify' ? 'Verify Data' : 'Calculate Utilization';
