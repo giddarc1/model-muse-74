@@ -246,10 +246,10 @@ export function createDemoModel(): Model {
     },
     param_names: { ...defaultParamNames },
     labor: [
-      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
-      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
-      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspectors' },
-      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Repair workers' },
+      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Preparation workers' },
+      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Machinists' },
+      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Inspectors' },
+      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Repair workers' },
     ],
     equipment: [
       { id: equipIds.BENCH, name: 'BENCH', equip_type: 'standard', count: 4, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.PREP, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Prep bench' },
