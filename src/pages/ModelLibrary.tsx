@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useModelStore, type Model } from '@/stores/modelStore';
+import { useModelStore, type Model, defaultParamNames } from '@/stores/modelStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserLevelStore } from '@/hooks/useUserLevel';
 import { usePageTitle } from '@/hooks/usePageTitle';

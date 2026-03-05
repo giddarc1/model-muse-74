@@ -475,6 +475,15 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     db.updateModel(modelId, { run_status: 'needs_recalc' });
   },
 
+  updateParamNames: (modelId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, param_names: { ...m.param_names, ...data }, updated_at: new Date().toISOString() } : m),
+    }));
+    supabase.from('model_param_names').upsert({ model_id: modelId, ...data }, { onConflict: 'model_id' }).then(({ error }) => {
+      if (error) console.error('updateParamNames:', error);
+    });
+  },
+
   addLabor: (modelId, labor) => {
     set((s) => ({
       models: s.models.map((m) => m.id === modelId ? { ...m, labor: [...m.labor, labor], updated_at: new Date().toISOString(), run_status: 'needs_recalc' as const } : m),
