@@ -17,7 +17,13 @@ export default function LaborData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
 
-  if (!model) return null;
+  if (!model) return (
+    <div className="p-6 space-y-4">
+      <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+      <div className="h-64 bg-muted animate-pulse rounded-lg" />
+    </div>
+  );
 
   const handleAdd = () => {
     if (!newName.trim()) return;
