@@ -45,7 +45,8 @@ export default function ProductData() {
     addProduct(model.id, {
       id: crypto.randomUUID(), name: newName.trim().toUpperCase(), demand: 0, lot_size: 1,
       tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1,
-      make_to_stock: false, gather_tbatches: true, dept_code: '', comments: '',
+      make_to_stock: false, gather_tbatches: true, dept_code: '',
+      prod1: 0, prod2: 0, prod3: 0, prod4: 0, comments: '',
     });
     setNewName('');
     setShowAdd(false);

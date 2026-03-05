@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '@/integrations/supabase/client';
 import { fetchAllModels, saveFullModelToDB, db } from '@/lib/supabaseData';
 
 export interface LaborGroup {
@@ -12,6 +13,10 @@ export interface LaborGroup {
   setup_factor: number;
   run_factor: number;
   var_factor: number;
+  lab1: number;
+  lab2: number;
+  lab3: number;
+  lab4: number;
   comments: string;
 }
 
@@ -30,6 +35,10 @@ export interface EquipmentGroup {
   setup_factor: number;
   run_factor: number;
   var_factor: number;
+  eq1: number;
+  eq2: number;
+  eq3: number;
+  eq4: number;
   comments: string;
 }
 
@@ -46,6 +55,10 @@ export interface Product {
   make_to_stock: boolean;
   gather_tbatches: boolean;
   dept_code: string;
+  prod1: number;
+  prod2: number;
+  prod3: number;
+  prod4: number;
   comments: string;
 }
 
@@ -96,8 +109,20 @@ export interface GeneralData {
   var_equip: number;
   var_labor: number;
   var_prod: number;
+  gen1: number;
+  gen2: number;
+  gen3: number;
+  gen4: number;
   author: string;
   comments: string;
+}
+
+export interface ParamNames {
+  gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
+  lab1_name: string; lab2_name: string; lab3_name: string; lab4_name: string;
+  eq1_name: string; eq2_name: string; eq3_name: string; eq4_name: string;
+  prod1_name: string; prod2_name: string; prod3_name: string; prod4_name: string;
+  oper1_name: string; oper2_name: string; oper3_name: string; oper4_name: string;
 }
 
 export interface Model {
@@ -113,6 +138,7 @@ export interface Model {
   is_demo: boolean;
   is_starred: boolean;
   general: GeneralData;
+  param_names: ParamNames;
   labor: LaborGroup[];
   equipment: EquipmentGroup[];
   products: Product[];
@@ -137,6 +163,7 @@ interface ModelStore {
   archiveModel: (id: string) => void;
   setRunStatus: (id: string, status: Model['run_status']) => void;
   updateGeneral: (modelId: string, data: Partial<GeneralData>) => void;
+  updateParamNames: (modelId: string, data: Partial<ParamNames>) => void;
   addLabor: (modelId: string, labor: LaborGroup) => void;
   updateLabor: (modelId: string, laborId: string, data: Partial<LaborGroup>) => void;
   deleteLabor: (modelId: string, laborId: string) => void;
@@ -162,6 +189,18 @@ interface ModelStore {
 const uid = () => crypto.randomUUID();
 
 const defaultOpTimes = { equip_setup_piece: 0, equip_setup_tbatch: 0, equip_run_lot: 0, equip_run_tbatch: 0, labor_setup_piece: 0, labor_setup_tbatch: 0, labor_run_lot: 0, labor_run_tbatch: 0 };
+
+export const defaultParamNames: ParamNames = {
+  gen1_name: 'Gen1', gen2_name: 'Gen2', gen3_name: 'Gen3', gen4_name: 'Gen4',
+  lab1_name: 'Lab1', lab2_name: 'Lab2', lab3_name: 'Lab3', lab4_name: 'Lab4',
+  eq1_name: 'Eq1', eq2_name: 'Eq2', eq3_name: 'Eq3', eq4_name: 'Eq4',
+  prod1_name: 'Prod1', prod2_name: 'Prod2', prod3_name: 'Prod3', prod4_name: 'Prod4',
+  oper1_name: 'Oper1', oper2_name: 'Oper2', oper3_name: 'Oper3', oper4_name: 'Oper4',
+};
+
+const defaultParamVals = { lab1: 0, lab2: 0, lab3: 0, lab4: 0 };
+const defaultEqParams = { eq1: 0, eq2: 0, eq3: 0, eq4: 0 };
+const defaultProdParams = { prod1: 0, prod2: 0, prod3: 0, prod4: 0 };
 
 // ─── Hub routing helper ─────────────────────────────────────────────
 function createHubRouting(productId: string): RoutingEntry[] {
@@ -202,33 +241,35 @@ export function createDemoModel(): Model {
       model_title: 'Hub Manufacturing Cell',
       ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
       conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+      gen1: 0, gen2: 0, gen3: 0, gen4: 0,
       author: 'RapidMCT Demo',
       comments: 'Based on the Hub Manufacturing Cell example from the MPX manual.',
     },
+    param_names: { ...defaultParamNames },
     labor: [
-      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Preparation workers' },
-      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Machinists' },
-      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspectors' },
-      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Repair workers' },
+      { id: laborIds.PREP, name: 'PREP', count: 4, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Preparation workers' },
+      { id: laborIds.MACHINST, name: 'MACHINST', count: 12, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Machinists' },
+      { id: laborIds.INSPECTR, name: 'INSPECTR', count: 3, overtime_pct: 0, unavail_pct: 5, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Inspectors' },
+      { id: laborIds.REPAIR, name: 'REPAIR', count: 3, overtime_pct: 0, unavail_pct: 10, dept_code: '', prioritize_use: false, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultParamVals, comments: 'Repair workers' },
     ],
     equipment: [
-      { id: equipIds.BENCH, name: 'BENCH', equip_type: 'standard', count: 4, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.PREP, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Prep bench' },
-      { id: equipIds.VT_LATHE, name: 'VT_LATHE', equip_type: 'standard', count: 7, mttf: 600, mttr: 60, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Vertical lathes' },
-      { id: equipIds.DEBURR, name: 'DEBURR', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Deburr stations' },
-      { id: equipIds.INSPECT, name: 'INSPECT', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.INSPECTR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Inspection stations' },
-      { id: equipIds.REWORK, name: 'REWORK', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Rework area' },
-      { id: equipIds.MILL, name: 'MILL', equip_type: 'standard', count: 3, mttf: 480, mttr: 30, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Milling machines' },
-      { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 8, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, comments: 'Drill presses' },
+      { id: equipIds.BENCH, name: 'BENCH', equip_type: 'standard', count: 4, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.PREP, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Prep bench' },
+      { id: equipIds.VT_LATHE, name: 'VT_LATHE', equip_type: 'standard', count: 7, mttf: 600, mttr: 60, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Vertical lathes' },
+      { id: equipIds.DEBURR, name: 'DEBURR', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Deburr stations' },
+      { id: equipIds.INSPECT, name: 'INSPECT', equip_type: 'standard', count: 3, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.INSPECTR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Inspection stations' },
+      { id: equipIds.REWORK, name: 'REWORK', equip_type: 'standard', count: 2, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.REPAIR, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Rework area' },
+      { id: equipIds.MILL, name: 'MILL', equip_type: 'standard', count: 3, mttf: 480, mttr: 30, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Milling machines' },
+      { id: equipIds.DRILL, name: 'DRILL', equip_type: 'standard', count: 8, mttf: 0, mttr: 0, overtime_pct: 0, labor_group_id: laborIds.MACHINST, dept_code: '', out_of_area: false, unavail_pct: 0, setup_factor: 1, run_factor: 1, var_factor: 1, ...defaultEqParams, comments: 'Drill presses' },
     ],
     products: [
-      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 1' },
-      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 2' },
-      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 3' },
-      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', comments: 'Hub variant 4' },
-      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Sleeve component' },
-      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Mount assembly' },
-      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bracket component' },
-      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', comments: 'Bolt component' },
+      { id: prodIds.HUB1, name: 'HUB1', demand: 5000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 1' },
+      { id: prodIds.HUB2, name: 'HUB2', demand: 4000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 2' },
+      { id: prodIds.HUB3, name: 'HUB3', demand: 3000, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 3' },
+      { id: prodIds.HUB4, name: 'HUB4', demand: 2500, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Hubs', ...defaultProdParams, comments: 'Hub variant 4' },
+      { id: prodIds.SLEEVE, name: 'SLEEVE', demand: 0, lot_size: 40, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Sleeve component' },
+      { id: prodIds.MOUNT, name: 'MOUNT', demand: 0, lot_size: 80, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Mount assembly' },
+      { id: prodIds.BRACKET, name: 'BRACKET', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Bracket component' },
+      { id: prodIds.BOLT, name: 'BOLT', demand: 0, lot_size: 1000, tbatch_size: -1, demand_factor: 1, lot_factor: 1, var_factor: 1, setup_factor: 1, make_to_stock: false, gather_tbatches: true, dept_code: 'Components', ...defaultProdParams, comments: 'Bolt component' },
     ],
     operations: [
       // HUB1
@@ -312,6 +353,7 @@ export function createDemoModel(): Model {
 const defaultGeneral: GeneralData = {
   model_title: '', ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
   conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+  gen1: 0, gen2: 0, gen3: 0, gen4: 0,
   author: '', comments: '',
 };
 
@@ -349,6 +391,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
       last_run_at: null, run_status: 'never_run',
       is_archived: false, is_demo: false, is_starred: false,
       general: { ...defaultGeneral, model_title: name },
+      param_names: { ...defaultParamNames },
       labor: [], equipment: [], products: [], operations: [], routing: [], ibom: [],
     };
     set((s) => ({ models: [model, ...s.models] }));
@@ -431,6 +474,15 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     }));
     db.updateGeneral(modelId, data);
     db.updateModel(modelId, { run_status: 'needs_recalc' });
+  },
+
+  updateParamNames: (modelId, data) => {
+    set((s) => ({
+      models: s.models.map((m) => m.id === modelId ? { ...m, param_names: { ...m.param_names, ...data }, updated_at: new Date().toISOString() } : m),
+    }));
+    supabase.from('model_param_names').upsert({ model_id: modelId, ...data }, { onConflict: 'model_id' }).then(({ error }) => {
+      if (error) console.error('updateParamNames:', error);
+    });
   },
 
   addLabor: (modelId, labor) => {

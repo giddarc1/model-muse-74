@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useModelStore, type Model } from '@/stores/modelStore';
+import { useModelStore, type Model, defaultParamNames } from '@/stores/modelStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserLevelStore } from '@/hooks/useUserLevel';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -158,7 +158,7 @@ export default function ModelLibrary() {
         updated_at: new Date().toISOString(),
         last_run_at: null, run_status: 'never_run',
         is_archived: false, is_demo: false, is_starred: false,
-        general: snap.general, labor, equipment, products, operations, routing, ibom,
+        general: snap.general, param_names: snap.param_names || { ...defaultParamNames }, labor, equipment, products, operations, routing, ibom,
       };
 
       await saveFullModelToDB(importedModel);

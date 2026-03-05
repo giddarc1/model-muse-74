@@ -4,7 +4,7 @@ import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
-  Network, Play, FlaskConical, FileText, Wrench, Grid3X3, Menu, X
+  Network, Play, FlaskConical, FileText, Wrench, Grid3X3, Menu, X, Tag
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
   { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all-operations' },
+  { label: 'Parameter Names', icon: Tag, path: 'param-names', feature: 'advanced-params' },
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif', feature: null },

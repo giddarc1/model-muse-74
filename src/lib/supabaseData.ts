@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Model, LaborGroup, EquipmentGroup, Product, Operation, RoutingEntry, IBOMEntry, GeneralData } from '@/stores/modelStore';
+import type { Model, LaborGroup, EquipmentGroup, Product, Operation, RoutingEntry, IBOMEntry, GeneralData, ParamNames } from '@/stores/modelStore';
+import { defaultParamNames } from '@/stores/modelStore';
 
 // ─── Fetch all models with child data ───────────────────────────────
 export async function fetchAllModels(): Promise<Model[]> {
@@ -9,7 +10,7 @@ export async function fetchAllModels(): Promise<Model[]> {
 
   const ids = models.map(m => m.id);
 
-  const [generalRes, laborRes, equipRes, prodRes, opsRes, routingRes, ibomRes] = await Promise.all([
+  const [generalRes, laborRes, equipRes, prodRes, opsRes, routingRes, ibomRes, paramNamesRes] = await Promise.all([
     supabase.from('model_general').select('*').in('model_id', ids),
     supabase.from('model_labor').select('*').in('model_id', ids),
     supabase.from('model_equipment').select('*').in('model_id', ids),
@@ -17,6 +18,7 @@ export async function fetchAllModels(): Promise<Model[]> {
     supabase.from('model_operations').select('*').in('model_id', ids),
     supabase.from('model_routing').select('*').in('model_id', ids),
     supabase.from('model_ibom').select('*').in('model_id', ids),
+    supabase.from('model_param_names').select('*').in('model_id', ids),
   ]);
 
   const group = <T extends { model_id: string }>(items: T[] | null) => {
@@ -26,6 +28,7 @@ export async function fetchAllModels(): Promise<Model[]> {
   };
 
   const generalByModel = Object.fromEntries((generalRes.data || []).map(g => [g.model_id, g]));
+  const paramNamesByModel = Object.fromEntries((paramNamesRes.data || []).map(p => [p.model_id, p]));
   const laborByModel = group(laborRes.data);
   const equipByModel = group(equipRes.data);
   const prodByModel = group(prodRes.data);
@@ -70,9 +73,29 @@ export async function fetchAllModels(): Promise<Model[]> {
         var_equip: Number(g.var_equip ?? 30),
         var_labor: Number(g.var_labor ?? 30),
         var_prod: Number(g.var_prod ?? 30),
+        gen1: Number(g.gen1 ?? 0),
+        gen2: Number(g.gen2 ?? 0),
+        gen3: Number(g.gen3 ?? 0),
+        gen4: Number(g.gen4 ?? 0),
         author: g.author || '',
         comments: g.comments || '',
       } : defaultGeneral(m.name),
+      param_names: (() => {
+        const pn = paramNamesByModel[m.id];
+        if (!pn) return { ...defaultParamNames };
+        return {
+          gen1_name: pn.gen1_name || 'Gen1', gen2_name: pn.gen2_name || 'Gen2',
+          gen3_name: pn.gen3_name || 'Gen3', gen4_name: pn.gen4_name || 'Gen4',
+          lab1_name: pn.lab1_name || 'Lab1', lab2_name: pn.lab2_name || 'Lab2',
+          lab3_name: pn.lab3_name || 'Lab3', lab4_name: pn.lab4_name || 'Lab4',
+          eq1_name: pn.eq1_name || 'Eq1', eq2_name: pn.eq2_name || 'Eq2',
+          eq3_name: pn.eq3_name || 'Eq3', eq4_name: pn.eq4_name || 'Eq4',
+          prod1_name: pn.prod1_name || 'Prod1', prod2_name: pn.prod2_name || 'Prod2',
+          prod3_name: pn.prod3_name || 'Prod3', prod4_name: pn.prod4_name || 'Prod4',
+          oper1_name: pn.oper1_name || 'Oper1', oper2_name: pn.oper2_name || 'Oper2',
+          oper3_name: pn.oper3_name || 'Oper3', oper4_name: pn.oper4_name || 'Oper4',
+        } as ParamNames;
+      })(),
       labor: (laborByModel[m.id] || []).map(l => ({
         id: l.id, name: l.name,
         count: l.count ?? 1,
@@ -83,6 +106,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         setup_factor: Number(l.setup_factor ?? 1),
         run_factor: Number(l.run_factor ?? 1),
         var_factor: Number(l.var_factor ?? 1),
+        lab1: Number(l.lab1 ?? 0),
+        lab2: Number(l.lab2 ?? 0),
+        lab3: Number(l.lab3 ?? 0),
+        lab4: Number(l.lab4 ?? 0),
         comments: l.comments || '',
       })),
       equipment: (equipByModel[m.id] || []).map(e => ({
@@ -99,6 +126,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         setup_factor: Number(e.setup_factor ?? 1),
         run_factor: Number(e.run_factor ?? 1),
         var_factor: Number(e.var_factor ?? 1),
+        eq1: Number(e.eq1 ?? 0),
+        eq2: Number(e.eq2 ?? 0),
+        eq3: Number(e.eq3 ?? 0),
+        eq4: Number(e.eq4 ?? 0),
         comments: e.comments || '',
       })),
       products: (prodByModel[m.id] || []).map(p => ({
@@ -113,6 +144,10 @@ export async function fetchAllModels(): Promise<Model[]> {
         make_to_stock: p.make_to_stock || false,
         gather_tbatches: p.gather_tbatches ?? true,
         dept_code: (p as any).dept_code || '',
+        prod1: Number(p.prod1 ?? 0),
+        prod2: Number(p.prod2 ?? 0),
+        prod3: Number(p.prod3 ?? 0),
+        prod4: Number(p.prod4 ?? 0),
         comments: p.comments || '',
       })),
       operations: ops.map(o => ({
@@ -150,6 +185,7 @@ function defaultGeneral(name: string): GeneralData {
   return {
     model_title: name, ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
     conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+    gen1: 0, gen2: 0, gen3: 0, gen4: 0,
     author: '', comments: '',
   };
 }
