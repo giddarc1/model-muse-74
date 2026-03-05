@@ -5,10 +5,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
+import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground inline-block ml-1 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
 
 export default function GeneralData() {
   const model = useModelStore((s) => s.getActiveModel());
   const updateGeneral = useModelStore((s) => s.updateGeneral);
+  const { userLevel } = useUserLevelStore();
+  const showAdvancedParams = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 max-w-3xl space-y-4">
@@ -19,6 +30,7 @@ export default function GeneralData() {
   );
 
   const g = model.general;
+  const pn = model.param_names;
   const update = (data: Partial<typeof g>) => updateGeneral(model.id, data);
 
   return (
@@ -106,26 +118,60 @@ export default function GeneralData() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Utilization Limit (%)</Label>
-                  <Input type="number" value={g.util_limit} onChange={(e) => update({ util_limit: +e.target.value })} />
+                  <Label className="flex items-center">Utilization Limit (%)<InfoTip text="When any equipment or labor group exceeds this utilization, MPX stops calculating and reports that production cannot be achieved. Default 95 is recommended — the 5% buffer accounts for model approximation. Do not use this as an allowance for breakdowns; model those separately." /></Label>
+                  <Input type="number" value={g.util_limit} onChange={(e) => {
+                    const v = +e.target.value;
+                    if (v >= 1 && v <= 99.9) update({ util_limit: v });
+                    else update({ util_limit: v });
+                  }} className={g.util_limit < 1 || g.util_limit > 99.9 ? 'border-destructive' : ''} />
+                  {(g.util_limit < 1 || g.util_limit > 99.9) && <p className="text-xs text-destructive mt-1">Valid range: 1–99.9</p>}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Equipment Variability %</Label>
+                  <Label className="flex items-center">Equipment Variability %<InfoTip text="Global coefficient of variation for equipment operation times, expressed as a percentage. 30% is typical for manufacturing. Individual equipment groups can multiply this using their Variability Factor." /></Label>
                   <Input type="number" value={g.var_equip} onChange={(e) => update({ var_equip: +e.target.value })} />
                 </div>
                 <div>
-                  <Label>Labor Variability %</Label>
+                  <Label className="flex items-center">Labor Variability %<InfoTip text="Global coefficient of variation for labor operation times, expressed as a percentage. 30% is typical for manufacturing. Individual labor groups can multiply this using their Variability Factor." /></Label>
                   <Input type="number" value={g.var_labor} onChange={(e) => update({ var_labor: +e.target.value })} />
                 </div>
                 <div>
-                  <Label>Product Variability %</Label>
+                  <Label className="flex items-center">Product Variability %<InfoTip text="Models variability in production scheduling — how consistently lots are released at regular intervals. Higher values model more chaotic shop floor scheduling." /></Label>
                   <Input type="number" value={g.var_prod} onChange={(e) => update({ var_prod: +e.target.value })} />
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {showAdvancedParams && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Global Parameters</CardTitle>
+                <CardDescription>Global variables that can be referenced in operation time formulas. Rename them in Parameter Names for clarity.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs flex items-center">{pn.gen1_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
+                    <Input type="number" className="h-8 font-mono" value={g.gen1} onChange={(e) => update({ gen1: +e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center">{pn.gen2_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
+                    <Input type="number" className="h-8 font-mono" value={g.gen2} onChange={(e) => update({ gen2: +e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center">{pn.gen3_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
+                    <Input type="number" className="h-8 font-mono" value={g.gen3} onChange={(e) => update({ gen3: +e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs flex items-center">{pn.gen4_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
+                    <Input type="number" className="h-8 font-mono" value={g.gen4} onChange={(e) => update({ gen4: +e.target.value })} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="comments" className="mt-4 space-y-4">

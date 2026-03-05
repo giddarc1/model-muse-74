@@ -11,6 +11,12 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
+
 export default function LaborData() {
   const model = useModelStore((s) => s.getActiveModel());
   const addLabor = useModelStore((s) => s.addLabor);
@@ -152,21 +158,35 @@ export default function LaborData() {
                     <div className="grid grid-cols-3 gap-3">
                       <div><Label className="text-xs">Setup Factor</Label><Input type="number" className="h-8 font-mono" value={l.setup_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.setup_factor} = {Math.round(l.setup_factor * 100)}%</span></div>
                       <div><Label className="text-xs">Run Factor</Label><Input type="number" className="h-8 font-mono" value={l.run_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.run_factor} = {Math.round(l.run_factor * 100)}%</span></div>
-                      <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={l.var_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {l.var_factor} = {Math.round(l.var_factor * 100)}%</span></div>
+                      <div>
+                        <Label className="text-xs">Variability</Label>
+                        <Input type="number" className="h-8 font-mono" value={l.var_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'var_factor', +e.target.value)} />
+                        <span className="text-[10px] text-muted-foreground">Effective: {model.general.var_labor}% × {l.var_factor} = {(model.general.var_labor * l.var_factor).toFixed(1)}%</span>
+                      </div>
                     </div>
                     <div>
                       <div className="flex items-center gap-1">
                         <Label className="text-xs">Group / Dept / Area</Label>
-                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Optional organisational label. No direct effect on calculations — provided for reference and model documentation.</TooltipContent></Tooltip></TooltipProvider>
+                        <InfoTip text="Optional organisational label. No direct effect on calculations — provided for reference and model documentation." />
                       </div>
                       <Input className="h-8" value={l.dept_code} placeholder="e.g. Assembly, Machining" onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Label className="text-xs">Prioritize Use</Label>
-                        <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">When enabled, operators are assumed to prioritise the most heavily loaded machines. This reduces Wait for Labor at high-utilisation equipment and increases it slightly at lower-utilisation equipment.</TooltipContent></Tooltip></TooltipProvider>
+                        <InfoTip text="When enabled, operators are assumed to prioritise the most heavily loaded machines. This reduces Wait for Labor at high-utilisation equipment and increases it slightly at lower-utilisation equipment." />
                       </div>
                       <Switch checked={l.prioritize_use} onCheckedChange={(v) => handleCellChange(l.id, 'prioritize_use', v)} />
+                    </div>
+                    {/* Lab1-4 parameter variables */}
+                    <div className="pt-2 border-t border-border">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
+                      <div className="grid grid-cols-4 gap-3 mt-1.5">
+                        <div><Label className="text-xs">{model.param_names.lab1_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab1} onChange={(e) => handleCellChange(l.id, 'lab1', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.lab2_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab2} onChange={(e) => handleCellChange(l.id, 'lab2', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.lab3_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab3} onChange={(e) => handleCellChange(l.id, 'lab3', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.lab4_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab4} onChange={(e) => handleCellChange(l.id, 'lab4', +e.target.value)} /></div>
+                      </div>
                     </div>
                   </div>
                 )}

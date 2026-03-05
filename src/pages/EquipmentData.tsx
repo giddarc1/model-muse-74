@@ -158,7 +158,11 @@ export default function EquipmentData() {
                       <div className="grid grid-cols-3 gap-3 mt-1.5">
                         <div><Label className="text-xs">Setup</Label><Input type="number" className="h-8 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.setup_factor} = {Math.round(eq.setup_factor * 100)}%</span></div>
                         <div><Label className="text-xs">Run</Label><Input type="number" className="h-8 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.run_factor} = {Math.round(eq.run_factor * 100)}%</span></div>
-                        <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.var_factor} = {Math.round(eq.var_factor * 100)}%</span></div>
+                        <div>
+                          <Label className="text-xs">Variability</Label>
+                          <Input type="number" className="h-8 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} />
+                          <span className="text-[10px] text-muted-foreground">Effective: {model.general.var_equip}% × {eq.var_factor} = {(model.general.var_equip * eq.var_factor).toFixed(1)}%</span>
+                        </div>
                       </div>
                     </div>
                     <div className="pt-2 border-t border-border space-y-3">
@@ -181,6 +185,16 @@ export default function EquipmentData() {
                           if (v) handleCellChange(eq.id, 'dept_code', 'Out of Area');
                           else if (eq.dept_code === 'Out of Area') handleCellChange(eq.id, 'dept_code', '');
                         }} />
+                      </div>
+                    </div>
+                    {/* Eq1-4 parameter variables */}
+                    <div className="pt-2 border-t border-border">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
+                      <div className="grid grid-cols-4 gap-3 mt-1.5">
+                        <div><Label className="text-xs">{model.param_names.eq1_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq1} onChange={(e) => handleCellChange(eq.id, 'eq1', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.eq2_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq2} onChange={(e) => handleCellChange(eq.id, 'eq2', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.eq3_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq3} onChange={(e) => handleCellChange(eq.id, 'eq3', +e.target.value)} /></div>
+                        <div><Label className="text-xs">{model.param_names.eq4_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq4} onChange={(e) => handleCellChange(eq.id, 'eq4', +e.target.value)} /></div>
                       </div>
                     </div>
                   </>
