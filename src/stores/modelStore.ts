@@ -352,6 +352,7 @@ export function createDemoModel(): Model {
 const defaultGeneral: GeneralData = {
   model_title: '', ops_time_unit: 'MIN', mct_time_unit: 'DAY', prod_period_unit: 'YEAR',
   conv1: 480, conv2: 210, util_limit: 95, var_equip: 30, var_labor: 30, var_prod: 30,
+  gen1: 0, gen2: 0, gen3: 0, gen4: 0,
   author: '', comments: '',
 };
 
