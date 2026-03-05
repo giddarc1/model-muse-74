@@ -746,6 +746,7 @@ export default function RunResults() {
             <TabsTrigger value="labor">Labor</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
+            {canAccess(userLevel, 'oper-details') && <TabsTrigger value="operdetails">Oper Details</TabsTrigger>}
             <TabsTrigger value="ibom">IBOM</TabsTrigger>
           </TabsList>
 
