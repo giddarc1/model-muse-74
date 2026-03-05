@@ -238,9 +238,15 @@ export function ModelContextBar() {
   };
 
   // ── Tooltip text ────────────────────────────────────────────────
-  const runTooltip = activeScenario
-    ? `Run Full Calculate on: ${activeScenario.name}`
-    : 'Run Full Calculate on the current scenario';
+  const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
+  const runTooltip = isResultsCurrent
+    ? 'Results are current — click to re-run'
+    : `Quick recalculate — runs Full Calculate on ${scenarioLabel}`;
+  const statusTooltip = model.run_status === 'current'
+    ? `Last calculated: ${model.last_run_at ? new Date(model.last_run_at).toLocaleString() : 'unknown'}`
+    : model.run_status === 'needs_recalc'
+      ? `Results are stale — data changed${model.last_run_at ? ` since last run on ${new Date(model.last_run_at).toLocaleString()}` : ''}`
+      : 'Model has never been run';
   const checkpointTooltip = 'Save a version checkpoint you can restore later';
   const exportTooltip = 'Download this model as a JSON file';
 
