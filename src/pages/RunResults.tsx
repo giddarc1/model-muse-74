@@ -837,6 +837,11 @@ export default function RunResults() {
                 </Table>
               </CardContent>
             </Card>
+
+            {/* Equipment WIP Chart */}
+            {canAccess(userLevel, 'equip-wip-chart') && (
+              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+            )}
           </TabsContent>
 
           {/* Labor Tab */}
