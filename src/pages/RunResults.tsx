@@ -168,19 +168,22 @@ function SortHead({ label, sortKey, current, onSort, align = 'right' }: {
 /* ─── Production Chart Data Builder ─── */
 function buildProductionData(results: CalcResults, model: any) {
   return results.products.map(pr => {
-    const prod = model.products.find((p: any) => p.id === pr.id);
-    // Pieces used as components in other products
+    // Units consumed as components in other products' production
     const usedInAssembly = model.ibom
       .filter((e: any) => e.component_product_id === pr.id)
       .reduce((sum: number, e: any) => {
         const parent = results.products.find((p: any) => p.id === e.parent_product_id);
         return sum + (parent ? parent.goodMade * (e.units_per_assy || 1) : 0);
       }, 0);
-    // Shipped in assembly = demand fulfilled through parent assembly shipments
-    const shippedInAssembly = usedInAssembly > 0 ? usedInAssembly : 0;
-    const shipped = pr.goodShipped;
+    // Check if this product is a parent that ships as part of another assembly
+    const isComponent = model.ibom.some((e: any) => e.component_product_id === pr.id);
+    // Shipped directly = end demand; components have 0 direct shipments
+    const shipped = isComponent ? 0 : pr.goodShipped;
+    // Shipped in assembly = for parent products, this is the end-demand shipments going out as assemblies
+    const isParent = model.ibom.some((e: any) => e.parent_product_id === pr.id);
+    const shippedInAssembly = isParent ? pr.goodShipped : 0;
     const scrapInProd = pr.scrap;
-    const total = shipped + usedInAssembly + scrapInProd;
+    const total = shipped + usedInAssembly + shippedInAssembly + scrapInProd;
     return {
       name: pr.name,
       shipped: Math.round(shipped),
@@ -1174,7 +1177,7 @@ function NormalSummary({ results, model, scenarioResults }: {
       <TableBody>
         {hasGroups ? (
           [...groups.entries()].map(([group, products]) => (
-            <>{products.map(renderProductRow)}{group && renderSubtotal(group, products)}</>
+            <React.Fragment key={`grp-${group}`}>{products.map(renderProductRow)}{group && renderSubtotal(group, products)}</React.Fragment>
           ))
         ) : (
           results.products.map(renderProductRow)
@@ -1597,11 +1600,19 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
   const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
 
+  // Sort hooks must be called before render functions that use them
+  const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
+  const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
+  const prodOps = useMemo(() => allMetrics.filter((m: any) => m.productId === selectedId), [allMetrics, selectedId]);
+  const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
+  const labSort = useSortableTable(labOps, 'opNumber', 'asc');
+  const prodSort = useSortableTable(prodOps, 'opNumber', 'asc');
+
   const renderByEquipment = () => {
     const eq = model.equipment.find(e => e.id === selectedId);
     if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
-    const ops = allMetrics.filter((m: any) => m.equipId === eq.id).sort((a: any, b: any) => a.opNumber - b.opNumber);
     return (
+      <div className="overflow-x-auto">
       <Table>
         <TableHeader><TableRow>
           <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
@@ -1638,15 +1649,9 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
           ))}
         </TableBody>
       </Table>
+      </div>
     );
   };
-
-  const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
-  const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
-  const prodOps = useMemo(() => allMetrics.filter((m: any) => m.productId === selectedId), [allMetrics, selectedId]);
-  const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
-  const labSort = useSortableTable(labOps, 'opNumber', 'asc');
-  const prodSort = useSortableTable(prodOps, 'opNumber', 'asc');
 
   const renderByLabor = () => {
     const lab = model.labor.find(l => l.id === selectedId);

@@ -107,6 +107,20 @@ export default function WhatIfStudio() {
     return { groups, ungrouped };
   }, [scenarios]);
 
+  // Auto-expand family that contains the active scenario
+  useEffect(() => {
+    if (activeScenarioId) {
+      const activeSc = scenarios.find(s => s.id === activeScenarioId);
+      if (activeSc?.familyId && collapsedFamilies.has(activeSc.familyId)) {
+        setCollapsedFamilies(prev => {
+          const next = new Set(prev);
+          next.delete(activeSc.familyId!);
+          return next;
+        });
+      }
+    }
+  }, [activeScenarioId]);
+
   if (!model || !modelId) return null;
 
   const handleCreate = async () => {
@@ -194,6 +208,7 @@ export default function WhatIfStudio() {
       return next;
     });
   };
+
 
   // Get active scenario's family
   const activeFamilyId = activeScenario?.familyId || null;
