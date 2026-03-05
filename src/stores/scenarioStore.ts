@@ -4,6 +4,7 @@ import { scenarioDb } from '@/lib/scenarioDb';
 
 export interface ScenarioChange {
   id: string;
+  // Extended data types for routing and product inclusion
   dataType: 'Labor' | 'Equipment' | 'Product' | 'General';
   entityId: string;
   entityName: string;
