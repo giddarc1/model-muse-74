@@ -30,9 +30,11 @@ export type Database = {
           mttf: number | null
           mttr: number | null
           name: string
+          out_of_area: boolean | null
           overtime_pct: number | null
           run_factor: number | null
           setup_factor: number | null
+          unavail_pct: number | null
           var_factor: number | null
         }
         Insert: {
@@ -50,9 +52,11 @@ export type Database = {
           mttf?: number | null
           mttr?: number | null
           name: string
+          out_of_area?: boolean | null
           overtime_pct?: number | null
           run_factor?: number | null
           setup_factor?: number | null
+          unavail_pct?: number | null
           var_factor?: number | null
         }
         Update: {
@@ -70,9 +74,11 @@ export type Database = {
           mttf?: number | null
           mttr?: number | null
           name?: string
+          out_of_area?: boolean | null
           overtime_pct?: number | null
           run_factor?: number | null
           setup_factor?: number | null
+          unavail_pct?: number | null
           var_factor?: number | null
         }
         Relationships: [
@@ -488,6 +494,7 @@ export type Database = {
           comments: string | null
           demand: number | null
           demand_factor: number | null
+          dept_code: string | null
           gather_tbatches: boolean | null
           id: string
           lot_factor: number | null
@@ -499,6 +506,7 @@ export type Database = {
           prod2: number | null
           prod3: number | null
           prod4: number | null
+          setup_factor: number | null
           tbatch_size: number | null
           var_factor: number | null
         }
@@ -506,6 +514,7 @@ export type Database = {
           comments?: string | null
           demand?: number | null
           demand_factor?: number | null
+          dept_code?: string | null
           gather_tbatches?: boolean | null
           id?: string
           lot_factor?: number | null
@@ -517,6 +526,7 @@ export type Database = {
           prod2?: number | null
           prod3?: number | null
           prod4?: number | null
+          setup_factor?: number | null
           tbatch_size?: number | null
           var_factor?: number | null
         }
@@ -524,6 +534,7 @@ export type Database = {
           comments?: string | null
           demand?: number | null
           demand_factor?: number | null
+          dept_code?: string | null
           gather_tbatches?: boolean | null
           id?: string
           lot_factor?: number | null
@@ -535,6 +546,7 @@ export type Database = {
           prod2?: number | null
           prod3?: number | null
           prod4?: number | null
+          setup_factor?: number | null
           tbatch_size?: number | null
           var_factor?: number | null
         }
