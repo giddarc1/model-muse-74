@@ -1328,3 +1328,316 @@ function IBOMPolesView({ model, results, selectedProductId }: { model: any; resu
     </div>
   );
 }
+
+/* ─── Equipment WIP Chart ─── */
+function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: {
+  results: CalcResults; model: Model; isMultiScenario: boolean; chartScenarios: ScenarioEntry[];
+}) {
+  const [showTable, setShowTable] = useState(false);
+
+  // Compute WIP per equipment group from product results and operations
+  const wipData = useMemo(() => {
+    const equipWip: Record<string, { name: string; inProcess: number; waiting: number }> = {};
+    model.equipment.forEach(eq => { equipWip[eq.id] = { name: eq.name, inProcess: 0, waiting: 0 }; });
+
+    results.products.forEach(pr => {
+      const ops = model.operations.filter(o => o.product_id === pr.id);
+      if (ops.length === 0 || pr.wip <= 0) return;
+      const wipPerOp = pr.wip / ops.length;
+      ops.forEach(op => {
+        if (op.equip_id && equipWip[op.equip_id]) {
+          const eqResult = results.equipment.find(e => e.id === op.equip_id);
+          const totalUtil = eqResult?.totalUtil || 0;
+          const runFrac = totalUtil > 0 ? ((eqResult?.runUtil || 0) / totalUtil) : 0.5;
+          equipWip[op.equip_id].inProcess += wipPerOp * runFrac;
+          equipWip[op.equip_id].waiting += wipPerOp * (1 - runFrac);
+        }
+      });
+    });
+    return Object.values(equipWip).filter(e => e.inProcess > 0 || e.waiting > 0)
+      .map(e => ({ name: e.name, inProcess: Math.round(e.inProcess * 10) / 10, waiting: Math.round(e.waiting * 10) / 10, total: Math.round((e.inProcess + e.waiting) * 10) / 10 }));
+  }, [results, model]);
+
+  if (wipData.length === 0) return (
+    <Card><CardContent className="py-12 text-center"><BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" /><p className="text-sm text-muted-foreground">Run the model to see Equipment WIP results.</p></CardContent></Card>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Equipment WIP</CardTitle>
+            <CardDescription>Work-in-progress at each equipment group</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setShowTable(!showTable)}>
+            {showTable ? 'Show Chart' : 'Show as Table'}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {showTable ? (
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead className="font-mono text-xs">Equipment</TableHead>
+              <TableHead className="font-mono text-xs text-right">In-Process</TableHead>
+              <TableHead className="font-mono text-xs text-right">Waiting</TableHead>
+              <TableHead className="font-mono text-xs text-right">Total WIP</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {wipData.map(e => (
+                <TableRow key={e.name}>
+                  <TableCell className="font-mono font-medium">{e.name}</TableCell>
+                  <TableCell className="font-mono text-right">{e.inProcess}</TableCell>
+                  <TableCell className="font-mono text-right">{e.waiting}</TableCell>
+                  <TableCell className="font-mono text-right font-medium">{e.total}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={wipData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP (units)', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="inProcess" fill="hsl(270, 50%, 60%)" name="In Process" />
+              <Bar dataKey="waiting" fill="hsl(38, 92%, 50%)" name="Waiting" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Labor Equipment Wait Chart ─── */
+function LaborWaitChart({ results, model }: { results: CalcResults; model: Model }) {
+  const [showTable, setShowTable] = useState(false);
+
+  const waitData = useMemo(() => {
+    return model.labor.map(lab => {
+      const equipGroups = model.equipment.filter(eq => eq.labor_group_id === lab.id);
+      const laborResult = results.labor.find(l => l.id === lab.id);
+      const totalUtil = laborResult?.totalUtil || 0;
+      const machinesTended = equipGroups.reduce((sum, eq) => {
+        const er = results.equipment.find(e => e.id === eq.id);
+        return sum + (er ? Math.min(1, (er.setupUtil + er.runUtil) / 100) * eq.count : 0);
+      }, 0);
+      const machinesWaiting = equipGroups.reduce((sum, eq) => {
+        const er = results.equipment.find(e => e.id === eq.id);
+        return sum + (er ? (er.waitLaborUtil / 100) * eq.count : 0);
+      }, 0);
+      return {
+        name: lab.name,
+        tended: Math.round(machinesTended * 10) / 10,
+        waiting: Math.round(machinesWaiting * 10) / 10,
+        waitLaborUtil: equipGroups.reduce((sum, eq) => {
+          const er = results.equipment.find(e => e.id === eq.id);
+          return sum + (er?.waitLaborUtil || 0);
+        }, 0) / Math.max(1, equipGroups.length),
+        idle: laborResult?.idle || 0,
+      };
+    }).filter(d => d.tended > 0 || d.waiting > 0);
+  }, [results, model]);
+
+  if (waitData.length === 0) return (
+    <Card><CardContent className="py-12 text-center"><BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" /><p className="text-sm text-muted-foreground">Run the model to see Equipment Wait results.</p></CardContent></Card>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
+          <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" className="text-xs gap-1 self-start" onClick={() => setShowTable(!showTable)}>
+          {showTable ? 'Show Chart' : 'Show as Table'}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {showTable ? (
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead className="font-mono text-xs">Labor Group</TableHead>
+              <TableHead className="font-mono text-xs text-right">Avg Machines Tended</TableHead>
+              <TableHead className="font-mono text-xs text-right">Avg Machines Waiting</TableHead>
+              <TableHead className="font-mono text-xs text-right">Wait Labor %</TableHead>
+              <TableHead className="font-mono text-xs text-right">Idle %</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {waitData.map(d => (
+                <TableRow key={d.name}>
+                  <TableCell className="font-mono font-medium">{d.name}</TableCell>
+                  <TableCell className="font-mono text-right">{d.tended}</TableCell>
+                  <TableCell className="font-mono text-right">{d.waiting}</TableCell>
+                  <TableCell className="font-mono text-right">{Math.round(d.waitLaborUtil * 10) / 10}</TableCell>
+                  <TableCell className="font-mono text-right text-muted-foreground">{d.idle}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={waitData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'Machines', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="tended" fill="hsl(142, 71%, 45%)" name="Avg Machines Tended" />
+              <Bar dataKey="waiting" fill="hsl(0, 72%, 51%)" name="Avg Machines Waiting" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Oper Details Tab ─── */
+function OperDetailsTab({ model, results }: { model: Model; results: CalcResults }) {
+  const [subTab, setSubTab] = useState<'equipment' | 'labor' | 'product'>('equipment');
+  const [selectedId, setSelectedId] = useState('');
+
+  const renderByEquipment = () => {
+    const eq = model.equipment.find(e => e.id === selectedId);
+    if (!eq) return <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>;
+    const ops = model.operations.filter(o => o.equip_id === eq.id);
+    const eqResult = results.equipment.find(e => e.id === eq.id);
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead className="font-mono text-xs">Product</TableHead>
+          <TableHead className="font-mono text-xs">Operation</TableHead>
+          <TableHead className="font-mono text-xs text-right">Op #</TableHead>
+          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
+          <TableHead className="font-mono text-xs text-right">Setup Util</TableHead>
+          <TableHead className="font-mono text-xs text-right">Run Util</TableHead>
+          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
+            const prod = model.products.find(p => p.id === op.product_id);
+            const pr = results.products.find(p => p.id === op.product_id);
+            const wipShare = pr && ops.length > 0 ? (pr.wip / model.operations.filter(o => o.product_id === op.product_id).length) : 0;
+            return (
+              <TableRow key={op.id}>
+                <TableCell className="font-mono text-xs">{prod?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{op.op_number}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{eqResult ? Math.round(eqResult.setupUtil / Math.max(1, ops.length) * 10) / 10 : '—'}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{eqResult ? Math.round(eqResult.runUtil / Math.max(1, ops.length) * 10) / 10 : '—'}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  const renderByLabor = () => {
+    const lab = model.labor.find(l => l.id === selectedId);
+    if (!lab) return <p className="text-sm text-muted-foreground text-center py-8">Select a labor group to view operation details.</p>;
+    const equipForLabor = model.equipment.filter(eq => eq.labor_group_id === lab.id);
+    const ops = model.operations.filter(o => equipForLabor.some(eq => eq.id === o.equip_id));
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead className="font-mono text-xs">Product</TableHead>
+          <TableHead className="font-mono text-xs">Operation</TableHead>
+          <TableHead className="font-mono text-xs">Equipment</TableHead>
+          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
+          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
+            const prod = model.products.find(p => p.id === op.product_id);
+            const eq = model.equipment.find(e => e.id === op.equip_id);
+            const pr = results.products.find(p => p.id === op.product_id);
+            const wipShare = pr ? (pr.wip / Math.max(1, model.operations.filter(o => o.product_id === op.product_id).length)) : 0;
+            return (
+              <TableRow key={op.id}>
+                <TableCell className="font-mono text-xs">{prod?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
+                <TableCell className="font-mono text-xs">{eq?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  const renderByProduct = () => {
+    const prod = model.products.find(p => p.id === selectedId);
+    if (!prod) return <p className="text-sm text-muted-foreground text-center py-8">Select a product to view operation details.</p>;
+    const ops = model.operations.filter(o => o.product_id === prod.id);
+    const pr = results.products.find(p => p.id === prod.id);
+    return (
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead className="font-mono text-xs">Operation</TableHead>
+          <TableHead className="font-mono text-xs">Equipment</TableHead>
+          <TableHead className="font-mono text-xs">Labor</TableHead>
+          <TableHead className="font-mono text-xs text-right">% Assign</TableHead>
+          <TableHead className="font-mono text-xs text-right">WIP</TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {ops.sort((a, b) => a.op_number - b.op_number).map(op => {
+            const eq = model.equipment.find(e => e.id === op.equip_id);
+            const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+            const wipShare = pr ? (pr.wip / Math.max(1, ops.length)) : 0;
+            return (
+              <TableRow key={op.id}>
+                <TableCell className="font-mono text-xs font-medium">{op.op_name}</TableCell>
+                <TableCell className="font-mono text-xs">{eq?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs">{lab?.name || '—'}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{op.pct_assigned}</TableCell>
+                <TableCell className="font-mono text-xs text-right">{Math.round(wipShare * 10) / 10}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details</CardTitle>
+        <CardDescription>Per-operation breakdown by resource or product</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={subTab} onValueChange={(v) => { setSubTab(v as any); setSelectedId(''); }}>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="h-8">
+              <TabsTrigger value="equipment" className="text-xs h-6">By Equipment</TabsTrigger>
+              <TabsTrigger value="labor" className="text-xs h-6">By Labor</TabsTrigger>
+              <TabsTrigger value="product" className="text-xs h-6">By Product</TabsTrigger>
+            </TabsList>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder={`Select ${subTab}...`} /></SelectTrigger>
+              <SelectContent>
+                {subTab === 'equipment' && model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+                {subTab === 'labor' && model.labor.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                {subTab === 'product' && model.products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <TabsContent value="equipment" className="p-0 overflow-x-auto">{renderByEquipment()}</TabsContent>
+          <TabsContent value="labor" className="p-0 overflow-x-auto">{renderByLabor()}</TabsContent>
+          <TabsContent value="product" className="p-0 overflow-x-auto">{renderByProduct()}</TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
