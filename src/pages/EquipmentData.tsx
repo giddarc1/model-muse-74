@@ -20,6 +20,8 @@ export default function EquipmentData() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+  const { userLevel } = useUserLevelStore();
+  const showAdvanced = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 space-y-4">
