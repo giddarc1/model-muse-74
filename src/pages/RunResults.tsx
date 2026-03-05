@@ -532,9 +532,9 @@ export default function RunResults() {
       toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
       return;
     }
-  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, optProducts, createScenario, setStoreResults, handleRun]);
+  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
 
-  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'optimize_lots'].includes(extRunMode);
+  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   if (!model) return (
     <div className="p-6 space-y-4">
