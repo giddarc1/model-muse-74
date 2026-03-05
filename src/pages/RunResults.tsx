@@ -243,17 +243,16 @@ export default function RunResults() {
           {/* Mode Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {RUN_MODE_OPTIONS.map(opt => {
-              // Hide for novice users if feature-gated
-              if (opt.feature && !canAccess(userLevel, opt.feature) && userLevel === 'novice') return null;
+              // Novice: hide util-only and product-inclusion entirely
+              if (opt.feature && userLevel === 'novice' && !canAccess(userLevel, opt.feature)) return null;
               const Icon = opt.icon;
               const isAdvancedOnly = opt.feature === 'product-inclusion' && userLevel !== 'advanced';
               const isDisabled = isAdvancedOnly;
-              const isSelected = !isDisabled && runMode === opt.mode && (opt.label === RUN_MODE_OPTIONS.find(o => o.mode === runMode && (runMode !== 'full' || o.label === opt.label))?.label);
-              // Simpler selection: match by label since two cards can share a mode
-              const selected = !isDisabled && opt === RUN_MODE_OPTIONS.find(o => {
-                if (runMode === 'full') return o.mode === 'full' && o.label === 'Full Calculate';
-                return o.mode === runMode;
-              });
+              // Only Full Calculate card highlights when mode is 'full' (not Product Inclusion)
+              const selected = !isDisabled && (
+                (runMode === opt.mode && opt.label !== 'Product Inclusion') ||
+                (opt.label === 'Full Calculate' && runMode === 'full')
+              ) && !(opt.label === 'Full Calculate' && runMode !== 'full');
               return (
                 <button
                   key={opt.label}
