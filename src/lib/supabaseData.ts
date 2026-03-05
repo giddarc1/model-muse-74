@@ -208,6 +208,7 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
         id: e.id, model_id: model.id, name: e.name, equip_type: e.equip_type, count: e.count,
         mttf: e.mttf || null, mttr: e.mttr || null, overtime_pct: e.overtime_pct,
         labor_group_id: e.labor_group_id || null, dept_code: e.dept_code || null,
+        out_of_area: e.out_of_area, unavail_pct: e.unavail_pct,
         setup_factor: e.setup_factor, run_factor: e.run_factor, var_factor: e.var_factor,
         comments: e.comments || null,
       }))
