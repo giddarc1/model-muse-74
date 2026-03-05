@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Cpu } from 'lucide-react';
 
 export default function EquipmentData() {
   const model = useModelStore((s) => s.getActiveModel());
