@@ -264,14 +264,14 @@ export function ModelContextBar() {
         <div className="h-4 w-px bg-sidebar-border" />
 
         {activeScenario ? (
-          <Badge variant="outline" className="border-warning/40 text-warning text-xs font-mono">
+          <Badge variant="outline" className="border-warning/40 text-warning text-xs font-mono shrink-0 hidden sm:flex">
             <FlaskConical className="h-2.5 w-2.5 mr-1" />
             Editing: {activeScenario.name}
           </Badge>
         ) : (
-          <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono">
+          <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono shrink-0 hidden sm:flex">
             <CircleDot className="h-2.5 w-2.5 mr-1" />
-            Editing: Basecase
+            Basecase
           </Badge>
         )}
 

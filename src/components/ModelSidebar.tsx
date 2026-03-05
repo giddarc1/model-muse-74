@@ -4,8 +4,10 @@ import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
-  Network, Play, FlaskConical, FileText, Wrench, Grid3X3
+  Network, Play, FlaskConical, FileText, Wrench, Grid3X3, Menu, X
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 const navItems = [
   { label: 'Overview', icon: LayoutDashboard, path: 'overview', feature: null },
@@ -26,16 +28,26 @@ export function ModelSidebar() {
   const model = useModelStore((s) => s.getActiveModel());
   const location = useLocation();
   const userLevel = useUserLevelStore((s) => s.userLevel);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   if (!model) return null;
 
   const basePath = `/models/${model.id}`;
   const visibleItems = navItems.filter(item => !item.feature || canAccess(userLevel, item.feature));
 
-  return (
-    <aside className="w-56 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
-      <div className="px-4 py-3 border-b border-sidebar-border">
+  const sidebarContent = (
+    <>
+      <div className="px-4 py-3 border-b border-sidebar-border flex items-center justify-between">
         <div className="text-xs font-mono text-sidebar-foreground/50 uppercase tracking-wider">Model Workspace</div>
+        {/* Close button on mobile */}
+        <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden" onClick={() => setMobileOpen(false)}>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
       <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
@@ -63,6 +75,38 @@ export function ModelSidebar() {
           {model.products.length} products · {model.equipment.length} equip · {model.labor.length} labor
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger trigger */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border shadow-sm"
+        onClick={() => setMobileOpen(true)}
+      >
+        <Menu className="h-4 w-4" />
+      </Button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <aside
+            className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex flex-col z-50 animate-in slide-in-from-left duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="w-56 bg-sidebar border-r border-sidebar-border flex-col shrink-0 hidden md:flex">
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
