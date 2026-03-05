@@ -61,6 +61,10 @@ export default function ModelSettings() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [restoreVersionId, setRestoreVersionId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
+  const [editingVersionName, setEditingVersionName] = useState('');
+  const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     if (!model) return;
