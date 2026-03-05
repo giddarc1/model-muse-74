@@ -318,6 +318,7 @@ export const db = {
     const { error } = await supabase.from('model_labor').insert({
       id: l.id, model_id: modelId, name: l.name, count: l.count,
       overtime_pct: l.overtime_pct, unavail_pct: l.unavail_pct, dept_code: l.dept_code || null,
+      prioritize_use: l.prioritize_use,
       setup_factor: l.setup_factor, run_factor: l.run_factor, var_factor: l.var_factor,
       comments: l.comments || null,
     });
