@@ -118,9 +118,17 @@ export async function fetchAllModels(): Promise<Model[]> {
         equip_id: o.equip_id || '',
         pct_assigned: Number(o.pct_assigned ?? 100),
         equip_setup_lot: Number(o.equip_setup_lot ?? 0),
+        equip_setup_piece: Number(o.equip_setup_piece ?? 0),
+        equip_setup_tbatch: Number(o.equip_setup_tbatch ?? 0),
         equip_run_piece: Number(o.equip_run_piece ?? 0),
+        equip_run_lot: Number(o.equip_run_lot ?? 0),
+        equip_run_tbatch: Number(o.equip_run_tbatch ?? 0),
         labor_setup_lot: Number(o.labor_setup_lot ?? 0),
+        labor_setup_piece: Number(o.labor_setup_piece ?? 0),
+        labor_setup_tbatch: Number(o.labor_setup_tbatch ?? 0),
         labor_run_piece: Number(o.labor_run_piece ?? 0),
+        labor_run_lot: Number(o.labor_run_lot ?? 0),
+        labor_run_tbatch: Number(o.labor_run_tbatch ?? 0),
       })),
       routing,
       ibom: (ibomByModel[m.id] || []).map(i => ({
@@ -217,8 +225,10 @@ export async function saveFullModelToDB(model: Model): Promise<void> {
       model.operations.map(o => ({
         id: o.id, model_id: model.id, product_id: o.product_id, op_name: o.op_name,
         op_number: o.op_number, equip_id: o.equip_id || null, pct_assigned: o.pct_assigned,
-        equip_setup_lot: o.equip_setup_lot, equip_run_piece: o.equip_run_piece,
-        labor_setup_lot: o.labor_setup_lot, labor_run_piece: o.labor_run_piece,
+        equip_setup_lot: o.equip_setup_lot, equip_setup_piece: o.equip_setup_piece, equip_setup_tbatch: o.equip_setup_tbatch,
+        equip_run_piece: o.equip_run_piece, equip_run_lot: o.equip_run_lot, equip_run_tbatch: o.equip_run_tbatch,
+        labor_setup_lot: o.labor_setup_lot, labor_setup_piece: o.labor_setup_piece, labor_setup_tbatch: o.labor_setup_tbatch,
+        labor_run_piece: o.labor_run_piece, labor_run_lot: o.labor_run_lot, labor_run_tbatch: o.labor_run_tbatch,
       }))
     ).select());
   }
@@ -368,8 +378,10 @@ export const db = {
     const { error } = await supabase.from('model_operations').insert({
       id: o.id, model_id: modelId, product_id: o.product_id, op_name: o.op_name,
       op_number: o.op_number, equip_id: o.equip_id || null, pct_assigned: o.pct_assigned,
-      equip_setup_lot: o.equip_setup_lot, equip_run_piece: o.equip_run_piece,
-      labor_setup_lot: o.labor_setup_lot, labor_run_piece: o.labor_run_piece,
+      equip_setup_lot: o.equip_setup_lot, equip_setup_piece: o.equip_setup_piece, equip_setup_tbatch: o.equip_setup_tbatch,
+      equip_run_piece: o.equip_run_piece, equip_run_lot: o.equip_run_lot, equip_run_tbatch: o.equip_run_tbatch,
+      labor_setup_lot: o.labor_setup_lot, labor_setup_piece: o.labor_setup_piece, labor_setup_tbatch: o.labor_setup_tbatch,
+      labor_run_piece: o.labor_run_piece, labor_run_lot: o.labor_run_lot, labor_run_tbatch: o.labor_run_tbatch,
     });
     if (error) console.error('insertOperation:', error);
   },

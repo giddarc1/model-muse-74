@@ -144,6 +144,14 @@ export default function EquipmentData() {
                     </Select>
                   </div>
                 </div>
+                <div className="pt-2 border-t border-border">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Scaling Factors</Label>
+                  <div className="grid grid-cols-3 gap-3 mt-1.5">
+                    <div><Label className="text-xs">Setup</Label><Input type="number" className="h-8 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.setup_factor} = {Math.round(eq.setup_factor * 100)}%</span></div>
+                    <div><Label className="text-xs">Run</Label><Input type="number" className="h-8 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.run_factor} = {Math.round(eq.run_factor * 100)}%</span></div>
+                    <div><Label className="text-xs">Variability</Label><Input type="number" className="h-8 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /><span className="text-[10px] text-muted-foreground">× {eq.var_factor} = {Math.round(eq.var_factor * 100)}%</span></div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}

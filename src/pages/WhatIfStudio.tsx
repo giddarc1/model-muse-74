@@ -506,6 +506,9 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
               { key: 'count', label: 'Count', value: l.count },
               { key: 'overtime_pct', label: 'OT %', value: l.overtime_pct },
               { key: 'unavail_pct', label: 'Unavail %', value: l.unavail_pct },
+              { key: 'setup_factor', label: 'Setup F.', value: l.setup_factor },
+              { key: 'run_factor', label: 'Run F.', value: l.run_factor },
+              { key: 'var_factor', label: 'Var F.', value: l.var_factor },
             ],
           }))}
           dataType="Labor"
@@ -523,6 +526,8 @@ function QuickInputPanel({ modelId, activeScenarioId }: { modelId: string; activ
               { key: 'mttf', label: 'MTTF', value: e.mttf },
               { key: 'mttr', label: 'MTTR', value: e.mttr },
               { key: 'setup_factor', label: 'Setup F.', value: e.setup_factor },
+              { key: 'run_factor', label: 'Run F.', value: e.run_factor },
+              { key: 'var_factor', label: 'Var F.', value: e.var_factor },
             ],
           }))}
           dataType="Equipment"

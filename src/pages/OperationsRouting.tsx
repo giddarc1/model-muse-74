@@ -41,6 +41,7 @@ export default function OperationsRouting() {
   const [routeFromOp, setRouteFromOp] = useState('');
   const [routeToOp, setRouteToOp] = useState('');
   const [routePct, setRoutePct] = useState(100);
+  const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
 
   const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
   const productOps = useMemo(
@@ -88,7 +89,10 @@ export default function OperationsRouting() {
       id: crypto.randomUUID(), product_id: selectedProductId,
       op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
       equip_id: newOpEquip, pct_assigned: 100,
-      equip_setup_lot: 0, equip_run_piece: 0, labor_setup_lot: 0, labor_run_piece: 0,
+      equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+      equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+      labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+      labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
     });
     setNewOpNumber(newOpNumber + 10); setNewOpName(''); setNewOpEquip('');
     setShowAddOp(false);
@@ -192,6 +196,9 @@ export default function OperationsRouting() {
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
+                    {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
+                  </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleResort} disabled={productOps.length === 0}>
                     <SortAsc className="h-3.5 w-3.5" /> Re-sort
                   </Button>
@@ -218,6 +225,16 @@ export default function OperationsRouting() {
                       <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
                       <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
                       <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
+                      {showAdvancedTimes && <>
+                        <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
+                        <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
+                        <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
+                        <TableHead className="font-mono text-xs">E.Run/TB</TableHead>
+                        <TableHead className="font-mono text-xs">L.Setup/Pc</TableHead>
+                        <TableHead className="font-mono text-xs">L.Setup/TB</TableHead>
+                        <TableHead className="font-mono text-xs">L.Run/Lot</TableHead>
+                        <TableHead className="font-mono text-xs">L.Run/TB</TableHead>
+                      </>}
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -240,6 +257,16 @@ export default function OperationsRouting() {
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
                         <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
+                        {showAdvancedTimes && <>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_run_lot: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_run_lot: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
+                        </>}
                         <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                       </TableRow>
                     ))}
