@@ -1166,17 +1166,17 @@ function NormalSummary({ results, model, scenarioResults }: {
       <TableHeader>
         <TableRow>
           <TableHead className="font-mono text-xs">Product</TableHead>
-          <TableHead className="font-mono text-xs text-right">Demand</TableHead>
-          <TableHead className="font-mono text-xs text-right">Lot Size</TableHead>
           <TableHead className="font-mono text-xs text-right">Good Made</TableHead>
+          <TableHead className="font-mono text-xs text-right">Good Shipped</TableHead>
           <TableHead className="font-mono text-xs text-right">Started</TableHead>
           <TableHead className="font-mono text-xs text-right">Scrap</TableHead>
           <TableHead className="font-mono text-xs text-right">WIP</TableHead>
           <TableHead className="font-mono text-xs text-right">MCT ({model.general.mct_time_unit})</TableHead>
           {hasScenarios && scenarioResults.map(sr => (
-            <TableHead key={sr.id} className="font-mono text-xs text-right text-primary">
-              MCT {sr.scenario.name}
-            </TableHead>
+            <React.Fragment key={sr.id}>
+              <TableHead className="font-mono text-xs text-right text-primary">WIP {sr.scenario.name}</TableHead>
+              <TableHead className="font-mono text-xs text-right text-primary">MCT {sr.scenario.name}</TableHead>
+            </React.Fragment>
           ))}
         </TableRow>
       </TableHeader>
