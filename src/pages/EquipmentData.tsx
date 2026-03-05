@@ -65,7 +65,7 @@ export default function EquipmentData() {
       </div>
 
       {model.equipment.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground"><p>No equipment groups defined yet.</p><Button className="mt-4" onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-1" /> Add First Equipment</Button></CardContent></Card>
+        <Card><CardContent className="py-16 text-center"><Cpu className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" /><p className="text-muted-foreground font-medium mb-1">No equipment groups defined</p><p className="text-sm text-muted-foreground/70 mb-4">Add equipment groups to define workstations and machines.</p><Button onClick={() => setShowAdd(true)} className="gap-1"><Plus className="h-4 w-4" /> Add First Equipment</Button></CardContent></Card>
       ) : viewMode === 'table' ? (
         <Card>
           <CardContent className="p-0 overflow-x-auto">
