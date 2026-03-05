@@ -250,13 +250,15 @@ export function ModelContextBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-11 bg-context-bar text-context-bar-foreground flex items-center px-4 gap-3 border-b border-sidebar-border shrink-0">
+      <div className="h-11 bg-context-bar text-context-bar-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-sidebar-border shrink-0 overflow-x-auto">
+        {/* Spacer for mobile hamburger */}
+        <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors shrink-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span className="font-medium truncate max-w-[200px]">{model.name}</span>
+          <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+          <span className="font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
         </button>
 
         <div className="h-4 w-px bg-sidebar-border" />
