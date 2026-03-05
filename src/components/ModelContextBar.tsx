@@ -3,7 +3,7 @@ import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
+import { ArrowLeft, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { calculate } from '@/lib/calculationEngine';
+import { useRunCalculation } from '@/hooks/useRunCalculation';
 
 interface RecentVersion {
   id: string;
@@ -29,12 +29,9 @@ interface RecentVersion {
 
 export function ModelContextBar() {
   const model = useModelStore((s) => s.getActiveModel());
-  const setRunStatus = useModelStore((s) => s.setRunStatus);
   const activeScenario = useScenarioStore((s) => s.getActiveScenario());
-  const markCalculated = useScenarioStore((s) => s.markCalculated);
-  const { setResults } = useResultsStore();
   const navigate = useNavigate();
-  const [isRunning, setIsRunning] = useState(false);
+  const { isRunning, handleRun: sharedRun } = useRunCalculation();
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [checkpointName, setCheckpointName] = useState('');
   const [isSavingCheckpoint, setIsSavingCheckpoint] = useState(false);
@@ -68,56 +65,8 @@ export function ModelContextBar() {
 
   const status = statusConfig[model.run_status];
   const isResultsCurrent = model.run_status === 'current';
-  const resultKey = activeScenario ? activeScenario.id : 'basecase';
 
-  // ── Run Full Calculate ──────────────────────────────────────────
-  const handleRun = async () => {
-    const validationErrors: string[] = [];
-    if (model.general.conv1 <= 0) validationErrors.push('Time Conversion 1 must be > 0');
-    if (model.general.conv2 <= 0) validationErrors.push('Time Conversion 2 must be > 0');
-    model.products.forEach(p => {
-      if (p.lot_size < 1) validationErrors.push(`Product "${p.name}": Lot Size must be ≥ 1`);
-      if (p.demand < 0) validationErrors.push(`Product "${p.name}": Demand cannot be negative`);
-    });
-    model.equipment.forEach(e => {
-      if (e.equip_type === 'standard' && e.count < 1) validationErrors.push(`Equipment "${e.name}": Count must be ≥ 1`);
-    });
-    model.labor.forEach(l => {
-      if (l.count < 1) validationErrors.push(`Labor "${l.name}": Count must be ≥ 1`);
-    });
-    if (validationErrors.length > 0) {
-      toast.error(`${validationErrors.length} validation error(s) — fix before calculating`, {
-        description: validationErrors.slice(0, 3).join('; ') + (validationErrors.length > 3 ? '…' : ''),
-      });
-      return;
-    }
-
-    setIsRunning(true);
-    setTimeout(async () => {
-      const calcResults = calculate(model, activeScenario || undefined);
-      setResults(resultKey, calcResults);
-      setRunStatus(model.id, 'current');
-      if (activeScenario) markCalculated(activeScenario.id);
-      setIsRunning(false);
-
-      const { scenarioDb } = await import('@/lib/scenarioDb');
-      if (activeScenario) {
-        scenarioDb.saveResults(activeScenario.id, calcResults);
-      } else {
-        scenarioDb.saveBasecaseResults(model.id, calcResults);
-      }
-      const { db } = await import('@/lib/supabaseData');
-      db.updateModel(model.id, { run_status: 'current', last_run_at: new Date().toISOString() });
-
-      if (calcResults.errors.length > 0) {
-        toast.error(calcResults.errors[0]);
-      } else if (calcResults.overLimitResources.length > 0) {
-        toast.warning(`${calcResults.overLimitResources.length} resource(s) exceed utilization limit`);
-      } else {
-        toast.success('Full calculation complete — all production targets achievable');
-      }
-    }, 100);
-  };
+  const handleRun = () => sharedRun('full');
 
   // ── Open checkpoint dialog ──────────────────────────────────────
   const handleOpenCheckpointDialog = () => {
@@ -287,9 +236,15 @@ export function ModelContextBar() {
   };
 
   // ── Tooltip text ────────────────────────────────────────────────
-  const runTooltip = activeScenario
-    ? `Run Full Calculate on: ${activeScenario.name}`
-    : 'Run Full Calculate on the current scenario';
+  const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
+  const runTooltip = isResultsCurrent
+    ? 'Results are current — click to re-run'
+    : `Quick recalculate — runs Full Calculate on ${scenarioLabel}`;
+  const statusTooltip = model.run_status === 'current'
+    ? `Last calculated: ${model.last_run_at ? new Date(model.last_run_at).toLocaleString() : 'unknown'}`
+    : model.run_status === 'needs_recalc'
+      ? `Results are stale — data changed${model.last_run_at ? ` since last run on ${new Date(model.last_run_at).toLocaleString()}` : ''}`
+      : 'Model has never been run';
   const checkpointTooltip = 'Save a version checkpoint you can restore later';
   const exportTooltip = 'Download this model as a JSON file';
 
@@ -320,9 +275,14 @@ export function ModelContextBar() {
           </Badge>
         )}
 
-        <Badge className={`text-xs ${status.className}`}>
-          {status.label}
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`text-xs cursor-default ${status.className}`}>
+              {status.label}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">{statusTooltip}</TooltipContent>
+        </Tooltip>
 
         <div className="flex-1" />
 
@@ -399,16 +359,15 @@ export function ModelContextBar() {
                     {isResultsCurrent ? (
                       <CheckCircle className="h-3.5 w-3.5 mr-1 text-success" />
                     ) : (
-                      <Play className="h-3.5 w-3.5 mr-1" />
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Run
+                    <span className="hidden lg:inline">Recalculate</span>
+                    <span className="lg:hidden">Run</span>
                   </>
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {isResultsCurrent ? 'Results are current — click to re-run' : runTooltip}
-            </TooltipContent>
+            <TooltipContent side="bottom">{runTooltip}</TooltipContent>
           </Tooltip>
         </div>
       </div>
