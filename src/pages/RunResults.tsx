@@ -140,11 +140,23 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
 
-const RUN_MODE_OPTIONS: { mode: RunMode; icon: typeof Play; label: string; description: string; feature?: string }[] = [
-  { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis. Calculates utilization, MCT, WIP, and queue times for all products and resources.' },
-  { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates all input data for errors and inconsistencies without running calculations. Use this to check your model before a full run.' },
-  { mode: 'util_only', icon: Gauge, label: 'Calculate Utilization Only', description: 'Calculates equipment and labor utilization only. Faster than Full Calculate — useful when exploring capacity balance.', feature: 'util-only-mode' },
-  { mode: 'full', icon: ListChecks, label: 'Product Inclusion', description: 'Select a subset of products to include in this run. Useful for cell design analysis.', feature: 'product-inclusion' },
+// Extended run mode type for advanced modes
+type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'optimize_lots';
+
+const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis with utilization, MCT, WIP, and queue times.' },
+  { mode: 'verify', icon: Shield, label: 'Verify Data Only', description: 'Validates input data for errors without running calculations.' },
+  { mode: 'util_only', icon: Gauge, label: 'Utilization Only', description: 'Equipment and labor utilization only — faster for capacity exploration.' },
+];
+
+const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'product_inclusion', icon: ListChecks, label: 'Product Inclusion', description: 'Select which products to include. Saves as a What-If scenario.' },
+  { mode: 'max_throughput', icon: TrendingUp, label: 'Max Throughput', description: 'Find the maximum achievable demand for a selected product.' },
+];
+
+const OPTIMIZATION_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
+  { mode: 'lot_size_range', icon: BarChart3, label: 'Lot Size Range', description: 'Run a range of lot sizes and chart MCT vs lot size curve.' },
+  { mode: 'optimize_lots', icon: Settings2, label: 'Optimize Lot Sizes', description: 'Minimize total WIP by iteratively adjusting lot sizes and transfer batches.' },
 ];
 
 export default function RunResults() {
