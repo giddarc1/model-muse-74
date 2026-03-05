@@ -277,9 +277,14 @@ export function ModelContextBar() {
           </Badge>
         )}
 
-        <Badge className={`text-xs ${status.className}`}>
-          {status.label}
-        </Badge>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`text-xs cursor-default ${status.className}`}>
+              {status.label}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">{statusTooltip}</TooltipContent>
+        </Tooltip>
 
         <div className="flex-1" />
 
