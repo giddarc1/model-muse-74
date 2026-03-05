@@ -110,7 +110,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
         setResults(resultKey, calcResults);
         setRunStatus(model.id, 'current');
         if (activeScenario) markCalculated(activeScenario.id);
-        setIsRunning(false);
+        setGlobalIsRunning(false);
         setVerifyMessages(null);
 
         const durationMs = Date.now() - startTime;
