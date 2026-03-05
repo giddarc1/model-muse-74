@@ -25,6 +25,8 @@ export default function ProductData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { userLevel } = useUserLevelStore();
+  const showAdvancedParams = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 space-y-4">
