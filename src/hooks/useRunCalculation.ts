@@ -100,7 +100,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
       return;
     }
 
-    setIsRunning(true);
+    setGlobalIsRunning(true);
     const startTime = Date.now();
     const resultKey = activeScenario ? activeScenario.id : 'basecase';
 
