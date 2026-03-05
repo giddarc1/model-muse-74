@@ -73,9 +73,29 @@ export async function fetchAllModels(): Promise<Model[]> {
         var_equip: Number(g.var_equip ?? 30),
         var_labor: Number(g.var_labor ?? 30),
         var_prod: Number(g.var_prod ?? 30),
+        gen1: Number(g.gen1 ?? 0),
+        gen2: Number(g.gen2 ?? 0),
+        gen3: Number(g.gen3 ?? 0),
+        gen4: Number(g.gen4 ?? 0),
         author: g.author || '',
         comments: g.comments || '',
       } : defaultGeneral(m.name),
+      param_names: (() => {
+        const pn = paramNamesByModel[m.id];
+        if (!pn) return { ...defaultParamNames };
+        return {
+          gen1_name: pn.gen1_name || 'Gen1', gen2_name: pn.gen2_name || 'Gen2',
+          gen3_name: pn.gen3_name || 'Gen3', gen4_name: pn.gen4_name || 'Gen4',
+          lab1_name: pn.lab1_name || 'Lab1', lab2_name: pn.lab2_name || 'Lab2',
+          lab3_name: pn.lab3_name || 'Lab3', lab4_name: pn.lab4_name || 'Lab4',
+          eq1_name: pn.eq1_name || 'Eq1', eq2_name: pn.eq2_name || 'Eq2',
+          eq3_name: pn.eq3_name || 'Eq3', eq4_name: pn.eq4_name || 'Eq4',
+          prod1_name: pn.prod1_name || 'Prod1', prod2_name: pn.prod2_name || 'Prod2',
+          prod3_name: pn.prod3_name || 'Prod3', prod4_name: pn.prod4_name || 'Prod4',
+          oper1_name: pn.oper1_name || 'Oper1', oper2_name: pn.oper2_name || 'Oper2',
+          oper3_name: pn.oper3_name || 'Oper3', oper4_name: pn.oper4_name || 'Oper4',
+        } as ParamNames;
+      })(),
       labor: (laborByModel[m.id] || []).map(l => ({
         id: l.id, name: l.name,
         count: l.count ?? 1,
