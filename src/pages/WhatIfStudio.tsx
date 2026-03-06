@@ -642,7 +642,7 @@ function CentrePanel({
 
   const isActive = activeScenarioId !== null && activeScenario?.id === activeScenarioId;
 
-  // ── STATE A: Basecase selected ──
+  // ── STATE A: Basecase selected (or inline create form) ──
   if (activeScenarioId === null) {
     const lastModified = model.updated_at ? new Date(model.updated_at).toLocaleDateString() : '—';
     return (
