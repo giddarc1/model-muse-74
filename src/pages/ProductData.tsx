@@ -207,7 +207,7 @@ export default function ProductData() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {model.products.map((p) => (
-            <Card key={p.id}>
+            <Card key={p.id} className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{p.name}</CardTitle>

@@ -178,7 +178,7 @@ export default function EquipmentData() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {model.equipment.map((eq) => (
-            <Card key={eq.id}>
+            <Card key={eq.id} className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{eq.name}</CardTitle>
