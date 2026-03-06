@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronRight, ChevronDown, ChevronsLeft, Network, Info, FlaskConical, Trash2, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -32,6 +34,8 @@ export default function IBOMScreen() {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [showRemoveAllDialog, setShowRemoveAllDialog] = useState(false);
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
     if (!model || visited.has(parentId)) return [];
@@ -150,6 +154,7 @@ export default function IBOMScreen() {
   const handleRemoveAll = () => {
     currentComponents.forEach((c) => deleteIBOM(model.id, c.id));
     toast.success('All components removed');
+    setShowRemoveAllDialog(false);
   };
 
   const expandAll = () => {
@@ -316,92 +321,121 @@ export default function IBOMScreen() {
       <div className="flex-1 min-h-0 px-6 pt-2 pb-4">
         <Card className="h-full flex flex-col">
           <CardHeader className="pb-2 shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">
-                  {editParentId
-                    ? <>Components of <span className="font-mono text-primary">{prodName(editParentId)}</span></>
-                    : 'Edit Components'
-                  }
-                </CardTitle>
-                <CardDescription>
-                  {editParentId
-                    ? `${currentComponents.length} component(s) defined. Click a row in the tree above or select a product to edit.`
-                    : 'Click any product in the tree above to manage its components.'
-                  }
-                </CardDescription>
-              </div>
-              {!selectedProductId && (
-                <Select value="" onValueChange={(v) => handleSelectRow(v)}>
-                  <SelectTrigger className="h-7 w-48 text-xs">
-                    <SelectValue placeholder="Or select product…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allProducts.map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+            <CardTitle className="text-base">
+              {editParentId
+                ? <>Components for: <span className="font-mono text-primary">{prodName(editParentId)}</span></>
+                : 'Edit Components'
+              }
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto p-4 pt-0">
             {!editParentId ? (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                Select a product from the tree or the dropdown to manage its components.
+                Click any product in the tree above to edit its components.
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 h-full">
                 {/* Left: Current Components */}
                 <div className="flex flex-col min-h-0">
-                  <Label className="text-xs mb-1.5 shrink-0">Current Components</Label>
+                  <Label className="text-xs font-medium mb-1.5 shrink-0">Current Components</Label>
                   <div className="border rounded-md flex-1 overflow-y-auto">
                     {currentComponents.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-3">No components defined yet.</p>
+                      <p className="text-xs text-muted-foreground p-3">No components added yet. Add from the list on the right.</p>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-xs font-mono h-7">Component</TableHead>
-                            <TableHead className="text-xs font-mono h-7 w-20">Units/Assy</TableHead>
-                            <TableHead className="text-xs font-mono h-7 w-8"></TableHead>
+                            <TableHead className="text-xs h-7">Component</TableHead>
+                            <TableHead className="text-xs h-7 w-24">Units/Assy</TableHead>
+                            <TableHead className="text-xs h-7 w-20"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {currentComponents.map((c) => (
-                            <TableRow key={c.id}>
-                              <TableCell className="font-mono text-xs py-1">{prodName(c.component_product_id)}</TableCell>
-                              <TableCell className="py-1">
-                                <Input
-                                  type="number"
-                                  className="h-6 w-16 font-mono text-xs"
-                                  value={c.units_per_assy}
-                                  min={1}
-                                  onChange={(e) => updateIBOM(model.id, c.id, { units_per_assy: Math.max(1, +e.target.value) })}
-                                />
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => { deleteIBOM(model.id, c.id); toast.success('Component removed'); }}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {currentComponents.map((c) => {
+                            const isConfirming = confirmingRemoveId === c.id;
+                            return (
+                              <TableRow key={c.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                                {isConfirming ? (
+                                  <TableCell colSpan={3} className="py-1.5">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-destructive font-medium">
+                                        Remove {prodName(c.component_product_id)}?
+                                      </span>
+                                      <div className="flex gap-1.5">
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          className="h-6 text-xs px-2"
+                                          onClick={() => {
+                                            deleteIBOM(model.id, c.id);
+                                            setConfirmingRemoveId(null);
+                                            toast.success('Component removed');
+                                          }}
+                                        >
+                                          Confirm
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 text-xs px-2"
+                                          onClick={() => setConfirmingRemoveId(null)}
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                ) : (
+                                  <>
+                                    <TableCell className="font-mono text-xs py-1">{prodName(c.component_product_id)}</TableCell>
+                                    <TableCell className="py-1">
+                                      <Input
+                                        type="number"
+                                        className="h-6 w-16 font-mono text-xs"
+                                        value={c.units_per_assy}
+                                        min={1}
+                                        onChange={(e) => updateIBOM(model.id, c.id, { units_per_assy: Math.max(1, +e.target.value) })}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="py-1 text-right">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-xs text-destructive hover:text-destructive px-2"
+                                        onClick={() => setConfirmingRemoveId(c.id)}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </TableCell>
+                                  </>
+                                )}
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     )}
                   </div>
-                  <Button variant="outline" size="sm" className="text-xs gap-1 mt-1.5 self-start" onClick={handleRemoveAll} disabled={currentComponents.length === 0}>
-                    Remove All
-                  </Button>
+                  {currentComponents.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs mt-1.5 self-start text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setShowRemoveAllDialog(true)}
+                    >
+                      Remove All Components
+                    </Button>
+                  )}
                 </div>
 
-                {/* Right: Allowable Components */}
+                {/* Right: Add Components */}
                 <div className="flex flex-col min-h-0">
-                  <Label className="text-xs mb-1.5 shrink-0">Allowable Components</Label>
+                  <Label className="text-xs font-medium mb-1.5 shrink-0">Available to add:</Label>
                   <div className="border rounded-md flex-1 overflow-y-auto p-1">
-                    {allowableProducts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-2">No available components (all products are already assigned or would create a circular reference).</p>
+                    {allProducts.length <= 1 ? (
+                      <p className="text-xs text-muted-foreground p-2">No other products exist. Add products in the Products tab first.</p>
+                    ) : allowableProducts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground p-2">All valid components have already been added.</p>
                     ) : (
                       <div className="space-y-0.5">
                         {allowableProducts.map((p) => (
@@ -409,17 +443,15 @@ export default function IBOMScreen() {
                             key={p.id}
                             className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-xs font-mono hover:bg-muted/50"
                           >
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={checkedAllowable.has(p.id)}
-                              onChange={(e) => {
+                              onCheckedChange={(checked) => {
                                 setCheckedAllowable(prev => {
                                   const next = new Set(prev);
-                                  if (e.target.checked) next.add(p.id); else next.delete(p.id);
+                                  if (checked) next.add(p.id); else next.delete(p.id);
                                   return next;
                                 });
                               }}
-                              className="rounded border-border"
                             />
                             {p.name}
                           </label>
@@ -428,11 +460,11 @@ export default function IBOMScreen() {
                     )}
                   </div>
                   <div className="flex gap-1.5 mt-1.5 shrink-0">
-                    <Button size="sm" className="text-xs gap-1" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
-                      <ChevronsLeft className="h-3.5 w-3.5" /> Add Selected
+                    <Button size="sm" className="text-xs" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
+                      {checkedAllowable.size > 0 ? `Add ${checkedAllowable.size} Selected` : 'Add Selected'}
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
-                      Add All
+                    <Button variant="outline" size="sm" className="text-xs" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
+                      Add All ({allowableProducts.length})
                     </Button>
                   </div>
                 </div>
@@ -441,6 +473,22 @@ export default function IBOMScreen() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Remove All Confirmation Dialog */}
+      <Dialog open={showRemoveAllDialog} onOpenChange={setShowRemoveAllDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove All Components</DialogTitle>
+            <DialogDescription>
+              Remove all {currentComponents.length} components from {editParentId ? prodName(editParentId) : ''}? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowRemoveAllDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleRemoveAll}>Remove All</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
