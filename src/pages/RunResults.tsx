@@ -1189,6 +1189,60 @@ export default function RunResults() {
           </Card>
         )}
       </div>
+
+      {/* ── Product Inclusion Modal ── */}
+      <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Product Inclusion</DialogTitle>
+            <DialogDescription>Select which products to include in the calculation.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pi-name" className="text-sm font-medium">What-if Name</Label>
+              <Input
+                id="pi-name"
+                value={piScenarioName}
+                onChange={e => setPiScenarioName(e.target.value)}
+                placeholder="Product Inclusion"
+              />
+            </div>
+            <div className="border border-border rounded-md max-h-64 overflow-y-auto">
+              {model?.products.map(p => (
+                <label key={p.id} className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 cursor-pointer border-b border-border last:border-b-0">
+                  <Checkbox
+                    checked={piSelectedProducts.has(p.id)}
+                    onCheckedChange={(checked) => {
+                      setPiSelectedProducts(prev => {
+                        const next = new Set(prev);
+                        if (checked) next.add(p.id); else next.delete(p.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <span className="text-sm">{p.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              MPX will automatically create a What-if before calculating, so no existing data will be lost.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPiModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={piSelectedProducts.size === 0 || advRunning}
+              onClick={async () => {
+                setPiModalOpen(false);
+                setExtRunMode('product_inclusion');
+                await handleAdvancedRun();
+              }}
+            >
+              Run
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
