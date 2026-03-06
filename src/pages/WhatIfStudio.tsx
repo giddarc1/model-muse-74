@@ -25,9 +25,10 @@ import {
 } from '@/components/ui/collapsible';
 import {
   Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw,
-  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers,
+  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck,
 } from 'lucide-react';
+import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
 import { scenarioDb } from '@/lib/scenarioDb';
 
