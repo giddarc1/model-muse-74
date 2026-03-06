@@ -20,6 +20,7 @@ import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
   TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
 } from 'lucide-react';
+import IBOMOutput, { MCT_COLORS } from '@/components/IBOMOutput';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -38,11 +39,11 @@ const SCENARIO_PALETTES = [
   { setup: 'hsl(0, 70%, 75%)', run: 'hsl(0, 70%, 55%)', repair: 'hsl(0, 55%, 40%)', waitLabor: 'hsl(0, 45%, 30%)', unavail: 'hsl(0, 25%, 45%)', lotWait: 'hsl(0, 70%, 80%)', queue: 'hsl(0, 55%, 45%)', single: 'hsl(0, 70%, 55%)' },
 ];
 
-// Single-scenario colors (legacy)
+// Single-scenario colors — use consistent 5-segment MCT colours for product charts
 const chartColors = {
-  setup: 'hsl(217, 91%, 60%)', run: 'hsl(142, 71%, 45%)',
-  repair: 'hsl(0, 72%, 51%)', waitLabor: 'hsl(38, 92%, 50%)',
-  unavail: 'hsl(220, 9%, 46%)', lotWait: 'hsl(270, 50%, 60%)', queue: 'hsl(0, 72%, 51%)',
+  setup: MCT_COLORS.setup, run: MCT_COLORS.run,
+  repair: 'hsl(0, 72%, 51%)', waitLabor: MCT_COLORS.waitLabor,
+  unavail: 'hsl(220, 9%, 46%)', lotWait: MCT_COLORS.lotWait, queue: MCT_COLORS.waitEquip,
 };
 
 type ScenarioEntry = { id: string; name: string; results: CalcResults };
@@ -228,7 +229,7 @@ export default function RunResults() {
   const [extRunMode, setExtRunMode] = useState<ExtendedRunMode>('full');
   const runMode: RunMode = (extRunMode === 'full' || extRunMode === 'verify' || extRunMode === 'util_only') ? extRunMode : 'full';
   const [transposed, setTransposed] = useState(false);
-  const [ibomProduct, setIbomProduct] = useState('');
+  // ibomProduct state removed — now managed inside IBOMOutput component
 
   // Advanced mode state — must be before early return
   const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
@@ -303,7 +304,7 @@ export default function RunResults() {
   const groupedMCT = useMemo(() => isMultiScenario ? buildGroupedProductMCTData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
   const groupedWIP = useMemo(() => isMultiScenario ? buildGroupedProductWIPData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
 
-  const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
+  // ibomSelectedProduct removed — now managed inside IBOMOutput component
 
   // Render a mode card
   const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}) => {
@@ -1022,8 +1023,8 @@ export default function RunResults() {
                       <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
                       <Tooltip contentStyle={tooltipStyle} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Lot Waiting" />
-                      <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Queue" />
+                      <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
+                      <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
                       <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
                       <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
                       <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
@@ -1097,40 +1098,7 @@ export default function RunResults() {
 
           {/* IBOM Tab */}
           <TabsContent value="ibom" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Network className="h-4 w-4 text-primary" /> IBOM Analysis
-                    </CardTitle>
-                    <CardDescription>Bill of Materials MCT contribution tree</CardDescription>
-                  </div>
-                  <Select value={ibomSelectedProduct} onValueChange={setIbomProduct}>
-                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Select product" /></SelectTrigger>
-                    <SelectContent>
-                      {model.products.filter(p => p.demand > 0).map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="tree">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="tree" className="text-xs">Tree</TabsTrigger>
-                    <TabsTrigger value="poles" className="text-xs">Poles</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="tree">
-                    <IBOMTreeView model={model} results={results!} selectedProductId={ibomSelectedProduct} />
-                  </TabsContent>
-                  <TabsContent value="poles">
-                    <IBOMPolesView model={model} results={results!} selectedProductId={ibomSelectedProduct} />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+            <IBOMOutput model={model} isRunning={isRunning} />
           </TabsContent>
 
           {/* Oper Details Tab */}
@@ -1295,125 +1263,7 @@ function TransposedSummary({ results, model, scenarioResults }: {
   );
 }
 
-/* ─── IBOM sub-components ─── */
-
-interface IBOMNode {
-  productId: string;
-  productName: string;
-  mct: number;
-  unitsPerAssy: number;
-  children: IBOMNode[];
-}
-
-function buildIBOMTree(model: any, results: CalcResults, rootId: string): IBOMNode {
-  const product = model.products.find((p: any) => p.id === rootId);
-  const pr = results.products.find(p => p.id === rootId);
-  const children = model.ibom
-    .filter((e: any) => e.parent_product_id === rootId)
-    .map((e: any) => ({
-      ...buildIBOMTree(model, results, e.component_product_id),
-      unitsPerAssy: e.units_per_assy,
-    }));
-
-  return {
-    productId: rootId,
-    productName: product?.name || '?',
-    mct: pr?.mct || 0,
-    unitsPerAssy: 1,
-    children,
-  };
-}
-
-function IBOMTreeView({ model, results, selectedProductId }: { model: any; results: CalcResults; selectedProductId: string }) {
-  const tree = useMemo(() => buildIBOMTree(model, results, selectedProductId), [model, results, selectedProductId]);
-
-  const renderNode = (node: IBOMNode, depth: number, isLongest: boolean) => (
-    <div key={node.productId} className="ml-4" style={{ marginLeft: depth * 24 }}>
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-mono mb-1 ${
-        isLongest ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border bg-card'
-      }`}>
-        <span>{node.productName}</span>
-        {node.unitsPerAssy > 1 && <Badge variant="secondary" className="text-[9px] h-4">×{node.unitsPerAssy}</Badge>}
-        <span className="text-muted-foreground">{node.mct.toFixed(4)} {model.general.mct_time_unit}</span>
-      </div>
-      {node.children.length > 0 && (
-        <div className="border-l border-border ml-4 pl-1">
-          {node.children.map(child => {
-            const longestChild = node.children.reduce((a, b) => a.mct > b.mct ? a : b);
-            return renderNode(child, 0, child.productId === longestChild.productId);
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  if (model.ibom.filter((e: any) => e.parent_product_id === selectedProductId).length === 0) {
-    return (
-      <div className="text-center py-8 text-sm text-muted-foreground">
-        No IBOM entries for this product. Add components in the IBOM screen.
-      </div>
-    );
-  }
-
-  return <div className="py-2">{renderNode(tree, 0, true)}</div>;
-}
-
-function IBOMPolesView({ model, results, selectedProductId }: { model: any; results: CalcResults; selectedProductId: string }) {
-  // Build all paths from root to leaf
-  const paths = useMemo(() => {
-    const allPaths: { path: string[]; totalMCT: number }[] = [];
-
-    function traverse(nodeId: string, currentPath: string[], currentMCT: number) {
-      const pr = results.products.find(p => p.id === nodeId);
-      const mct = pr?.mct || 0;
-      const product = model.products.find((p: any) => p.id === nodeId);
-      const name = product?.name || '?';
-      const newPath = [...currentPath, name];
-      const newMCT = currentMCT + mct;
-
-      const children = model.ibom.filter((e: any) => e.parent_product_id === nodeId);
-      if (children.length === 0) {
-        allPaths.push({ path: newPath, totalMCT: newMCT });
-      } else {
-        children.forEach((c: any) => traverse(c.component_product_id, newPath, newMCT));
-      }
-    }
-
-    traverse(selectedProductId, [], 0);
-    return allPaths.sort((a, b) => b.totalMCT - a.totalMCT);
-  }, [model, results, selectedProductId]);
-
-  if (paths.length <= 1 && paths[0]?.path.length <= 1) {
-    return (
-      <div className="text-center py-8 text-sm text-muted-foreground">
-        No IBOM paths to display. Add components in the IBOM screen.
-      </div>
-    );
-  }
-
-  const maxMCT = paths[0]?.totalMCT || 1;
-
-  return (
-    <div className="space-y-2 py-2">
-      {paths.map((p, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <div className="w-40 text-xs font-mono text-right truncate text-muted-foreground">
-            {p.path.join(' → ')}
-          </div>
-          <div className="flex-1 h-6 bg-muted rounded overflow-hidden relative">
-            <div
-              className={`h-full rounded transition-all ${i === 0 ? 'bg-primary' : 'bg-primary/40'}`}
-              style={{ width: `${(p.totalMCT / maxMCT) * 100}%` }}
-            />
-            <span className="absolute right-2 top-0.5 text-[10px] font-mono">
-              {p.totalMCT.toFixed(4)} {model.general.mct_time_unit}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* Old IBOM sub-components removed — now in src/components/IBOMOutput.tsx */
 
 /* ─── Equipment WIP Chart ─── */
 function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: {
