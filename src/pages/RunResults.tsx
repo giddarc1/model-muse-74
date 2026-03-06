@@ -995,6 +995,7 @@ export default function RunResults() {
                   </button>
                 ))}
               </div>
+              <ScenarioContextBar />
 
               {laborSubTab === 'util-chart' && (
                 <Card>
