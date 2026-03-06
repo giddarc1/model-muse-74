@@ -41,6 +41,7 @@ export default function IBOMScreen() {
   const [showRemoveAllDialog, setShowRemoveAllDialog] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
+  const [showEmptyPicker, setShowEmptyPicker] = useState(false);
 
   // Track previous valid values for revert on blur
   const prevUpaValues = useRef<Map<string, number>>(new Map());
