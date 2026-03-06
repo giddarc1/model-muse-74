@@ -1110,7 +1110,8 @@ export default function RunResults() {
                           : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
+                      <ChartScenarioLabel />
                       <ResponsiveContainer width="100%" height={350}>
                         {isMultiScenario && groupedMCT ? (
                           <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
