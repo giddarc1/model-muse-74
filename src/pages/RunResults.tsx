@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip as ShadTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
@@ -25,7 +25,7 @@ import {
 import IBOMOutput, { MCT_COLORS } from '@/components/IBOMOutput';
 import { toast } from 'sonner';
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
