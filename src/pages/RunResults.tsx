@@ -586,7 +586,7 @@ export default function RunResults() {
   const lastRunText = model.last_run_at ? `Last run: ${new Date(model.last_run_at).toLocaleString()}` : 'Never run';
 
   return (
-    <div className="h-full flex flex-col animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden animate-fade-in">
       {/* ── Page Header Row ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <h1 className="text-xl font-bold">Run &amp; Results</h1>
