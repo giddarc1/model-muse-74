@@ -677,15 +677,44 @@ function CentrePanel({
             </div>
           </div>
 
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold mb-1">What-if Scenarios</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {scenarios.length} saved What-if{scenarios.length !== 1 ? 's' : ''}
-            </p>
-            <Button onClick={onShowNewModal} className="h-10 text-sm px-6">
-              <Plus className="h-4 w-4 mr-2" /> New What-if
-            </Button>
-          </div>
+          {showCreateForm ? (
+            <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
+              <h3 className="text-sm font-semibold">New What-if</h3>
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onCreateSubmit(); if (e.key === 'Escape') onCancelCreate(); }}
+                  placeholder="e.g. Higher demand scenario"
+                  className="h-8 mt-1"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Comment (optional)</Label>
+                <Textarea placeholder="Describe what you want to explore…" className="mt-1 text-sm min-h-[40px] resize-none" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-8 text-xs" onClick={onCreateSubmit} disabled={!newName.trim()}>
+                  <Play className="h-3.5 w-3.5 mr-1" /> Start Editing
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onCancelCreate}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold mb-1">What-if Scenarios</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {scenarios.length} saved What-if{scenarios.length !== 1 ? 's' : ''}
+              </p>
+              <Button onClick={onShowNewForm} className="h-10 text-sm px-6">
+                <Plus className="h-4 w-4 mr-2" /> New What-if
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
