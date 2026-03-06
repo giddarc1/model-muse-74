@@ -24,9 +24,9 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw,
+  Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw, ArrowLeft, ChevronUp,
   FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar,
 } from 'lucide-react';
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
@@ -437,38 +437,23 @@ export default function WhatIfStudio() {
         </div>
 
         {/* Centre Panel — Active Scenario (flex fill) */}
-        <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
-          <div className="p-3 border-b border-border">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {showFamilyRecords && activeFamilyId ? (
-              <FamilyRecordsView
-                familyMembers={activeFamilyMembers}
-                activeScenarioId={activeScenarioId}
-                model={model}
-                onClose={() => setShowFamilyRecords(false)}
-                userLevel={userLevel}
-              />
-            ) : activeScenarioId === null ? (
-              <BasecaseView />
-            ) : activeScenario ? (
-              <ScenarioEditorPanel
-                scenario={activeScenario}
-                model={model}
-                onUpdateDescription={updateScenarioDescription}
-                onRename={renameScenario}
-                onRemoveChange={removeChange}
-                onPromote={() => setShowPromoteModal(true)}
-                onRunScenario={handleRunScenario}
-                onSaveAs={handleSaveAs}
-                userLevel={userLevel}
-              />
-            ) : (
-              <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
-            )}
-          </div>
-        </div>
+        <CentrePanel
+          model={model}
+          modelId={modelId}
+          scenarios={scenarios}
+          activeScenarioId={activeScenarioId}
+          activeScenario={activeScenario}
+          setActiveScenario={setActiveScenario}
+          onRename={renameScenario}
+          onUpdateDescription={updateScenarioDescription}
+          onRemoveChange={removeChange}
+          onPromote={() => setShowPromoteModal(true)}
+          onRunScenario={handleRunScenario}
+          onSaveAs={handleSaveAs}
+          onDelete={deleteScenario}
+          onShowNewModal={() => setShowNewModal(true)}
+          userLevel={userLevel}
+        />
 
         {/* Right Panel — Families (300px, Advanced only) */}
         {isVisible('whatif_families', userLevel) && (
@@ -564,182 +549,344 @@ export default function WhatIfStudio() {
   );
 }
 
-function BasecaseView() {
-  return (
-    <div className="p-8 flex flex-col items-center justify-center h-full text-center">
-      <Shield className="h-12 w-12 text-primary/30 mb-4" />
-      <h2 className="text-lg font-semibold mb-2">Basecase Active</h2>
-      <p className="text-sm text-muted-foreground max-w-md">
-        You are viewing the Basecase — the reference state of your model. Create or select a What-If scenario from the left panel to explore changes.
-      </p>
-    </div>
-  );
-}
-
-// 2C: Scenario Editor with Direct Edits
-function ScenarioEditorPanel({
-  scenario, model, onUpdateDescription, onRename, onRemoveChange, onPromote, onRunScenario, onSaveAs, userLevel,
+// ─── Centre Panel ────────────────────────────────────────────────────
+function CentrePanel({
+  model, modelId, scenarios, activeScenarioId, activeScenario,
+  setActiveScenario, onRename, onUpdateDescription, onRemoveChange,
+  onPromote, onRunScenario, onSaveAs, onDelete, onShowNewModal, userLevel,
 }: {
-  scenario: Scenario;
   model: any;
-  onUpdateDescription: (id: string, desc: string) => void;
+  modelId: string;
+  scenarios: Scenario[];
+  activeScenarioId: string | null;
+  activeScenario: Scenario | null;
+  setActiveScenario: (id: string | null) => void;
   onRename: (id: string, name: string) => void;
+  onUpdateDescription: (id: string, desc: string) => void;
   onRemoveChange: (scenarioId: string, changeId: string) => void;
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
   onSaveAs: (scenario: Scenario) => void;
+  onDelete: (id: string) => void;
+  onShowNewModal: () => void;
   userLevel: UserLevel;
 }) {
   const [editingName, setEditingName] = useState(false);
-  const [nameVal, setNameVal] = useState(scenario.name);
+  const [nameVal, setNameVal] = useState(activeScenario?.name || '');
+  const [showChanges, setShowChanges] = useState(false);
   const [directEdits, setDirectEdits] = useState(false);
   const { updateChange, markNeedsRecalc } = useScenarioStore();
   const { updateLabor, updateEquipment, updateProduct, updateRouting } = useModelStore();
 
+  // Sync nameVal when scenario changes
+  useEffect(() => {
+    if (activeScenario) setNameVal(activeScenario.name);
+    setShowChanges(false);
+    setDirectEdits(false);
+  }, [activeScenario?.id]);
+
+  const isActive = activeScenarioId !== null && activeScenario?.id === activeScenarioId;
+
+  // ── STATE A: Basecase selected ──
+  if (activeScenarioId === null) {
+    const lastModified = model.updated_at ? new Date(model.updated_at).toLocaleDateString() : '—';
+    return (
+      <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+        <div className="p-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="rounded-lg border border-border p-5 bg-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Basecase</h2>
+              <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px] ml-auto">Read-only</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Package className="h-3.5 w-3.5" />
+                <span>{model.products?.length || 0} Products</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Wrench className="h-3.5 w-3.5" />
+                <span>{model.equipment?.length || 0} Equipment</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-3.5 w-3.5" />
+                <span>{model.labor?.length || 0} Labor Groups</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Modified {lastModified}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-sm font-semibold mb-1">What-if Scenarios</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {scenarios.length} saved What-if{scenarios.length !== 1 ? 's' : ''}
+            </p>
+            <Button onClick={onShowNewModal} className="h-10 text-sm px-6">
+              <Plus className="h-4 w-4 mr-2" /> New What-if
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeScenario) {
+    return (
+      <div className="flex-1 border-r border-border flex items-center justify-center text-muted-foreground">
+        Select a scenario
+      </div>
+    );
+  }
+
+  // Helpers
   const handleWhatIfEdit = (changeId: string, value: string) => {
     const numVal = Number(value);
-    if (!isNaN(numVal)) {
-      updateChange(scenario.id, changeId, numVal);
-      markNeedsRecalc(scenario.id);
-    }
+    if (!isNaN(numVal)) { updateChange(activeScenario.id, changeId, numVal); markNeedsRecalc(activeScenario.id); }
   };
-
   const handleBasecaseEdit = (change: ScenarioChange, value: string) => {
     const numVal = Number(value);
     if (isNaN(numVal)) return;
-    // Update basecase model directly
     if (change.dataType === 'Labor') updateLabor(model.id, change.entityId, { [change.field]: numVal });
     else if (change.dataType === 'Equipment') updateEquipment(model.id, change.entityId, { [change.field]: numVal });
     else if (change.dataType === 'Product') updateProduct(model.id, change.entityId, { [change.field]: numVal });
     else if (change.dataType === 'Routing') updateRouting(model.id, change.entityId, { [change.field]: numVal });
-    markNeedsRecalc(scenario.id);
+    markNeedsRecalc(activeScenario.id);
+  };
+  const getChangeDelta = (c: ScenarioChange) => {
+    const base = Number(c.basecaseValue); const wi = Number(c.whatIfValue);
+    if (isNaN(base) || isNaN(wi)) return null;
+    return wi - base;
+  };
+  const screenBadgeColor = (dt: string) => {
+    if (dt === 'Labor') return 'bg-blue-100 text-blue-700';
+    if (dt === 'Equipment') return 'bg-purple-100 text-purple-700';
+    if (dt === 'Product') return 'bg-green-100 text-green-700';
+    return 'bg-muted text-muted-foreground';
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          {editingName ? (
-            <div className="flex items-center gap-2">
-              <Input value={nameVal} onChange={e => setNameVal(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { onRename(scenario.id, nameVal); setEditingName(false); } if (e.key === 'Escape') setEditingName(false); }}
-                className="h-8 text-lg font-semibold" autoFocus />
-              <Button size="sm" className="h-8" onClick={() => { onRename(scenario.id, nameVal); setEditingName(false); }}>Save</Button>
-            </div>
-          ) : (
-            <h1 className="text-xl font-bold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
-              onClick={() => { setNameVal(scenario.name); setEditingName(true); }}>
-              <FlaskConical className="h-5 w-5 text-primary" />
-              {scenario.name}
-              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-            </h1>
-          )}
-          <Textarea value={scenario.description} onChange={e => onUpdateDescription(scenario.id, e.target.value)}
-            placeholder="Add a description…" className="mt-2 text-sm min-h-[48px] resize-none" />
-        </div>
-        <Badge className={`ml-4 shrink-0 text-xs border-0 ${scenario.status === 'calculated' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-          {scenario.status === 'calculated' ? 'Calculated' : 'Needs Recalc'}
-        </Badge>
-      </div>
+  const hasResults = useResultsStore.getState().getResults(activeScenario.id) != null;
+  const lastCalcLabel = activeScenario.status === 'calculated' && activeScenario.updatedAt
+    ? new Date(activeScenario.updatedAt).toLocaleString() : 'Never run';
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <Button size="sm" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
-          <Play className="h-3.5 w-3.5 mr-1" /> Run This Scenario
-        </Button>
-        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => onSaveAs(scenario)}>
-          <Save className="h-3.5 w-3.5 mr-1" /> Save As
-        </Button>
-        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onPromote}>
-          <ArrowUpCircle className="h-3.5 w-3.5 mr-1" /> Replace Basecase
-        </Button>
-      </div>
-
-      {/* Changes List */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">Changes from Basecase ({scenario.changes.length})</h3>
-          {/* 2C: Direct Edits Toggle - Advanced only */}
-          {isVisible('allow_edit_whatif', userLevel) && (
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Direct Edits</Label>
-              <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
-            </div>
-          )}
+  // ── Shared changes table ──
+  const changesTable = (
+    <div className="mt-3">
+      {directEdits && (
+        <div className="flex items-center gap-2 rounded-md px-3 py-2 mb-3 text-xs font-medium" style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#DC2626' }}>
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          Editing Basecase Value here is permanent and cannot be undone.
         </div>
-        {scenario.changes.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            No changes yet. Use the Quick Input panel on the right to make edits.
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 text-muted-foreground text-xs">
-                  <th className="text-left p-2.5 font-medium">Data Type</th>
-                  <th className="text-left p-2.5 font-medium">Entity</th>
-                  <th className="text-left p-2.5 font-medium">Field</th>
-                  <th className="text-right p-2.5 font-medium">Basecase</th>
-                  <th className="text-right p-2.5 font-medium">What-If</th>
-                  <th className="p-2.5 w-8"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {scenario.changes.map(c => (
-                  <tr key={c.id} className="border-t border-border hover:bg-muted/30">
-                    <td className="p-2.5">
-                      <Badge variant="outline" className="text-[10px] font-mono">{c.dataType}</Badge>
+      )}
+      {activeScenario.changes.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          No changes yet. Go to an Input screen and modify data to start building this What-if.
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50 text-muted-foreground text-xs">
+                <th className="text-left p-2 font-medium w-8">#</th>
+                <th className="text-left p-2 font-medium">Parameter</th>
+                <th className="text-left p-2 font-medium">Screen</th>
+                <th className={`text-right p-2 font-medium ${directEdits ? 'bg-red-50' : ''}`}>Basecase Value</th>
+                <th className="text-right p-2 font-medium">What-if Value</th>
+                <th className="text-right p-2 font-medium">Change</th>
+                <th className="p-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeScenario.changes.map((c, idx) => {
+                const delta = getChangeDelta(c);
+                return (
+                  <tr key={c.id} className="border-t border-border hover:bg-muted/30 text-xs">
+                    <td className="p-2 text-muted-foreground">{idx + 1}</td>
+                    <td className="p-2">
+                      <span className="font-medium">{c.entityName}</span>
+                      <span className="text-muted-foreground"> · {c.fieldLabel}</span>
                     </td>
-                    <td className="p-2.5 font-mono text-xs">{c.entityName}</td>
-                    <td className="p-2.5 text-xs">{c.fieldLabel}</td>
-                    <td className="p-2.5 text-right font-mono text-xs text-muted-foreground">
+                    <td className="p-2">
+                      <span className={`inline-block text-[10px] font-medium rounded px-1.5 py-0.5 ${screenBadgeColor(c.dataType)}`}>
+                        {c.dataType}
+                      </span>
+                    </td>
+                    <td className={`p-2 text-right font-mono ${directEdits ? 'bg-red-50' : ''}`}>
                       {directEdits ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <input
-                                type="number"
-                                defaultValue={c.basecaseValue}
-                                onBlur={e => handleBasecaseEdit(c, e.target.value)}
-                                className="w-20 text-right bg-warning/5 border border-warning/30 rounded px-1 py-0.5 text-xs font-mono focus:border-warning focus:outline-none"
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent className="text-xs max-w-xs">
-                              <div className="flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3 text-warning" />
-                                Editing this permanently changes the Basecase model data.
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <input type="number" defaultValue={c.basecaseValue} onBlur={e => handleBasecaseEdit(c, e.target.value)}
+                          className="w-20 text-right border border-red-300 bg-red-50 rounded px-1 py-0.5 text-xs font-mono focus:border-red-500 focus:outline-none" />
                       ) : (
-                        c.basecaseValue
+                        <span className="text-muted-foreground">{c.basecaseValue}</span>
                       )}
                     </td>
-                    <td className="p-2.5 text-right font-mono text-xs font-semibold text-primary">
+                    <td className="p-2 text-right font-mono font-semibold text-primary">
                       {directEdits ? (
-                        <input
-                          type="number"
-                          defaultValue={c.whatIfValue}
-                          onBlur={e => handleWhatIfEdit(c.id, e.target.value)}
-                          className="w-20 text-right bg-primary/5 border border-primary/30 rounded px-1 py-0.5 text-xs font-mono font-semibold text-primary focus:border-primary focus:outline-none"
-                        />
+                        <input type="number" defaultValue={c.whatIfValue} onBlur={e => handleWhatIfEdit(c.id, e.target.value)}
+                          className="w-20 text-right bg-primary/5 border border-primary/30 rounded px-1 py-0.5 text-xs font-mono font-semibold text-primary focus:border-primary focus:outline-none" />
                       ) : (
                         c.whatIfValue
                       )}
                     </td>
-                    <td className="p-2.5">
-                      <button onClick={() => onRemoveChange(scenario.id, c.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <td className="p-2 text-right font-mono text-xs">
+                      {delta !== null ? (
+                        <span className={delta >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                          {delta >= 0 ? '+' : ''}{delta % 1 === 0 ? delta : delta.toFixed(2)}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="p-2">
+                      <button onClick={() => onRemoveChange(activeScenario.id, c.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <Button variant="ghost" size="sm" className="mt-2 text-xs text-muted-foreground" onClick={() => setShowChanges(false)}>
+        <ChevronUp className="h-3.5 w-3.5 mr-1" /> Collapse Changes
+      </Button>
+    </div>
+  );
+
+  // ── STATE C: Active scenario ──
+  if (isActive) {
+    return (
+      <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+        <div className="p-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="border-l-4 border-amber-400 p-6 space-y-5">
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <Input value={nameVal} onChange={e => setNameVal(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { onRename(activeScenario.id, nameVal); setEditingName(false); } if (e.key === 'Escape') setEditingName(false); }}
+                  className="h-9 text-xl font-bold" autoFocus />
+              </div>
+            ) : (
+              <h1 className="text-xl font-bold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
+                onClick={() => { setNameVal(activeScenario.name); setEditingName(true); }}>
+                {activeScenario.name}
+                <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+              </h1>
+            )}
+
+            <Textarea value={activeScenario.description} onChange={e => onUpdateDescription(activeScenario.id, e.target.value)}
+              placeholder="Add a comment…" className="text-sm min-h-[48px] resize-none" />
+
+            <div className="flex items-start gap-3 rounded-md px-4 py-3 text-sm" style={{ backgroundColor: 'rgba(245,158,11,0.08)', color: '#92400E' }}>
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+              <span>You are now editing this What-if. Go to any Input screen and make your changes. All edits will be recorded here automatically.</span>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Changes ({activeScenario.changes.length})</h3>
+                <div className="flex items-center gap-2">
+                  {isVisible('allow_edit_whatif', userLevel) && showChanges && (
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-xs text-muted-foreground">Allow Direct Edits</Label>
+                      <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
+                    </div>
+                  )}
+                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowChanges(!showChanges)}>
+                    {showChanges ? 'Hide' : 'View / Edit Changes'}
+                  </Button>
+                </div>
+              </div>
+              {showChanges && changesTable}
+            </div>
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 text-[11px] text-muted-foreground uppercase font-semibold tracking-wider">Lifecycle Actions</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => onRunScenario(activeScenario)}>
+                <Save className="h-3.5 w-3.5 mr-1" /> Save What-if
+              </Button>
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => onSaveAs(activeScenario)}>
+                <Copy className="h-3.5 w-3.5 mr-1" /> Save As New What-if…
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setActiveScenario(null)}>
+                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Return to Basecase
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50" onClick={onPromote}>
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
+              </Button>
+            </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE B: Selected but not active ──
+  return (
+    <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+      <div className="p-3 border-b border-border">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        {editingName ? (
+          <div className="flex items-center gap-2">
+            <Input value={nameVal} onChange={e => setNameVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { onRename(activeScenario.id, nameVal); setEditingName(false); } if (e.key === 'Escape') setEditingName(false); }}
+              className="h-9 text-lg font-semibold" autoFocus />
+          </div>
+        ) : (
+          <h1 className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
+            onClick={() => { setNameVal(activeScenario.name); setEditingName(true); }}>
+            {activeScenario.name}
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+          </h1>
         )}
+
+        <Textarea value={activeScenario.description}
+          onBlur={e => onUpdateDescription(activeScenario.id, e.target.value)}
+          onChange={e => onUpdateDescription(activeScenario.id, e.target.value)}
+          placeholder="Add a comment…" className="text-sm min-h-[48px] resize-none" />
+
+        <div className="flex items-center gap-3">
+          <Badge className={`text-[10px] border-0 ${activeScenario.status === 'calculated' ? 'bg-emerald-500/15 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
+            {activeScenario.status === 'calculated' ? 'Current' : 'Not Run'}
+          </Badge>
+          <span className="text-xs text-muted-foreground">{lastCalcLabel}</span>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Changes ({activeScenario.changes.length})</h3>
+            {activeScenario.changes.length > 0 && (
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setShowChanges(!showChanges)}>
+                {showChanges ? 'Hide Changes' : 'View All Changes'}
+              </Button>
+            )}
+          </div>
+          {showChanges && changesTable}
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          <Button size="sm" className="h-8 text-xs" onClick={() => setActiveScenario(activeScenario.id)}>
+            <Play className="h-3.5 w-3.5 mr-1" /> Activate for Editing
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive hover:text-destructive"
+            onClick={() => { onDelete(activeScenario.id); toast.success('Scenario deleted'); }}>
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+          </Button>
+        </div>
       </div>
     </div>
   );
