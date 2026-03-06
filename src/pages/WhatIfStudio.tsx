@@ -29,7 +29,7 @@ import {
 import {
   Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw, ArrowLeft, ChevronUp,
   FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar, ClipboardPaste,
 } from 'lucide-react';
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
