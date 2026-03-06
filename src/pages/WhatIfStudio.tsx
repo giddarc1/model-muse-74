@@ -71,6 +71,7 @@ export default function WhatIfStudio() {
   const [newName, setNewName] = useState('');
   const [newComment, setNewComment] = useState('');
   const [familyRecordsId, setFamilyRecordsId] = useState<string | null>(null);
+  const [familiesDrawerOpen, setFamiliesDrawerOpen] = useState(false);
 
   const showFamilies = isVisible('whatif_families', userLevel);
 
