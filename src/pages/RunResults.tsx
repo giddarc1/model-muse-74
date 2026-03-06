@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
   TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
