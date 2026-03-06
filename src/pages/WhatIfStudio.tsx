@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange, type ScenarioFamily } from '@/stores/scenarioStore';
+import FamiliesDrawer from '@/components/FamiliesPanel';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useUserLevelStore, isVisible, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
