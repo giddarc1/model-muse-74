@@ -268,7 +268,7 @@ export default function WhatIfStudio() {
                 <DropdownMenuItem onClick={() => { setRenamingId(sc.id); setRenameValue(sc.name); }}>
                   <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
                 </DropdownMenuItem>
-                {canAccess(userLevel, 'whatif-families') && !sc.familyId && (
+                {isVisible('whatif_families', userLevel) && !sc.familyId && (
                   <DropdownMenuItem onClick={() => { setFamilyParentId(sc.id); setShowFamilyModal(true); }}>
                     <Layers className="h-3.5 w-3.5 mr-2" /> Create Family
                   </DropdownMenuItem>
