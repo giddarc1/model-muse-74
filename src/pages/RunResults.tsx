@@ -1222,6 +1222,7 @@ export default function RunResults() {
               ibomZoom={ibomZoom}
               setIbomZoom={setIbomZoom}
             />
+            </>
           )
         )}
 
