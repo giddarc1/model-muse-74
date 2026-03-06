@@ -26,7 +26,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { scenarioDb } from '@/lib/scenarioDb';
 
 // ── Scenario color palettes for grouped charts ──
@@ -306,27 +306,21 @@ export default function RunResults() {
   const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
 
   // Render a mode card
-  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}, isAdvancedOnly = false) => {
+  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}) => {
     const Icon = opt.icon;
-    const isDisabled = isAdvancedOnly && userLevel !== 'advanced';
-    const selected = !isDisabled && extRunMode === opt.mode;
+    const selected = extRunMode === opt.mode;
     return (
       <button
         key={opt.label}
-        onClick={() => !isDisabled && setExtRunMode(opt.mode)}
-        disabled={isDisabled}
+        onClick={() => setExtRunMode(opt.mode)}
         className={`text-left p-3 rounded-lg border-2 transition-all ${
-          isDisabled ? 'border-border opacity-50 cursor-not-allowed'
-          : selected ? 'border-primary bg-primary/5'
+          selected ? 'border-primary bg-primary/5'
           : 'border-border hover:border-primary/40 hover:bg-accent/30'
         }`}
       >
         <div className="flex items-center gap-2 mb-1.5">
           <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
           <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
-          {isAdvancedOnly && userLevel !== 'advanced' && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced</Badge>
-          )}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
       </button>
@@ -583,32 +577,37 @@ export default function RunResults() {
           {/* ── Standard Analysis ── */}
           <div>
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Standard Analysis</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 gap-3 ${isVisible('calculate_util_only', userLevel) ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {STANDARD_MODES.map(opt => {
-                if (opt.mode === 'util_only' && userLevel === 'novice') return null;
+                if (opt.mode === 'util_only' && !isVisible('calculate_util_only', userLevel)) return null;
                 return renderModeCard(opt);
               })}
             </div>
+            {!isVisible('calculate_util_only', userLevel) && (
+              <p className="text-xs text-muted-foreground/60 mt-2">Select a mode above, then click Run to calculate.</p>
+            )}
           </div>
 
-          {/* ── Scenario Analysis ── */}
-          {userLevel !== 'novice' && (
-            <div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SCENARIO_MODES.map(opt => renderModeCard(opt, true))}
+          {/* ── Advanced Analysis — advanced users only ── */}
+          {isVisible('product_inclusion', userLevel) && (
+            <>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center"><span className="bg-card px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Advanced Analysis</span></div>
               </div>
-            </div>
-          )}
-
-          {/* ── Optimization ── */}
-          {userLevel !== 'novice' && (
-            <div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {OPTIMIZATION_MODES.map(opt => renderModeCard(opt, true))}
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SCENARIO_MODES.map(opt => renderModeCard(opt))}
+                </div>
               </div>
-            </div>
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {OPTIMIZATION_MODES.map(opt => renderModeCard(opt))}
+                </div>
+              </div>
+            </>
           )}
 
           {/* ── Advanced Mode Config Panels ── */}
@@ -864,7 +863,7 @@ export default function RunResults() {
             <TabsTrigger value="labor">Labor</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="summary">Summary</TabsTrigger>
-            {canAccess(userLevel, 'oper-details') && <TabsTrigger value="operdetails">Oper Details</TabsTrigger>}
+            {isVisible('oper_details', userLevel) && <TabsTrigger value="operdetails">Oper Details</TabsTrigger>}
             <TabsTrigger value="ibom">IBOM</TabsTrigger>
           </TabsList>
 
@@ -923,9 +922,7 @@ export default function RunResults() {
             <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
 
             {/* Equipment WIP Chart */}
-            {canAccess(userLevel, 'equip-wip-chart') && (
-              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
-            )}
+            <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
           </TabsContent>
 
           {/* Labor Tab */}
@@ -979,9 +976,7 @@ export default function RunResults() {
             <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
 
             {/* Labor Equipment Wait Chart */}
-            {canAccess(userLevel, 'labor-wait-chart') && (
-              <LaborWaitChart results={results!} model={model} />
-            )}
+            <LaborWaitChart results={results!} model={model} />
           </TabsContent>
 
           {/* Products Tab */}
@@ -1139,7 +1134,7 @@ export default function RunResults() {
           </TabsContent>
 
           {/* Oper Details Tab */}
-          {canAccess(userLevel, 'oper-details') && (
+          {isVisible('oper_details', userLevel) && (
             <TabsContent value="operdetails" className="mt-4">
               <OperDetailsTab model={model} results={results!} />
             </TabsContent>

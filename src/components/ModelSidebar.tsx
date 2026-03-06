@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible, type FeatureKey } from '@/hooks/useUserLevel';
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
@@ -9,15 +9,15 @@ import {
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
+const navItems: { label: string; icon: typeof LayoutDashboard; path: string; feature: FeatureKey | null }[] = [
   { label: 'Overview', icon: LayoutDashboard, path: 'overview', feature: null },
   { label: 'General Data', icon: Settings2, path: 'general', feature: null },
   { label: 'Labor', icon: Users, path: 'labor', feature: null },
   { label: 'Equipment', icon: Cpu, path: 'equipment', feature: null },
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
-  { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all-operations' },
-  { label: 'Parameter Names', icon: Tag, path: 'param-names', feature: 'advanced-params' },
+  { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all_operations' },
+  { label: 'Parameter Names', icon: Tag, path: 'param-names', feature: 'parameter_names' },
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif', feature: null },
@@ -39,7 +39,7 @@ export function ModelSidebar() {
   if (!model) return null;
 
   const basePath = `/models/${model.id}`;
-  const visibleItems = navItems.filter(item => !item.feature || canAccess(userLevel, item.feature));
+  const visibleItems = navItems.filter(item => !item.feature || isVisible(item.feature, userLevel));
 
   const sidebarContent = (
     <>

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +36,7 @@ export default function OperationsRouting() {
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   const { userLevel } = useUserLevelStore();
-  const showFormulaBuilder = canAccess(userLevel, 'formula-builder');
+  const showFormulaBuilder = isVisible('formula_builder', userLevel);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProductId = searchParams.get('product') || '';

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { useUserLevelStore, canAccess, type UserLevel } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -268,12 +268,12 @@ export default function WhatIfStudio() {
                 <DropdownMenuItem onClick={() => { setRenamingId(sc.id); setRenameValue(sc.name); }}>
                   <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
                 </DropdownMenuItem>
-                {canAccess(userLevel, 'whatif-families') && !sc.familyId && (
+                {isVisible('whatif_families', userLevel) && !sc.familyId && (
                   <DropdownMenuItem onClick={() => { setFamilyParentId(sc.id); setShowFamilyModal(true); }}>
                     <Layers className="h-3.5 w-3.5 mr-2" /> Create Family
                   </DropdownMenuItem>
                 )}
-                {canAccess(userLevel, 'whatif-families') && sc.familyId && (
+                {isVisible('whatif_families', userLevel) && sc.familyId && (
                   <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); setShowFamilyRecords(true); }}>
                     <Layers className="h-3.5 w-3.5 mr-2" /> View Family Records
                   </DropdownMenuItem>
@@ -519,7 +519,7 @@ function ScenarioEditorPanel({
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
   onSaveAs: (scenario: Scenario) => void;
-  userLevel: string;
+  userLevel: UserLevel;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
@@ -592,7 +592,7 @@ function ScenarioEditorPanel({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Changes from Basecase ({scenario.changes.length})</h3>
           {/* 2C: Direct Edits Toggle - Advanced only */}
-          {canAccess(userLevel as UserLevel, 'inline-change-edit') && (
+          {isVisible('allow_edit_whatif', userLevel) && (
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Direct Edits</Label>
               <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
@@ -736,7 +736,7 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
           <p className="text-sm text-muted-foreground">{familyMembers.length} scenarios in this family</p>
         </div>
         <div className="flex items-center gap-3">
-          {canAccess(userLevel, 'inline-change-edit') && (
+          {isVisible('allow_edit_whatif', userLevel) && (
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Direct Edits</Label>
               <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />

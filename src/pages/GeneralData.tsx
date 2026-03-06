@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -19,7 +19,7 @@ export default function GeneralData() {
   const model = useModelStore((s) => s.getActiveModel());
   const updateGeneral = useModelStore((s) => s.updateGeneral);
   const { userLevel } = useUserLevelStore();
-  const showAdvancedParams = canAccess(userLevel, 'advanced-params');
+  const showAdvancedParams = isVisible('advanced_parameters', userLevel);
 
   if (!model) return (
     <div className="p-6 max-w-3xl space-y-4">
@@ -41,7 +41,7 @@ export default function GeneralData() {
       <Tabs defaultValue="time">
         <TabsList>
           <TabsTrigger value="time">Time Settings</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced Parameters</TabsTrigger>
+          {showAdvancedParams && <TabsTrigger value="advanced">Advanced Parameters</TabsTrigger>}
           <TabsTrigger value="comments">Comments</TabsTrigger>
         </TabsList>
 

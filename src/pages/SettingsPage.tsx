@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Save, UserCircle, Building2, Trash2, Plus, Mail, LogOut } from 'lucide-react';
+import { UserLevelChip } from '@/components/UserLevelChip';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,7 +97,8 @@ export default function SettingsPage() {
               <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
               <p className="text-sm text-muted-foreground mt-1">Manage your profile and organization</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <UserLevelChip />
               <Button variant="outline" size="sm" onClick={() => navigate('/library')}>← Back to Library</Button>
               <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground gap-1">
                 <LogOut className="h-4 w-4" /> Sign Out
