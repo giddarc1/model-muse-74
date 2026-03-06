@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useSortableTable, type SortDir } from '@/hooks/useSortableTable';
 import { useModelStore, type Model } from '@/stores/modelStore';
@@ -22,7 +22,7 @@ import {
   Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
   TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
 } from 'lucide-react';
-import IBOMOutput, { MCT_COLORS } from '@/components/IBOMOutput';
+import IBOMOutput, { MCT_COLORS, TreeChart, TreeTable, PolesChart, PolesTable, MCTLegend, ZoomSelect, buildNodeTree, buildPoles } from '@/components/IBOMOutput';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend,
@@ -540,10 +540,33 @@ export default function RunResults() {
   const [equipSubTab, setEquipSubTab] = useState('util-chart');
   const [laborSubTab, setLaborSubTab] = useState('util-chart');
   const [productsSubTab, setProductsSubTab] = useState('mct-chart');
+  const [ibomSubTab, setIbomSubTab] = useState('tree-chart');
+  const [ibomZoom, setIbomZoom] = useState(100);
 
   // Detect if last run was util-only (MCT/WIP not available)
   const lastRunMode = runLog.length > 0 ? runLog[0].mode : null;
   const isUtilOnly = lastRunMode === 'util_only';
+
+  // Auto-navigate to Summary on Full Calculate completion; toast on background recalc
+  const prevRunLogLenRef = useRef(runLog.length);
+  const wasViewingTabRef = useRef(activeTab);
+  // Track which tab user is on before a run starts
+  useEffect(() => { wasViewingTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => {
+    if (runLog.length > prevRunLogLenRef.current) {
+      const latest = runLog[0];
+      if (latest && latest.mode === 'full' && latest.status !== 'error') {
+        // If user was on summary or had no results, go to summary
+        if (wasViewingTabRef.current === 'summary') {
+          setActiveTab('summary');
+        } else {
+          // User is on a specific tab — don't navigate, just toast
+          toast.success('Results updated', { duration: 2000 });
+        }
+      }
+    }
+    prevRunLogLenRef.current = runLog.length;
+  }, [runLog.length]);
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -566,7 +589,7 @@ export default function RunResults() {
   const lastRunText = model.last_run_at ? `Last run: ${new Date(model.last_run_at).toLocaleString()}` : 'Never run';
 
   return (
-    <div className="h-full flex flex-col animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden animate-fade-in">
       {/* ── Page Header Row ── */}
       <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
         <h1 className="text-xl font-bold">Run &amp; Results</h1>
@@ -1102,7 +1125,17 @@ export default function RunResults() {
         {/* ── IBOM Tab ── */}
         {activeTab === 'ibom' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <IBOMOutput model={model} isRunning={isRunning} />
+            <IBOMTabContent
+              model={model}
+              results={results!}
+              basecaseResults={basecaseResults}
+              isRunning={isRunning}
+              isUtilOnly={isUtilOnly}
+              ibomSubTab={ibomSubTab}
+              setIbomSubTab={setIbomSubTab}
+              ibomZoom={ibomZoom}
+              setIbomZoom={setIbomZoom}
+            />
           )
         )}
 
@@ -1155,11 +1188,144 @@ export default function RunResults() {
 }
 
 /* ─── Util-Only Banner ─── */
-function UtilOnlyBanner() {
+function UtilOnlyBanner({ message }: { message?: string }) {
   return (
     <div className="flex items-center gap-2 p-3 mb-4 bg-warning/10 border border-warning/30 rounded-md">
       <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-      <span className="text-sm text-warning font-medium">WIP and MCT results require Full Calculate. These results show utilisation data only.</span>
+      <span className="text-sm text-warning font-medium">{message || 'WIP and MCT results require Full Calculate. These results show utilisation data only.'}</span>
+    </div>
+  );
+}
+
+/* ─── IBOM Tab Content ─── */
+function IBOMTabContent({ model, results, basecaseResults, isRunning, isUtilOnly, ibomSubTab, setIbomSubTab, ibomZoom, setIbomZoom }: {
+  model: Model; results: CalcResults; basecaseResults: CalcResults | undefined; isRunning: boolean; isUtilOnly: boolean;
+  ibomSubTab: string; setIbomSubTab: (t: string) => void; ibomZoom: number; setIbomZoom: (z: number) => void;
+}) {
+  const allScenarios = useScenarioStore(s => s.scenarios);
+  const modelScenarios = allScenarios.filter(s => s.modelId === model.id);
+  const { getResults } = useResultsStore();
+
+  // Find final assemblies
+  const finalAssemblies = useMemo(() => {
+    const parentIds = new Set(model.ibom.map(e => e.parent_product_id));
+    const componentIds = new Set(model.ibom.map(e => e.component_product_id));
+    const topLevel = model.products.filter(p => parentIds.has(p.id) && !componentIds.has(p.id));
+    return topLevel.length > 0 ? topLevel : model.products.filter(p => parentIds.has(p.id));
+  }, [model]);
+
+  const [selectedProductId, setSelectedProductId] = useState(() => finalAssemblies[0]?.id || '');
+  const [scenarioId, setScenarioId] = useState('basecase');
+
+  const ibomResults = getResults(scenarioId) || results;
+  const scenario = allScenarios.find(s => s.id === scenarioId);
+  const scenarioLabel = scenarioId === 'basecase' ? 'Basecase results' : `${scenario?.name || 'What-if'} results`;
+  const mctUnit = model.general.mct_time_unit.toLowerCase() + 's';
+  const runScenarios = modelScenarios.filter(s => getResults(s.id));
+
+  // No IBOM structure
+  if (model.ibom.length === 0 || finalAssemblies.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Network className="h-10 w-10 text-muted-foreground/30 mb-3" />
+        <p className="text-base font-medium text-muted-foreground mb-1">No IBOM structure defined</p>
+        <p className="text-sm text-muted-foreground/70">Go to Input → IBOM to add component relationships between products.</p>
+      </div>
+    );
+  }
+
+  const hasChildren = model.ibom.some(e => e.parent_product_id === selectedProductId);
+  const tree = hasChildren ? buildNodeTree(model, ibomResults, selectedProductId, 0, new Set()) : null;
+  const poles = tree ? buildPoles(tree) : [];
+  const showZoom = ibomSubTab === 'tree-chart' || ibomSubTab === 'poles-chart';
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Level 2 sub-tab bar */}
+      <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-0 shrink-0">
+        {([
+          { key: 'tree-chart', label: 'Tree Chart' },
+          { key: 'tree-table', label: 'Tree Table' },
+          { key: 'poles-chart', label: 'Poles Chart' },
+          { key: 'poles-table', label: 'Poles Table' },
+        ] as const).map(st => (
+          <button
+            key={st.key}
+            onClick={() => setIbomSubTab(st.key)}
+            className={`h-8 px-4 text-[13px] relative transition-colors ${
+              ibomSubTab === st.key
+                ? 'text-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {st.label}
+            {ibomSubTab === st.key && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Shared IBOM control bar */}
+      <div className="flex items-center gap-3 py-3 -mx-6 px-6 border-b border-border/30 mb-4">
+        <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+          <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="Select assembly..." /></SelectTrigger>
+          <SelectContent>
+            {finalAssemblies.map(p => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex-1" />
+
+        <Select value={scenarioId} onValueChange={setScenarioId}>
+          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="basecase">Basecase</SelectItem>
+            {runScenarios.map(s => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex-1" />
+
+        <span className="text-sm font-medium text-primary whitespace-nowrap">{scenarioLabel}</span>
+
+        {showZoom && <ZoomSelect zoom={ibomZoom} setZoom={setIbomZoom} />}
+      </div>
+
+      {/* Util-only banner for all IBOM sub-tabs */}
+      {isUtilOnly && <UtilOnlyBanner message="IBOM MCT results require Full Calculate." />}
+
+      {/* No children for selected product */}
+      {!tree ? (
+        <div className="py-12 text-center">
+          <p className="text-sm text-muted-foreground">This product has no components. Select a product with sub-assemblies to view the IBOM tree.</p>
+        </div>
+      ) : (
+        <>
+          {ibomSubTab === 'tree-chart' && (
+            <>
+              <TreeChart model={model} results={ibomResults} tree={tree} mctUnit={mctUnit} zoom={ibomZoom} />
+              <MCTLegend />
+            </>
+          )}
+          {ibomSubTab === 'tree-table' && (
+            <TreeTable model={model} results={ibomResults} tree={tree} mctUnit={mctUnit} />
+          )}
+          {ibomSubTab === 'poles-chart' && (
+            <>
+              <PolesChart model={model} poles={poles} mctUnit={mctUnit} zoom={ibomZoom} />
+              <MCTLegend />
+            </>
+          )}
+          {ibomSubTab === 'poles-table' && (
+            <PolesTable model={model} poles={poles} mctUnit={mctUnit} />
+          )}
+        </>
+      )}
     </div>
   );
 }
