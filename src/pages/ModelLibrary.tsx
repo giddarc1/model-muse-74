@@ -248,6 +248,7 @@ export default function ModelLibrary() {
               <Button onClick={() => setShowCreate(true)} className="gap-2">
                 <Plus className="h-4 w-4" /> New Model
               </Button>
+              <UserLevelChip />
               <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
