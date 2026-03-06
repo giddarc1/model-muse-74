@@ -137,90 +137,109 @@ export default function WhatIfStudio() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ═══ LEFT PANEL — 240px ═══ */}
-      <div className="w-[240px] shrink-0 border-r border-border flex flex-col bg-muted/20">
-        <div className="h-10 flex items-center px-3 border-b border-border shrink-0">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scenarios</span>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {/* Basecase */}
+    <div style={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%', overflow: 'hidden' }}>
+      {/* ═══ LEFT PANEL — 240px with tabs ═══ */}
+      <div style={{ width: 240, minWidth: 240, flexShrink: 0, height: '100%', overflow: 'hidden' }} className="border-r border-border flex flex-col bg-muted/20">
+        {/* Tab bar — 36px */}
+        <div className="h-9 flex items-center border-b border-border shrink-0">
           <button
-            onClick={() => handleLeftClick('basecase')}
-            className={`w-full text-left px-3 py-2.5 flex items-center gap-2 transition-colors border-b border-border/50 ${selectedId === 'basecase' ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
+            onClick={() => setLeftTab('scenarios')}
+            className={`flex-1 h-full text-[13px] font-medium transition-colors relative ${leftTab === 'scenarios' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium flex-1 truncate">Basecase</span>
-            {!activeScenarioId && <Badge className="bg-emerald-500/15 text-emerald-600 text-[10px] border-0 shrink-0">Active</Badge>}
-            <Eye className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            Scenarios
+            {leftTab === 'scenarios' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
-          {/* What-if rows */}
-          {scenarios.map((sc, idx) => {
-            const dotColor = getScenarioColor(idx);
-            const isActive = activeScenarioId === sc.id;
-            const isSelected = selectedId === sc.id;
-            const isDisplayed = displayIds.includes(sc.id);
-            const hasResults = useResultsStore.getState().getResults(sc.id) != null;
-            const family = sc.familyId ? families.find(f => f.id === sc.familyId) : null;
-
-            let statusBadge: React.ReactNode;
-            if (isActive) {
-              statusBadge = <Badge className="bg-amber-500/15 text-amber-600 border-0 text-[10px] shrink-0 gap-0.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" /> Active</Badge>;
-            } else if (sc.status === 'needs_recalc' && hasResults) {
-              statusBadge = <Badge variant="outline" className="border-amber-400 text-amber-600 text-[10px] shrink-0 gap-0.5"><CircleAlert className="h-2.5 w-2.5" /> Stale</Badge>;
-            } else if (sc.status === 'calculated') {
-              statusBadge = <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px] shrink-0 gap-0.5"><CircleCheck className="h-2.5 w-2.5" /> Current</Badge>;
-            } else {
-              statusBadge = <Badge variant="secondary" className="text-[10px] shrink-0 gap-0.5"><Circle className="h-2.5 w-2.5" /> Not Run</Badge>;
-            }
-            return (
-              <button key={sc.id} onClick={() => handleLeftClick(sc.id)}
-                className={`w-full text-left px-3 py-2.5 flex items-center gap-1.5 transition-colors border-b border-border/30 ${isSelected ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
-              >
-                <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-                <span className="text-sm font-medium flex-1 truncate">{sc.name}</span>
-                {/* Family pill */}
-                {family && showFamilies && (
-                  <FamilyPill scenario={sc} family={family} families={families} modelId={modelId} />
-                )}
-                {statusBadge}
-                <button onClick={(e) => { e.stopPropagation(); toggleDisplayScenario(sc.id); }}
-                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                  title={isDisplayed ? 'Hide from charts' : 'Show in charts'}
-                >
-                  {isDisplayed ? <Eye className="h-3.5 w-3.5" style={{ color: dotColor }} /> : <EyeOff className="h-3.5 w-3.5" />}
-                </button>
-              </button>
-            );
-          })}
-        </div>
-        <div className="p-3 border-t border-border shrink-0 space-y-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button size="sm" className="w-full h-8 text-xs" onClick={() => { setShowNewForm(true); setSelectedId(null); setFamilyRecordsId(null); }} disabled={activeScenarioId !== null}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> New What-if
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              {activeScenarioId !== null && <TooltipContent side="top"><p className="text-xs">Save or return to Basecase first.</p></TooltipContent>}
-            </Tooltip>
-          </TooltipProvider>
           {showFamilies && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-8 text-xs"
-              onClick={() => setFamiliesDrawerOpen(true)}
+            <button
+              onClick={() => setLeftTab('families')}
+              className={`flex-1 h-full text-[13px] font-medium transition-colors relative ${leftTab === 'families' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              <Layers className="h-3.5 w-3.5 mr-1" /> Families
-            </Button>
+              Families
+              {leftTab === 'families' && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+            </button>
           )}
         </div>
+
+        {leftTab === 'scenarios' ? (
+          <>
+            <div className="flex-1 overflow-y-auto">
+              {/* Basecase */}
+              <button
+                onClick={() => handleLeftClick('basecase')}
+                className={`w-full text-left px-3 py-2.5 flex items-center gap-2 transition-colors border-b border-border/50 ${selectedId === 'basecase' ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
+              >
+                <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium flex-1 truncate">Basecase</span>
+                {!activeScenarioId && <Badge className="bg-emerald-500/15 text-emerald-600 text-[10px] border-0 shrink-0">Active</Badge>}
+                <Eye className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+              {/* What-if rows */}
+              {scenarios.map((sc, idx) => {
+                const dotColor = getScenarioColor(idx);
+                const isActive = activeScenarioId === sc.id;
+                const isSelected = selectedId === sc.id;
+                const isDisplayed = displayIds.includes(sc.id);
+                const hasResults = useResultsStore.getState().getResults(sc.id) != null;
+                const family = sc.familyId ? families.find(f => f.id === sc.familyId) : null;
+
+                let statusBadge: React.ReactNode;
+                if (isActive) {
+                  statusBadge = <Badge className="bg-amber-500/15 text-amber-600 border-0 text-[10px] shrink-0 gap-0.5"><span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" /> Active</Badge>;
+                } else if (sc.status === 'needs_recalc' && hasResults) {
+                  statusBadge = <Badge variant="outline" className="border-amber-400 text-amber-600 text-[10px] shrink-0 gap-0.5"><CircleAlert className="h-2.5 w-2.5" /> Stale</Badge>;
+                } else if (sc.status === 'calculated') {
+                  statusBadge = <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px] shrink-0 gap-0.5"><CircleCheck className="h-2.5 w-2.5" /> Current</Badge>;
+                } else {
+                  statusBadge = <Badge variant="secondary" className="text-[10px] shrink-0 gap-0.5"><Circle className="h-2.5 w-2.5" /> Not Run</Badge>;
+                }
+                return (
+                  <button key={sc.id} onClick={() => handleLeftClick(sc.id)}
+                    className={`w-full text-left px-3 py-2.5 flex items-center gap-1.5 transition-colors border-b border-border/30 ${isSelected ? 'bg-primary/5' : 'hover:bg-muted/50'}`}
+                  >
+                    <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+                    <span className="text-sm font-medium flex-1 truncate">{sc.name}</span>
+                    {family && showFamilies && (
+                      <FamilyPill scenario={sc} family={family} families={families} modelId={modelId} />
+                    )}
+                    {statusBadge}
+                    <button onClick={(e) => { e.stopPropagation(); toggleDisplayScenario(sc.id); }}
+                      className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                      title={isDisplayed ? 'Hide from charts' : 'Show in charts'}
+                    >
+                      {isDisplayed ? <Eye className="h-3.5 w-3.5" style={{ color: dotColor }} /> : <EyeOff className="h-3.5 w-3.5" />}
+                    </button>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="p-3 border-t border-border shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button size="sm" className="w-full h-8 text-xs" onClick={() => { setShowNewForm(true); setSelectedId(null); setFamilyRecordsId(null); }} disabled={activeScenarioId !== null}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> New What-if
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {activeScenarioId !== null && <TooltipContent side="top"><p className="text-xs">Save or return to Basecase first.</p></TooltipContent>}
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </>
+        ) : (
+          <FamiliesTabContent
+            modelId={modelId}
+            scenarios={scenarios}
+            activeScenarioId={activeScenarioId}
+            onSelectScenario={(id) => { setSelectedId(id); setLeftTab('scenarios'); }}
+            onShowFamilyRecords={(fId) => { setFamilyRecordsId(fId); setSelectedId(null); setShowNewForm(false); }}
+          />
+        )}
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto h-full">
+      {/* ═══ CENTRE PANEL ═══ */}
+      <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }} className="flex flex-col">
         {familyRecordsId ? (
           <FamilyRecordsView
             family={families.find(f => f.id === familyRecordsId)!}
@@ -253,9 +272,6 @@ export default function WhatIfStudio() {
           <EmptyState onNew={() => setShowNewForm(true)} disabled={activeScenarioId !== null} />
         )}
       </div>
-
-
-
 
       {/* ── Modals ── */}
       {showDeleteModal && (() => {
