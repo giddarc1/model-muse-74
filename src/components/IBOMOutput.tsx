@@ -485,8 +485,12 @@ function PolesTable({ model, poles, mctUnit }: {
   );
 }
 
+// Export sub-components and utilities for use in RunResults IBOM tab
+export { TreeChart, TreeTable, PolesChart, PolesTable, MCTLegend, ZoomSelect, buildNodeTree, buildPoles, getMaxMCT };
+export type { IBOMNodeData, Pole };
+
 // ════════════════════════════════════════════════════════════
-//  MAIN IBOM OUTPUT COMPONENT
+//  MAIN IBOM OUTPUT COMPONENT (legacy, kept for compatibility)
 // ════════════════════════════════════════════════════════════
 export default function IBOMOutput({ model, isRunning }: { model: Model; isRunning?: boolean }) {
   const { getResults } = useResultsStore();
