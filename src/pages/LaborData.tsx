@@ -113,7 +113,7 @@ export default function LaborData() {
           </CardContent>
         </Card>
       ) : viewMode === 'table' ? (
-        <Card>
+        <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
