@@ -736,7 +736,7 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
           <p className="text-sm text-muted-foreground">{familyMembers.length} scenarios in this family</p>
         </div>
         <div className="flex items-center gap-3">
-          {canAccess(userLevel, 'inline-change-edit') && (
+          {isVisible('allow_edit_whatif', userLevel) && (
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Direct Edits</Label>
               <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
