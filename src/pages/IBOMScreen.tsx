@@ -31,7 +31,7 @@ export default function IBOMScreen() {
   const [viewAssemblyId, setViewAssemblyId] = useState('');
   const [editParentId, setEditParentId] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [selectedAllowable, setSelectedAllowable] = useState('');
+  const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
   const [selectedComponent, setSelectedComponent] = useState('');
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
