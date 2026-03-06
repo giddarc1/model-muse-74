@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info, FlaskConical } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronsLeft, Network, Info, FlaskConical, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -29,10 +29,9 @@ export default function IBOMScreen() {
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
 
   const [viewAssemblyId, setViewAssemblyId] = useState('');
-  const [editParentId, setEditParentId] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
-  const [selectedComponent, setSelectedComponent] = useState('');
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
     if (!model || visited.has(parentId)) return [];
@@ -51,14 +50,6 @@ export default function IBOMScreen() {
     });
   }, [model]);
 
-  const getDescendants = useCallback((productId: string, visited: Set<string> = new Set()): Set<string> => {
-    if (!model || visited.has(productId)) return visited;
-    visited.add(productId);
-    const children = model.ibom.filter((e) => e.parent_product_id === productId);
-    children.forEach((c) => getDescendants(c.component_product_id, visited));
-    return visited;
-  }, [model]);
-
   const getAncestors = useCallback((productId: string, visited: Set<string> = new Set()): Set<string> => {
     if (!model || visited.has(productId)) return visited;
     visited.add(productId);
@@ -72,11 +63,10 @@ export default function IBOMScreen() {
     return buildTree(viewAssemblyId, 0, new Set());
   }, [viewAssemblyId, buildTree]);
 
-  // 2E: Compute Units / Final Assembly for each component
+  // Compute Units / Final Assembly for each component
   const unitsPerFinalAssy = useMemo(() => {
     if (!model || !viewAssemblyId) return new Map<string, number>();
     const result = new Map<string, number>();
-    
     function traverse(parentId: string, multiplier: number, visited: Set<string>) {
       if (visited.has(parentId)) return;
       const nextVisited = new Set(visited);
@@ -89,11 +79,12 @@ export default function IBOMScreen() {
         traverse(e.component_product_id, cumulative, nextVisited);
       });
     }
-    
     traverse(viewAssemblyId, 1, new Set());
     return result;
   }, [model, viewAssemblyId]);
 
+  // Bottom panel: components of selected product
+  const editParentId = selectedProductId || '';
   const currentComponents = useMemo(() => {
     if (!model || !editParentId) return [];
     return model.ibom.filter((e) => e.parent_product_id === editParentId);
@@ -114,13 +105,20 @@ export default function IBOMScreen() {
   if (!model) return null;
 
   const prodName = (id: string) => model.products.find((p) => p.id === id)?.name || '???';
+  const allProducts = model.products;
 
-  const toggleExpand = (key: string) => {
+  const toggleExpand = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setExpandedNodes((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
+  };
+
+  const handleSelectRow = (productId: string) => {
+    setSelectedProductId(productId);
+    setCheckedAllowable(new Set());
   };
 
   const handleAddChecked = () => {
@@ -137,16 +135,6 @@ export default function IBOMScreen() {
     setCheckedAllowable(new Set());
   };
 
-  const handleRemoveOne = () => {
-    if (!selectedComponent) return;
-    const entry = currentComponents.find((c) => c.component_product_id === selectedComponent);
-    if (entry) {
-      deleteIBOM(model.id, entry.id);
-      setSelectedComponent('');
-      toast.success('Component removed');
-    }
-  };
-
   const handleAddAll = () => {
     allowableProducts.forEach((p) => {
       addIBOM(model.id, {
@@ -161,216 +149,240 @@ export default function IBOMScreen() {
 
   const handleRemoveAll = () => {
     currentComponents.forEach((c) => deleteIBOM(model.id, c.id));
-    setSelectedComponent('');
     toast.success('All components removed');
+  };
+
+  const expandAll = () => {
+    const allKeys = new Set<string>();
+    const collectKeys = (nodes: TreeNode[], parentKey: string) => {
+      nodes.forEach((n, i) => {
+        const key = `${parentKey}-${n.productId}-${i}`;
+        if (n.children.length > 0) { allKeys.add(key); collectKeys(n.children, key); }
+      });
+    };
+    collectKeys(tree, 'root');
+    setExpandedNodes(allKeys);
   };
 
   const renderTreeNode = (node: TreeNode, parentKey: string, index: number) => {
     const key = `${parentKey}-${node.productId}-${index}`;
     const hasChildren = node.children.length > 0;
     const isExpanded = expandedNodes.has(key);
+    const isSelected = selectedProductId === node.productId;
     const ufa = unitsPerFinalAssy.get(node.productId);
 
     return (
       <div key={key}>
         <div
-          className="flex items-center gap-2 py-1.5 px-2 hover:bg-muted/50 rounded cursor-pointer text-sm"
+          className={`flex items-center gap-2 h-8 px-2 cursor-pointer text-sm transition-colors ${
+            isSelected
+              ? 'bg-primary/5 border-l-2 border-l-primary'
+              : 'hover:bg-muted/50 border-l-2 border-l-transparent'
+          }`}
           style={{ paddingLeft: `${node.depth * 20 + 8}px` }}
-          onClick={() => hasChildren && toggleExpand(key)}
+          onClick={() => handleSelectRow(node.productId)}
         >
           {hasChildren ? (
-            isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <button
+              className="shrink-0 p-0.5 rounded hover:bg-muted"
+              onClick={(e) => toggleExpand(key, e)}
+            >
+              {isExpanded
+                ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              }
+            </button>
           ) : (
-            <span className="w-3.5 shrink-0" />
+            <span className="w-4.5 shrink-0 text-center text-muted-foreground/40">—</span>
           )}
-          <span className="font-mono font-medium">{node.productName}</span>
-          <Badge variant="secondary" className="text-xs font-mono h-5 px-1.5">
-            ×{node.unitsPerAssy}
-          </Badge>
-          {ufa !== undefined && (
-            <span className="text-[10px] text-muted-foreground italic ml-auto font-mono" title="Units / Final Assembly">
-              {ufa} / final
-            </span>
-          )}
+          <span className={`font-mono text-xs ${hasChildren ? 'font-medium' : 'text-muted-foreground'}`}>
+            {node.productName}
+          </span>
+          <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums w-16 text-right">
+            {node.unitsPerAssy}
+          </span>
+          <span className="font-mono text-xs text-muted-foreground/60 italic tabular-nums w-20 text-right">
+            {ufa !== undefined ? ufa : '—'}
+          </span>
         </div>
         {hasChildren && isExpanded && node.children.map((child, i) => renderTreeNode(child, key, i))}
       </div>
     );
   };
 
-  const allProducts = model.products;
-
   return (
-    <div className="p-6 animate-fade-in">
-      {activeScenarioId && activeScenario && (
-        <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
-          <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
-          <span className="text-sm text-amber-700 font-medium">
-            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
-          </span>
-        </div>
-      )}
-      <h1 className="text-xl font-bold mb-1">Indented Bill of Materials</h1>
-      <p className="text-sm text-muted-foreground mb-6">Define parent-child relationships between products and their component parts.</p>
+    <div className="h-full flex flex-col overflow-hidden animate-fade-in">
+      {/* Page Header */}
+      <div className="px-6 pt-4 pb-2 shrink-0">
+        {activeScenarioId && activeScenario && (
+          <div className="mb-2 flex items-center gap-2 p-2 bg-warning/10 border border-warning/30 rounded-md">
+            <FlaskConical className="h-3.5 w-3.5 text-warning shrink-0" />
+            <span className="text-xs text-warning font-medium">
+              Changes recorded to <span className="font-semibold">{activeScenario.name}</span>
+            </span>
+          </div>
+        )}
+        <h1 className="text-xl font-bold">Indented Bill of Materials</h1>
+        <p className="text-sm text-muted-foreground">Define parent–child relationships between products and their component parts.</p>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Panel: View IBOM Structure */}
-        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
-          <CardHeader>
-            <CardTitle className="text-base">View Assembly Structure</CardTitle>
-            <CardDescription>Select an assembly to view its component hierarchy.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <Label className="text-xs">Choose Assembly</Label>
-              <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); }}>
-                <SelectTrigger><SelectValue placeholder="Select an assembly..." /></SelectTrigger>
-                <SelectContent>
-                  {allProducts.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                      {model.ibom.some((e) => e.parent_product_id === p.id) && (
-                        <span className="text-muted-foreground ml-1">
-                          ({model.ibom.filter((e) => e.parent_product_id === p.id).length} components)
-                        </span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {viewAssemblyId && (
-              <div className="border rounded-md p-2 min-h-[200px] bg-muted/20">
-                <div className="flex items-center gap-2 py-1.5 px-2 font-medium text-sm">
-                  <Network className="h-4 w-4 text-primary" />
-                  <span className="font-mono">{prodName(viewAssemblyId)}</span>
-                  <Badge className="text-xs h-5">Assembly</Badge>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground ml-auto cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs text-xs">
-                        <p>"Units / Final Assy" shows total units of each component needed per 1 good final assembly across all IBOM levels. Scrap is excluded.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                {tree.length === 0 ? (
-                  <p className="text-sm text-muted-foreground px-2 py-4">No components defined for this product.</p>
-                ) : (
-                  <>
-                    <Button variant="ghost" size="sm" className="text-xs mb-1" onClick={() => {
-                      const allKeys = new Set<string>();
-                      const collectKeys = (nodes: TreeNode[], parentKey: string) => {
-                        nodes.forEach((n, i) => {
-                          const key = `${parentKey}-${n.productId}-${i}`;
-                          if (n.children.length > 0) { allKeys.add(key); collectKeys(n.children, key); }
-                        });
-                      };
-                      collectKeys(tree, 'root');
-                      setExpandedNodes(allKeys);
-                    }}>Expand All</Button>
-                    {tree.map((node, i) => renderTreeNode(node, 'root', i))}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Units / Final Assembly Table */}
-            {viewAssemblyId && unitsPerFinalAssy.size > 0 && (
-              <div className="mt-4">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                  Units / Final Assembly
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3 w-3 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs text-xs">
-                        Read-only. Units of this component needed per 1 good final assembly, accounting for all IBOM levels. Scrap is excluded.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-mono text-xs">Component</TableHead>
-                      <TableHead className="font-mono text-xs text-right">Units/Assy</TableHead>
-                      <TableHead className="font-mono text-xs text-right">
-                        Units / Final Assy
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...unitsPerFinalAssy.entries()].map(([prodId, qty]) => {
-                      const ibomEntry = model.ibom.find(e => e.component_product_id === prodId);
+      {/* ═══ TOP PANEL — IBOM Structure Tree ═══ */}
+      <div className="shrink-0 px-6 pb-2" style={{ height: '45%', minHeight: 200 }}>
+        <Card className="h-full flex flex-col">
+          <CardHeader className="pb-2 shrink-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">IBOM Structure</CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">View assembly:</span>
+                <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); }}>
+                  <SelectTrigger className="h-7 w-48 text-xs">
+                    <SelectValue placeholder="Select assembly…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allProducts.map((p) => {
+                      const compCount = model.ibom.filter(e => e.parent_product_id === p.id).length;
                       return (
-                        <TableRow key={prodId}>
-                          <TableCell className="font-mono text-xs">{prodName(prodId)}</TableCell>
-                          <TableCell className="font-mono text-xs text-right">{ibomEntry?.units_per_assy ?? '—'}</TableCell>
-                          <TableCell className="font-mono text-xs text-right italic text-muted-foreground bg-muted/30">{qty}</TableCell>
-                        </TableRow>
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                          {compCount > 0 && <span className="text-muted-foreground ml-1">({compCount})</span>}
+                        </SelectItem>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                  </SelectContent>
+                </Select>
+                {viewAssemblyId && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setViewAssemblyId(''); setSelectedProductId(''); setExpandedNodes(new Set()); }}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-0">
+            {!viewAssemblyId ? (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                Select an assembly above to view its structure.
+              </div>
+            ) : tree.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                No components defined for this product. Select it below to add components.
+              </div>
+            ) : (
+              <div className="text-xs">
+                {/* Column headers */}
+                <div className="flex items-center gap-2 h-7 px-2 border-b border-border bg-muted/30 text-muted-foreground font-medium sticky top-0 z-10">
+                  <div className="flex-1 pl-2 flex items-center gap-2">
+                    <span>Component</span>
+                    <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 ml-2" onClick={expandAll}>
+                      Expand All
+                    </Button>
+                  </div>
+                  <span className="w-16 text-right">Units/Assy</span>
+                  <span className="w-20 text-right">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-help underline decoration-dotted">Units/Final</TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs text-xs">
+                          Total units of this component needed per 1 good final assembly across all IBOM levels. Scrap excluded.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </span>
+                </div>
+                {/* Root assembly row */}
+                <div
+                  className={`flex items-center gap-2 h-8 px-2 cursor-pointer transition-colors ${
+                    selectedProductId === viewAssemblyId
+                      ? 'bg-primary/5 border-l-2 border-l-primary'
+                      : 'hover:bg-muted/50 border-l-2 border-l-transparent'
+                  }`}
+                  onClick={() => handleSelectRow(viewAssemblyId)}
+                >
+                  <Network className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-mono text-xs font-semibold">{prodName(viewAssemblyId)}</span>
+                  <Badge variant="outline" className="text-[9px] h-4 px-1">Assembly</Badge>
+                  <span className="ml-auto w-16 text-right font-mono text-xs text-muted-foreground">—</span>
+                  <span className="w-20 text-right font-mono text-xs text-muted-foreground/60">—</span>
+                </div>
+                {/* Tree nodes */}
+                {tree.map((node, i) => renderTreeNode(node, 'root', i))}
               </div>
             )}
           </CardContent>
         </Card>
+      </div>
 
-        {/* Right Panel: Build IBOM Structure */}
-        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
-          <CardHeader>
-            <CardTitle className="text-base">Build IBOM Structure</CardTitle>
-            <CardDescription>Select a parent product and manage its components.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-xs">Choose Parent Product</Label>
-              <Select value={editParentId} onValueChange={(v) => { setEditParentId(v); setCheckedAllowable(new Set()); setSelectedComponent(''); }}>
-                <SelectTrigger><SelectValue placeholder="Select a parent product..." /></SelectTrigger>
-                <SelectContent>
-                  {allProducts.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+      {/* ═══ BOTTOM PANEL — Edit Components ═══ */}
+      <div className="flex-1 min-h-0 px-6 pt-2 pb-4">
+        <Card className="h-full flex flex-col">
+          <CardHeader className="pb-2 shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">
+                  {editParentId
+                    ? <>Components of <span className="font-mono text-primary">{prodName(editParentId)}</span></>
+                    : 'Edit Components'
+                  }
+                </CardTitle>
+                <CardDescription>
+                  {editParentId
+                    ? `${currentComponents.length} component(s) defined. Click a row in the tree above or select a product to edit.`
+                    : 'Click any product in the tree above to manage its components.'
+                  }
+                </CardDescription>
+              </div>
+              {!selectedProductId && (
+                <Select value="" onValueChange={(v) => handleSelectRow(v)}>
+                  <SelectTrigger className="h-7 w-48 text-xs">
+                    <SelectValue placeholder="Or select product…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allProducts.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
-
-            {editParentId && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-xs mb-1.5 block">Current Components</Label>
-                  <div className="border rounded-md min-h-[200px] max-h-[320px] overflow-y-auto">
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto p-4 pt-0">
+            {!editParentId ? (
+              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                Select a product from the tree or the dropdown to manage its components.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {/* Left: Current Components */}
+                <div className="flex flex-col min-h-0">
+                  <Label className="text-xs mb-1.5 shrink-0">Current Components</Label>
+                  <div className="border rounded-md flex-1 overflow-y-auto">
                     {currentComponents.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-3">No components</p>
+                      <p className="text-xs text-muted-foreground p-3">No components defined yet.</p>
                     ) : (
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="text-xs font-mono h-8">Component</TableHead>
-                            <TableHead className="text-xs font-mono h-8 w-20">Units</TableHead>
-                            <TableHead className="text-xs font-mono h-8 w-10"></TableHead>
+                            <TableHead className="text-xs font-mono h-7">Component</TableHead>
+                            <TableHead className="text-xs font-mono h-7 w-20">Units/Assy</TableHead>
+                            <TableHead className="text-xs font-mono h-7 w-8"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {currentComponents.map((c) => (
                             <TableRow key={c.id}>
-                              <TableCell className="font-mono text-xs py-1.5">{prodName(c.component_product_id)}</TableCell>
-                              <TableCell className="py-1.5">
+                              <TableCell className="font-mono text-xs py-1">{prodName(c.component_product_id)}</TableCell>
+                              <TableCell className="py-1">
                                 <Input
                                   type="number"
-                                  className="h-7 w-16 font-mono text-xs"
+                                  className="h-6 w-16 font-mono text-xs"
                                   value={c.units_per_assy}
                                   min={1}
                                   onChange={(e) => updateIBOM(model.id, c.id, { units_per_assy: Math.max(1, +e.target.value) })}
                                 />
                               </TableCell>
-                              <TableCell className="py-1.5">
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => { deleteIBOM(model.id, c.id); toast.success('Component removed'); }}>
-                                  <ChevronRightIcon className="h-3.5 w-3.5" />
+                              <TableCell className="py-1">
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => { deleteIBOM(model.id, c.id); toast.success('Component removed'); }}>
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -379,24 +391,23 @@ export default function IBOMScreen() {
                       </Table>
                     )}
                   </div>
-                  <div className="flex gap-1.5 mt-2">
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleRemoveAll} disabled={currentComponents.length === 0}>
-                      <ChevronsRight className="h-3.5 w-3.5" /> Remove All
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="sm" className="text-xs gap-1 mt-1.5 self-start" onClick={handleRemoveAll} disabled={currentComponents.length === 0}>
+                    Remove All
+                  </Button>
                 </div>
 
-                <div>
-                  <Label className="text-xs mb-1.5 block">Allowable Components</Label>
-                  <div className="border rounded-md min-h-[200px] max-h-[320px] overflow-y-auto">
+                {/* Right: Allowable Components */}
+                <div className="flex flex-col min-h-0">
+                  <Label className="text-xs mb-1.5 shrink-0">Allowable Components</Label>
+                  <div className="border rounded-md flex-1 overflow-y-auto p-1">
                     {allowableProducts.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-3">No available components</p>
+                      <p className="text-xs text-muted-foreground p-2">No available components (all products are already assigned or would create a circular reference).</p>
                     ) : (
-                      <div className="p-1 space-y-0.5">
+                      <div className="space-y-0.5">
                         {allowableProducts.map((p) => (
                           <label
                             key={p.id}
-                            className="flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs font-mono hover:bg-muted/50"
+                            className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-xs font-mono hover:bg-muted/50"
                           >
                             <input
                               type="checkbox"
@@ -416,9 +427,9 @@ export default function IBOMScreen() {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-1.5 mt-2">
+                  <div className="flex gap-1.5 mt-1.5 shrink-0">
                     <Button size="sm" className="text-xs gap-1" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
-                      <ChevronsLeft className="h-3.5 w-3.5" /> Add Selected as Components
+                      <ChevronsLeft className="h-3.5 w-3.5" /> Add Selected
                     </Button>
                     <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
                       Add All
