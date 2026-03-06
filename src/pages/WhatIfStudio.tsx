@@ -130,9 +130,10 @@ export default function WhatIfStudio() {
     if (!newName.trim()) return;
     const id = await createScenario(modelId, newName.trim());
     setActiveScenario(id);
+    const nm = newName.trim();
     setNewName('');
-    setShowNewModal(false);
-    toast.success(`Scenario "${newName.trim()}" created`);
+    setShowNewForm(false);
+    toast.success(`What-if "${nm}" is now active. Go to any Input screen to make changes.`);
   };
 
   const handleRunScenario = (scenario: Scenario) => {
