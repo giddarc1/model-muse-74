@@ -203,7 +203,7 @@ export default function GeneralData() {
         </TabsContent>
 
         <TabsContent value="comments" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardContent className="pt-6 space-y-4">
               <div>
                 <Label>Author</Label>

@@ -254,7 +254,7 @@ export default function OperationsRouting() {
       ) : (
         <div className="space-y-6">
           {/* Operations Table */}
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>

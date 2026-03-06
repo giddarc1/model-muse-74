@@ -321,7 +321,7 @@ export default function IBOMScreen() {
         </Card>
 
         {/* Right Panel: Build IBOM Structure */}
-        <Card className="h-fit">
+        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
           <CardHeader>
             <CardTitle className="text-base">Build IBOM Structure</CardTitle>
             <CardDescription>Select a parent product and manage its components.</CardDescription>
