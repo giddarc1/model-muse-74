@@ -57,6 +57,12 @@ export default function EquipmentData() {
   };
 
   const handleCellChange = (id: string, field: keyof EquipmentGroup, value: any) => {
+    if (activeScenarioId && activeScenario) {
+      const eq = model.equipment.find(e => e.id === id);
+      const entityName = eq?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Equipment', id, entityName, field, fieldLabel, value as string | number);
+    }
     if (field === 'equip_type' && value === 'delay') {
       updateEquipment(model.id, id, { [field]: value, count: -1 });
     } else {
