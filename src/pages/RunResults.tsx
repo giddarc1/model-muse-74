@@ -1379,13 +1379,8 @@ function LaborWaitChart({ results, model }: { results: CalcResults; model: Model
   return (
     <Card>
       <CardHeader>
-        <div>
-          <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
-          <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
-        </div>
-        <Button variant="outline" size="sm" className="text-xs gap-1 self-start" onClick={() => setShowTable(!showTable)}>
-          {showTable ? 'Show Chart' : 'Show as Table'}
-        </Button>
+        <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
+        <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
       </CardHeader>
       <CardContent>
         {showTable ? (
