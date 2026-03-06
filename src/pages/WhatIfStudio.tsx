@@ -272,7 +272,7 @@ function NewWhatIfForm({ newName, newComment, setNewName, setNewComment, onSubmi
         </div>
         <div>
           <Label className="text-xs">Comment (optional)</Label>
-          <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe what you want to explore…" className="mt-1 text-sm min-h-[48px] resize-none" />
+          <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Brief description" className="mt-1 text-sm min-h-[48px] resize-none" />
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={onSubmit} disabled={!newName.trim()}><Play className="h-3.5 w-3.5 mr-1" /> Create & Activate</Button>
