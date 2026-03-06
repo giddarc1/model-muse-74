@@ -684,7 +684,20 @@ export default function RunResults() {
               }}>
                 <TrendingUp className="h-4 w-4 mr-2" /> Max Throughput + Lot Size Range…
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setExtRunMode('optimize_lots')}>
+              <DropdownMenuItem onClick={() => {
+                const vals: Record<string, number> = {};
+                model?.products.forEach(p => { vals[p.id] = 1; });
+                setOlUnitValues(vals);
+                setOlOptLot(new Set(model?.products.map(p => p.id) || []));
+                setOlOptTb(new Set(model?.products.map(p => p.id) || []));
+                setOlName('Optimised Lot Sizes');
+                // Compute initial weighted WIP
+                const baseCalc = calculate(model!);
+                const initWip = baseCalc.products.reduce((s, pr) => s + pr.wip * (vals[pr.id] || 1), 0);
+                setOlInitialWip(Math.round(initWip * 100) / 100);
+                setOlCurrentWip(null);
+                setOlModalOpen(true);
+              }}>
                 <Settings2 className="h-4 w-4 mr-2" /> Optimise Lot Sizes &amp; Transfer Batches…
               </DropdownMenuItem>
               <DropdownMenuSeparator />
