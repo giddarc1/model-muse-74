@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users, Info } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
@@ -25,8 +25,8 @@ export default function LaborData() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
-  const showAdvanced = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -60,6 +60,10 @@ export default function LaborData() {
           <p className="text-sm text-muted-foreground">{model.labor.length} groups defined</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+          </Button>
           <div className="flex border rounded-md overflow-hidden">
             <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('table')}>
               <List className="h-4 w-4" />
@@ -85,7 +89,7 @@ export default function LaborData() {
         </Card>
       ) : viewMode === 'table' ? (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -93,9 +97,17 @@ export default function LaborData() {
                   <TableHead className="font-mono text-xs">Count</TableHead>
                   <TableHead className="font-mono text-xs">Overtime %</TableHead>
                   <TableHead className="font-mono text-xs">Unavail %</TableHead>
-                  <TableHead className="font-mono text-xs">Setup Factor</TableHead>
-                  <TableHead className="font-mono text-xs">Run Factor</TableHead>
-                  <TableHead className="font-mono text-xs">Var Factor</TableHead>
+                  {showAdvanced && <>
+                    <TableHead className="font-mono text-xs">Dept/Area</TableHead>
+                    <TableHead className="font-mono text-xs">Setup Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Run Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Var Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Prioritize</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.lab1_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.lab2_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.lab3_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.lab4_name}</TableHead>
+                  </>}
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -112,15 +124,17 @@ export default function LaborData() {
                     <TableCell>
                       <Input type="number" className="h-8 w-20 font-mono" value={l.unavail_pct} onChange={(e) => handleCellChange(l.id, 'unavail_pct', +e.target.value)} />
                     </TableCell>
-                    <TableCell>
-                      <Input type="number" className="h-8 w-20 font-mono" value={l.setup_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'setup_factor', +e.target.value)} />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" className="h-8 w-20 font-mono" value={l.run_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'run_factor', +e.target.value)} />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" className="h-8 w-20 font-mono" value={l.var_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'var_factor', +e.target.value)} />
-                    </TableCell>
+                    {showAdvanced && <>
+                      <TableCell><Input className="h-8 w-24" value={l.dept_code} onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.setup_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'setup_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.run_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'run_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.var_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'var_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Switch checked={l.prioritize_use} onCheckedChange={(v) => handleCellChange(l.id, 'prioritize_use', v)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab1} onChange={(e) => handleCellChange(l.id, 'lab1', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab2} onChange={(e) => handleCellChange(l.id, 'lab2', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab3} onChange={(e) => handleCellChange(l.id, 'lab3', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab4} onChange={(e) => handleCellChange(l.id, 'lab4', +e.target.value)} /></TableCell>
+                    </>}
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLabor(model.id, l.id)}>
                         <Trash2 className="h-4 w-4" />

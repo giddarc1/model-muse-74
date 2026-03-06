@@ -1,18 +1,19 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useModelStore, type Operation } from '@/stores/modelStore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Grid3X3, ClipboardPaste } from 'lucide-react';
+import { Grid3X3, ClipboardPaste, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AllOperations() {
   const model = useModelStore(s => s.getActiveModel());
   const updateOperation = useModelStore(s => s.updateOperation);
   const [filter, setFilter] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const rows = useMemo(() => {
     if (!model) return [];
@@ -67,6 +68,8 @@ export default function AllOperations() {
 
   if (!model) return null;
 
+  const pn = model.param_names;
+
   return (
     <div className="p-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -79,6 +82,10 @@ export default function AllOperations() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced Data' : 'Show Advanced Data'}
+          </Button>
           <Input
             placeholder="Filter by product or op name…"
             value={filter}
@@ -105,6 +112,20 @@ export default function AllOperations() {
                 <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
                 <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
                 <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
+                {showAdvanced && <>
+                  <TableHead className="font-mono text-xs">E.Setup/TBatch</TableHead>
+                  <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
+                  <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
+                  <TableHead className="font-mono text-xs">E.Run/TBatch</TableHead>
+                  <TableHead className="font-mono text-xs">L.Setup/TBatch</TableHead>
+                  <TableHead className="font-mono text-xs">L.Setup/Pc</TableHead>
+                  <TableHead className="font-mono text-xs">L.Run/Lot</TableHead>
+                  <TableHead className="font-mono text-xs">L.Run/TBatch</TableHead>
+                  <TableHead className="font-mono text-xs">{pn.oper1_name}</TableHead>
+                  <TableHead className="font-mono text-xs">{pn.oper2_name}</TableHead>
+                  <TableHead className="font-mono text-xs">{pn.oper3_name}</TableHead>
+                  <TableHead className="font-mono text-xs">{pn.oper4_name}</TableHead>
+                </>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -154,6 +175,20 @@ export default function AllOperations() {
                       <Input type="number" step="0.01" className="h-7 w-20 font-mono text-xs" value={r.op.labor_run_piece}
                         onChange={e => updateOperation(model.id, r.op.id, { labor_run_piece: +e.target.value })} />
                     </TableCell>
+                    {showAdvanced && <>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.equip_setup_tbatch} onChange={e => updateOperation(model.id, r.op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.01" className="h-7 w-20 font-mono text-xs" value={r.op.equip_setup_piece} onChange={e => updateOperation(model.id, r.op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.equip_run_lot} onChange={e => updateOperation(model.id, r.op.id, { equip_run_lot: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.equip_run_tbatch} onChange={e => updateOperation(model.id, r.op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.labor_setup_tbatch} onChange={e => updateOperation(model.id, r.op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.01" className="h-7 w-20 font-mono text-xs" value={r.op.labor_setup_piece} onChange={e => updateOperation(model.id, r.op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.labor_run_lot} onChange={e => updateOperation(model.id, r.op.id, { labor_run_lot: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" step="0.1" className="h-7 w-20 font-mono text-xs" value={r.op.labor_run_tbatch} onChange={e => updateOperation(model.id, r.op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" className="h-7 w-20 font-mono text-xs" value={r.op.oper1} onChange={e => updateOperation(model.id, r.op.id, { oper1: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" className="h-7 w-20 font-mono text-xs" value={r.op.oper2} onChange={e => updateOperation(model.id, r.op.id, { oper2: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" className="h-7 w-20 font-mono text-xs" value={r.op.oper3} onChange={e => updateOperation(model.id, r.op.id, { oper3: +e.target.value })} /></TableCell>
+                      <TableCell><Input type="number" className="h-7 w-20 font-mono text-xs" value={r.op.oper4} onChange={e => updateOperation(model.id, r.op.id, { oper4: +e.target.value })} /></TableCell>
+                    </>}
                   </TableRow>
                 );
               })}
