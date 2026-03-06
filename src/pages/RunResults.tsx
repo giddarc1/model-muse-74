@@ -306,27 +306,21 @@ export default function RunResults() {
   const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
 
   // Render a mode card
-  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}, isAdvancedOnly = false) => {
+  const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}) => {
     const Icon = opt.icon;
-    const isDisabled = isAdvancedOnly && userLevel !== 'advanced';
-    const selected = !isDisabled && extRunMode === opt.mode;
+    const selected = extRunMode === opt.mode;
     return (
       <button
         key={opt.label}
-        onClick={() => !isDisabled && setExtRunMode(opt.mode)}
-        disabled={isDisabled}
+        onClick={() => setExtRunMode(opt.mode)}
         className={`text-left p-3 rounded-lg border-2 transition-all ${
-          isDisabled ? 'border-border opacity-50 cursor-not-allowed'
-          : selected ? 'border-primary bg-primary/5'
+          selected ? 'border-primary bg-primary/5'
           : 'border-border hover:border-primary/40 hover:bg-accent/30'
         }`}
       >
         <div className="flex items-center gap-2 mb-1.5">
           <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
           <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
-          {isAdvancedOnly && userLevel !== 'advanced' && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">Advanced</Badge>
-          )}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{opt.description}</p>
       </button>
