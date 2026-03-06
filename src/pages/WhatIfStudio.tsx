@@ -408,9 +408,10 @@ export default function WhatIfStudio() {
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium truncate block">{sc.name}</span>
                     {isVisible('whatif_families', userLevel) && sc.familyId && (
-                      <span className="inline-block mt-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none">
-                        Family
-                      </span>
+                      <FamilyPillPopover
+                        scenario={sc}
+                        families={useScenarioStore.getState().families.filter(f => f.modelId === modelId)}
+                      />
                     )}
                   </div>
                   {/* Status badge */}
