@@ -1171,7 +1171,8 @@ export default function RunResults() {
                     <CardHeader>
                       <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
+                      <ChartScenarioLabel />
                       <ResponsiveContainer width="100%" height={300}>
                         {isMultiScenario && groupedWIP ? (
                           <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
