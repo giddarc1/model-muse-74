@@ -739,8 +739,8 @@ function EditableOperationsTab({ model, scenario, getWhatIfValue, onBlur }: Edit
 // ═══════════════════════════════════════════════════════════════════════
 // Changes Tab (audit trail)
 // ═══════════════════════════════════════════════════════════════════════
-function ChangesTab({ scenario, isActive, userLevel, modelId }: {
-  scenario: Scenario; isActive: boolean; userLevel: UserLevel; modelId: string;
+function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
+  scenario: Scenario; isActive: boolean; userLevel: UserLevel; modelId: string; onPromote?: () => void;
 }) {
   const [directEdits, setDirectEdits] = useState(false);
   const { removeChange, updateChange, markNeedsRecalc } = useScenarioStore();
