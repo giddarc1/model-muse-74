@@ -944,7 +944,7 @@ function CentrePanel({
 
             <div className="flex items-start gap-3 rounded-md px-4 py-3 text-sm" style={{ backgroundColor: 'rgba(245,158,11,0.08)', color: '#92400E' }}>
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
-              <span>You are now editing this What-if. Go to any Input screen and make your changes. All edits will be recorded here automatically.</span>
+              <span>What-if mode is active. Go to any Input screen — Labor, Equipment, Products, or General Data — and make your changes there. Every change you make will be automatically recorded here.</span>
             </div>
 
             <div>

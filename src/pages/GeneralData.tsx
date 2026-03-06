@@ -55,6 +55,14 @@ export default function GeneralData() {
 
   return (
     <div className="p-6 max-w-3xl animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <h1 className="text-xl font-bold mb-1">General Data</h1>
       <p className="text-sm text-muted-foreground mb-6">Configure time settings, variability parameters, and model metadata.</p>
 
