@@ -1297,18 +1297,80 @@ export default function RunResults() {
                 if (!product) return;
 
                 if (mtModalMode === 'max_throughput') {
-                  setExtRunMode('max_throughput');
-                  setMtProduct(mtModalProduct);
-                  setMtScenarioName(mtModalName || `Max Throughput — ${product.name}`);
-                  // Trigger the run via existing handler
-                  setTimeout(() => handleAdvancedRun(), 50);
+                  // Inline max throughput logic
+                  setAdvRunning(true);
+                  let demand = product.demand > 0 ? product.demand : 100;
+                  let lastValidDemand = demand;
+                  let limitingResource = '';
+                  const step = Math.max(1, Math.round(demand * 0.1));
+                  let iterations = 0;
+                  const maxIter = 200;
+
+                  while (iterations < maxIter) {
+                    iterations++;
+                    setAdvProgress({ current: iterations, total: maxIter, label: `Testing demand: ${Math.round(demand)}` });
+                    const testModel = { ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, demand } : p) };
+                    const r = calculate(testModel);
+                    if (r.overLimitResources.length > 0) {
+                      limitingResource = r.overLimitResources[0];
+                      let lo = lastValidDemand, hi = demand;
+                      for (let i = 0; i < 20; i++) {
+                        const mid = Math.round((lo + hi) / 2);
+                        const tr = calculate({ ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, demand: mid } : p) });
+                        if (tr.overLimitResources.length > 0) { hi = mid; limitingResource = tr.overLimitResources[0]; }
+                        else { lo = mid; lastValidDemand = mid; }
+                        if (hi - lo <= 1) break;
+                      }
+                      break;
+                    }
+                    lastValidDemand = demand;
+                    demand += step;
+                    await new Promise(r => setTimeout(r, 0));
+                  }
+
+                  const name = mtModalName || `Max Throughput — ${product.name}`;
+                  const scenarioId = await createScenario(model.id, name);
+                  useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtModalProduct, product.name, 'demand', 'Demand', lastValidDemand);
+                  const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                  if (scenario) {
+                    const r = calculate(model, scenario);
+                    setStoreResults(scenarioId, r);
+                    useScenarioStore.getState().markCalculated(scenarioId);
+                    scenarioDb.saveResults(scenarioId, r);
+                  }
+                  setMtResult({ demand: lastValidDemand, limitingResource });
+                  setAdvProgress(null);
+                  setAdvRunning(false);
+                  toast.success(`Max throughput for ${product.name}: ${lastValidDemand} units`);
                 } else {
-                  setExtRunMode('lot_size_range');
-                  setLsrProduct(mtModalProduct);
-                  setLsrMin(mtModalLsFrom);
-                  setLsrMax(mtModalLsTo);
-                  setLsrStep(mtModalLsStep);
-                  setTimeout(() => handleAdvancedRun(), 50);
+                  // Inline lot size range logic
+                  setAdvRunning(true);
+                  const steps: number[] = [];
+                  for (let ls = mtModalLsFrom; ls <= mtModalLsTo; ls += mtModalLsStep) steps.push(ls);
+                  const curResults: {lotSize: number; mct: number}[] = [];
+
+                  for (let i = 0; i < steps.length; i++) {
+                    setAdvProgress({ current: i + 1, total: steps.length, label: `Lot size: ${steps[i]}` });
+                    const testModel = { ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, lot_size: steps[i] } : p) };
+                    const r = calculate(testModel);
+                    const pr = r.products.find(p => p.id === mtModalProduct);
+                    curResults.push({ lotSize: steps[i], mct: pr?.mct || 0 });
+
+                    const scName = `${mtModalName || product.name} — Lot ${steps[i]}`;
+                    const scenarioId = await createScenario(model.id, scName);
+                    useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtModalProduct, product.name, 'lot_size', 'Lot Size', steps[i]);
+                    const sc = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                    if (sc) {
+                      setStoreResults(scenarioId, r);
+                      useScenarioStore.getState().markCalculated(scenarioId);
+                      scenarioDb.saveResults(scenarioId, r);
+                    }
+                    await new Promise(r => setTimeout(r, 0));
+                  }
+                  setLsrResults(curResults);
+                  setAdvProgress(null);
+                  setAdvRunning(false);
+                  toast.success(`Created ${steps.length} lot size scenarios for ${product.name}`);
                 }
               }}
             >
