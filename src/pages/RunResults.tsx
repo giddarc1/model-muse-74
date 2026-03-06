@@ -1098,40 +1098,7 @@ export default function RunResults() {
 
           {/* IBOM Tab */}
           <TabsContent value="ibom" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Network className="h-4 w-4 text-primary" /> IBOM Analysis
-                    </CardTitle>
-                    <CardDescription>Bill of Materials MCT contribution tree</CardDescription>
-                  </div>
-                  <Select value={ibomSelectedProduct} onValueChange={setIbomProduct}>
-                    <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Select product" /></SelectTrigger>
-                    <SelectContent>
-                      {model.products.filter(p => p.demand > 0).map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="tree">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="tree" className="text-xs">Tree</TabsTrigger>
-                    <TabsTrigger value="poles" className="text-xs">Poles</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="tree">
-                    <IBOMTreeView model={model} results={results!} selectedProductId={ibomSelectedProduct} />
-                  </TabsContent>
-                  <TabsContent value="poles">
-                    <IBOMPolesView model={model} results={results!} selectedProductId={ibomSelectedProduct} />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+            <IBOMOutput model={model} isRunning={isRunning} />
           </TabsContent>
 
           {/* Oper Details Tab */}
