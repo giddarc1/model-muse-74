@@ -547,6 +547,24 @@ export default function RunResults() {
   const lastRunMode = runLog.length > 0 ? runLog[0].mode : null;
   const isUtilOnly = lastRunMode === 'util_only';
 
+  // Auto-navigate to Summary on Full Calculate completion; toast on background recalc
+  const prevRunLogLenRef = useRef(runLog.length);
+  useEffect(() => {
+    if (runLog.length > prevRunLogLenRef.current) {
+      const latest = runLog[0];
+      if (latest && latest.mode === 'full' && latest.status !== 'error') {
+        if (activeTab === 'summary' || !hasRun) {
+          // First run or already on summary — navigate
+          setActiveTab('summary');
+        } else {
+          // Background recalc while viewing another tab — just toast
+          toast.success('Results updated', { duration: 2000 });
+        }
+      }
+    }
+    prevRunLogLenRef.current = runLog.length;
+  }, [runLog.length]);
+
   if (!model) return (
     <div className="p-6 space-y-4">
       <div className="h-7 w-48 bg-muted animate-pulse rounded" />
