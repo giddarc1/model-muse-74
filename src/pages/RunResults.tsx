@@ -268,6 +268,15 @@ export default function RunResults() {
   const [mtModalLsTo, setMtModalLsTo] = useState(200);
   const [mtModalLsStep, setMtModalLsStep] = useState(10);
 
+  // Optimise Lot Sizes modal state
+  const [olModalOpen, setOlModalOpen] = useState(false);
+  const [olName, setOlName] = useState('Optimised Lot Sizes');
+  const [olUnitValues, setOlUnitValues] = useState<Record<string, number>>({});
+  const [olOptLot, setOlOptLot] = useState<Set<string>>(new Set());
+  const [olOptTb, setOlOptTb] = useState<Set<string>>(new Set());
+  const [olInitialWip, setOlInitialWip] = useState<number | null>(null);
+  const [olCurrentWip, setOlCurrentWip] = useState<number | null>(null);
+
   const { createScenario } = useScenarioStore();
   const { setResults: setStoreResults } = useResultsStore();
 
