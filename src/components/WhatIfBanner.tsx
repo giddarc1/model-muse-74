@@ -22,7 +22,7 @@ export function WhatIfBanner() {
   if (!activeScenario) return null;
 
   const handleViewChanges = () => {
-    if (modelId && !location.pathname.endsWith('/whatif')) {
+    if (modelId) {
       navigate(`/models/${modelId}/whatif`);
     }
   };
@@ -95,10 +95,16 @@ export function WhatIfBanner() {
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="ghost" onClick={() => setShowReturnModal(false)}>Stay in What-if</Button>
-            <Button variant="secondary" className="border border-amber-400 text-amber-700" onClick={() => {
-              setActiveScenario(null);
-              setShowReturnModal(false);
-            }}>Discard Changes and Return</Button>
+            <Button
+              variant="secondary"
+              className="border border-amber-400 text-amber-700"
+              onClick={() => {
+                setActiveScenario(null);
+                setShowReturnModal(false);
+              }}
+            >
+              Discard Changes and Return
+            </Button>
             <Button onClick={handleSaveAndReturn}>Save and Return</Button>
           </DialogFooter>
         </DialogContent>

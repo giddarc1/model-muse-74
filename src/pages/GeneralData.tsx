@@ -56,9 +56,9 @@ export default function GeneralData() {
   return (
     <div className="p-6 max-w-3xl animate-fade-in">
       {activeScenarioId && activeScenario && (
-        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
-          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm text-primary font-medium">
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+          <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-700 font-medium">
             Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
           </span>
         </div>
@@ -74,7 +74,7 @@ export default function GeneralData() {
         </TabsList>
 
         <TabsContent value="time" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader>
               <CardTitle className="text-base">Time Settings</CardTitle>
               <CardDescription>Define time units and conversion factors for this model.</CardDescription>
@@ -138,7 +138,7 @@ export default function GeneralData() {
         </TabsContent>
 
         <TabsContent value="advanced" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader>
               <CardTitle className="text-base">Variability & Limits</CardTitle>
               <CardDescription>Default coefficients of variation for queuing calculations.</CardDescription>
@@ -173,7 +173,7 @@ export default function GeneralData() {
           </Card>
 
           {showAdvancedParams && (
-            <Card>
+            <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
               <CardHeader>
                 <CardTitle className="text-base">Global Parameters</CardTitle>
                 <CardDescription>Global variables that can be referenced in operation time formulas. Rename them in Parameter Names for clarity.</CardDescription>
@@ -203,7 +203,7 @@ export default function GeneralData() {
         </TabsContent>
 
         <TabsContent value="comments" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardContent className="pt-6 space-y-4">
               <div>
                 <Label>Author</Label>

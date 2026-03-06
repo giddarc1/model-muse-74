@@ -75,9 +75,9 @@ export default function EquipmentData() {
   return (
     <div className="p-6 animate-fade-in">
       {activeScenarioId && activeScenario && (
-        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
-          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm text-primary font-medium">
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+          <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-700 font-medium">
             Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
           </span>
         </div>
@@ -103,7 +103,7 @@ export default function EquipmentData() {
       {model.equipment.length === 0 ? (
         <Card><CardContent className="py-16 text-center"><Cpu className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" /><p className="text-muted-foreground font-medium mb-1">No equipment groups defined</p><p className="text-sm text-muted-foreground/70 mb-4">Add equipment groups to define workstations and machines.</p><Button onClick={() => setShowAdd(true)} className="gap-1"><Plus className="h-4 w-4" /> Add First Equipment</Button></CardContent></Card>
       ) : viewMode === 'table' ? (
-        <Card>
+        <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
@@ -178,7 +178,7 @@ export default function EquipmentData() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {model.equipment.map((eq) => (
-            <Card key={eq.id}>
+            <Card key={eq.id} className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{eq.name}</CardTitle>

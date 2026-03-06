@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -24,6 +25,8 @@ export default function IBOMScreen() {
   const addIBOM = useModelStore((s) => s.addIBOM);
   const updateIBOM = useModelStore((s) => s.updateIBOM);
   const deleteIBOM = useModelStore((s) => s.deleteIBOM);
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
 
   const [viewAssemblyId, setViewAssemblyId] = useState('');
   const [editParentId, setEditParentId] = useState('');
@@ -197,12 +200,20 @@ export default function IBOMScreen() {
 
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+          <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-700 font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <h1 className="text-xl font-bold mb-1">Indented Bill of Materials</h1>
       <p className="text-sm text-muted-foreground mb-6">Define parent-child relationships between products and their component parts.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Panel: View IBOM Structure */}
-        <Card className="h-fit">
+        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
           <CardHeader>
             <CardTitle className="text-base">View Assembly Structure</CardTitle>
             <CardDescription>Select an assembly to view its component hierarchy.</CardDescription>
@@ -310,7 +321,7 @@ export default function IBOMScreen() {
         </Card>
 
         {/* Right Panel: Build IBOM Structure */}
-        <Card className="h-fit">
+        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
           <CardHeader>
             <CardTitle className="text-base">Build IBOM Structure</CardTitle>
             <CardDescription>Select a parent product and manage its components.</CardDescription>
