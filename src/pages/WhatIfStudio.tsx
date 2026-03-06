@@ -117,6 +117,10 @@ export default function WhatIfStudio() {
 
   const handleRunAndView = (scenario: Scenario) => {
     handleRunScenario(scenario);
+    // Ensure this scenario's eye icon is toggled on so results are visible in charts
+    if (!displayIds.includes(scenario.id)) {
+      toggleDisplayScenario(scenario.id);
+    }
     if (modelId) navigate(`/models/${modelId}/run`);
   };
 
