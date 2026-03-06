@@ -962,91 +962,139 @@ export default function RunResults() {
         {/* ── Products Tab ── */}
         {activeTab === 'products' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Product MCT (Manufacturing Cycle Time)</CardTitle>
-                  <CardDescription>
-                    {isMultiScenario
-                      ? `Comparing ${chartScenarios.length} scenarios — MCT in ${model.general.mct_time_unit}s`
-                      : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={350}>
-                    {isMultiScenario && groupedMCT ? (
-                      <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {groupedMCT.bars.map(b => (
-                          <Bar key={b.prefix + 'lotWait'} dataKey={b.prefix + 'lotWait'} stackId={b.stackId} fill={b.palette.lotWait} name={`${b.name} Lot Wait`} />
-                        ))}
-                        {groupedMCT.bars.map(b => (
-                          <Bar key={b.prefix + 'queue'} dataKey={b.prefix + 'queue'} stackId={b.stackId} fill={b.palette.queue} name={`${b.name} Queue`} />
-                        ))}
-                        {groupedMCT.bars.map(b => (
-                          <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} />
-                        ))}
-                        {groupedMCT.bars.map(b => (
-                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                        ))}
-                        {groupedMCT.bars.map(b => (
-                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
-                        <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
-                        <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
-                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
-                      </BarChart>
+            <div className="flex flex-col h-full">
+              {/* Level 2 sub-tab bar */}
+              <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-6 shrink-0">
+                {([
+                  { key: 'mct-chart', label: 'MCT Chart' },
+                  { key: 'results-table', label: 'Results Table' },
+                  { key: 'production-chart', label: 'Production Chart' },
+                  { key: 'wip-chart', label: 'WIP Chart' },
+                  ...(isVisible('oper_details', userLevel) ? [{ key: 'oper-details', label: 'Oper Details' }] : []),
+                ] as const).map(st => (
+                  <button
+                    key={st.key}
+                    onClick={() => setProductsSubTab(st.key)}
+                    className={`h-8 px-4 text-[13px] relative transition-colors ${
+                      productsSubTab === st.key
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {st.label}
+                    {productsSubTab === st.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
                     )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  </button>
+                ))}
+              </div>
 
-              {/* WIP Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {isMultiScenario && groupedWIP ? (
-                      <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {groupedWIP.bars.map((b, i) => (
-                          <Bar key={b.prefix + 'wip'} dataKey={b.prefix + 'wip'} fill={b.palette.single} name={`${b.name} WIP`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={results?.products.map(p => ({ name: p.name, wip: p.wip })) || []} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Bar dataKey="wip" fill={chartColors.setup} name="WIP" radius={[2, 2, 0, 0]} />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              {productsSubTab === 'mct-chart' && (
+                <>
+                  {isUtilOnly && <UtilOnlyBanner />}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Product MCT (Manufacturing Cycle Time)</CardTitle>
+                      <CardDescription>
+                        {isMultiScenario
+                          ? `Comparing ${chartScenarios.length} scenarios — MCT in ${model.general.mct_time_unit}s`
+                          : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={350}>
+                        {isMultiScenario && groupedMCT ? (
+                          <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                            <Tooltip contentStyle={tooltipStyle} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            {groupedMCT.bars.map(b => (
+                              <Bar key={b.prefix + 'lotWait'} dataKey={b.prefix + 'lotWait'} stackId={b.stackId} fill={b.palette.lotWait} name={`${b.name} Lot Wait`} />
+                            ))}
+                            {groupedMCT.bars.map(b => (
+                              <Bar key={b.prefix + 'queue'} dataKey={b.prefix + 'queue'} stackId={b.stackId} fill={b.palette.queue} name={`${b.name} Queue`} />
+                            ))}
+                            {groupedMCT.bars.map(b => (
+                              <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} />
+                            ))}
+                            {groupedMCT.bars.map(b => (
+                              <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                            ))}
+                            {groupedMCT.bars.map(b => (
+                              <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} radius={[2, 2, 0, 0]} />
+                            ))}
+                          </BarChart>
+                        ) : (
+                          <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                            <Tooltip contentStyle={tooltipStyle} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
+                            <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
+                            <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
+                            <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                            <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
 
-              <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              {productsSubTab === 'results-table' && (
+                <ProductResultsTable results={results!} model={model} displayScenarioResults={displayScenarioResults} />
+              )}
+
+              {productsSubTab === 'production-chart' && (
+                <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              )}
+
+              {productsSubTab === 'wip-chart' && (
+                <>
+                  {isUtilOnly && <UtilOnlyBanner />}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        {isMultiScenario && groupedWIP ? (
+                          <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                            <Tooltip contentStyle={tooltipStyle} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            {groupedWIP.bars.map((b) => (
+                              <Bar key={b.prefix + 'wip'} dataKey={b.prefix + 'wip'} fill={b.palette.single} name={`${b.name} WIP`} radius={[2, 2, 0, 0]} />
+                            ))}
+                          </BarChart>
+                        ) : (
+                          <BarChart data={results?.products.map(p => ({ name: p.name, wip: p.wip })) || []} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                            <Tooltip contentStyle={tooltipStyle} />
+                            <Bar dataKey="wip" fill={chartColors.setup} name="WIP" radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {productsSubTab === 'oper-details' && isVisible('oper_details', userLevel) && (
+                <>
+                  {isUtilOnly && <UtilOnlyBanner />}
+                  <ProductOperDetails model={model} results={results!} />
+                </>
+              )}
             </div>
           )
         )}
