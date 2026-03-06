@@ -1134,7 +1134,7 @@ export default function RunResults() {
           </TabsContent>
 
           {/* Oper Details Tab */}
-          {canAccess(userLevel, 'oper-details') && (
+          {isVisible('oper_details', userLevel) && (
             <TabsContent value="operdetails" className="mt-4">
               <OperDetailsTab model={model} results={results!} />
             </TabsContent>
