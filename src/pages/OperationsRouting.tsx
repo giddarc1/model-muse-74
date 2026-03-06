@@ -377,7 +377,7 @@ export default function OperationsRouting() {
                             <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper1} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper1', +e.target.value)} /></TableCell>
                             <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper2} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper2', +e.target.value)} /></TableCell>
                             <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper3} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper3', +e.target.value)} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper4} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper4: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper4} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper4', +e.target.value)} /></TableCell>
                           </>}
 
                           {/* Formula Builder trigger */}
