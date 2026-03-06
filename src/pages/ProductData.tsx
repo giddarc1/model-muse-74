@@ -13,6 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink, Info, FlaskConical } from 'lucide-react';
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
+
+const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 
