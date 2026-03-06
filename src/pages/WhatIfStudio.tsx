@@ -393,6 +393,7 @@ function ScenarioView({
   onReturnToBasecase: () => void; onPromote: () => void;
   onRunAndView: (s: Scenario) => void;
   userLevel: UserLevel;
+  // Note: Delete button absent in active state, Promote moved to Changes tab
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
