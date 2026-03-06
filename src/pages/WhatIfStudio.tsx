@@ -600,7 +600,9 @@ export default function WhatIfStudio() {
 function CentrePanel({
   model, modelId, scenarios, activeScenarioId, activeScenario,
   setActiveScenario, onRename, onUpdateDescription, onRemoveChange,
-  onPromote, onRunScenario, onSaveAs, onDelete, onShowNewModal, userLevel,
+  onPromote, onRunScenario, onSaveAs, onDelete, onReturnToBasecase,
+  showCreateForm, newName, setNewName, onCreateSubmit, onCancelCreate, onShowNewForm,
+  userLevel,
 }: {
   model: any;
   modelId: string;
@@ -615,7 +617,13 @@ function CentrePanel({
   onRunScenario: (scenario: Scenario) => void;
   onSaveAs: (scenario: Scenario) => void;
   onDelete: (id: string) => void;
-  onShowNewModal: () => void;
+  onReturnToBasecase: () => void;
+  showCreateForm: boolean;
+  newName: string;
+  setNewName: (v: string) => void;
+  onCreateSubmit: () => void;
+  onCancelCreate: () => void;
+  onShowNewForm: () => void;
   userLevel: UserLevel;
 }) {
   const [editingName, setEditingName] = useState(false);
