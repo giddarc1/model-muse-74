@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
-import { useUserLevelStore, canAccess, type UserLevel } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
