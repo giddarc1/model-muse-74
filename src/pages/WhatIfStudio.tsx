@@ -61,8 +61,10 @@ export default function WhatIfStudio() {
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
 
   const [newName, setNewName] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
+  const [showNewForm, setShowNewForm] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showFamilyModal, setShowFamilyModal] = useState(false);
