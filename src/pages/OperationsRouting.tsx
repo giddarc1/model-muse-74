@@ -323,6 +323,16 @@ export default function OperationsRouting() {
                         {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
                       </TableHead>
                       {showAdvancedTimes && <>
+                        <TableHead colSpan={8} className="text-center text-[10px] text-amber-700 bg-amber-50 border-b-0 font-normal py-1">
+                          ⚠ These time fields are additive. Only fill in fields that apply. Do not enter the same time in multiple fields — it will be double-counted.
+                        </TableHead>
+                      </>}
+                    </TableRow>
+                    {showAdvancedTimes && (
+                      <TableRow>
+                        <TableHead className="font-mono text-xs" colSpan={4}></TableHead>
+                        {!viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
+                        {viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
                         <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
                         <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
@@ -335,7 +345,10 @@ export default function OperationsRouting() {
                         <TableHead className="font-mono text-xs">{pn.oper2_name}</TableHead>
                         <TableHead className="font-mono text-xs">{pn.oper3_name}</TableHead>
                         <TableHead className="font-mono text-xs">{pn.oper4_name}</TableHead>
-                      </>}
+                        {showFormulaBuilder && <TableHead className="font-mono text-xs w-10"></TableHead>}
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    )}
                       {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
