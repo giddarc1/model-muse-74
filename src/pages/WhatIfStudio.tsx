@@ -275,7 +275,7 @@ function NewWhatIfForm({ newName, newComment, setNewName, setNewComment, onSubmi
           <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Brief description" className="mt-1 text-sm min-h-[48px] resize-none" />
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={onSubmit} disabled={!newName.trim()}><Play className="h-3.5 w-3.5 mr-1" /> Create & Activate</Button>
+          <Button size="sm" onClick={onSubmit} disabled={!newName.trim()}><Play className="h-3.5 w-3.5 mr-1" /> Start Editing</Button>
           <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
       </div>
