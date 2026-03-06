@@ -349,9 +349,11 @@ export default function OperationsRouting() {
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     )}
-                      {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
+                    {!showAdvancedTimes && (
+                      <>{showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
+                      <TableHead className="w-10"></TableHead></>
+                    )}
+                  </TableRow>
                   </TableHeader>
                   <TableBody>
                     {productOps.map((op) => {
