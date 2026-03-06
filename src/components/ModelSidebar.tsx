@@ -39,7 +39,7 @@ export function ModelSidebar() {
   if (!model) return null;
 
   const basePath = `/models/${model.id}`;
-  const visibleItems = navItems.filter(item => !item.feature || canAccess(userLevel, item.feature));
+  const visibleItems = navItems.filter(item => !item.feature || isVisible(item.feature, userLevel));
 
   const sidebarContent = (
     <>

@@ -36,7 +36,7 @@ export default function OperationsRouting() {
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   const { userLevel } = useUserLevelStore();
-  const showFormulaBuilder = canAccess(userLevel, 'formula-builder');
+  const showFormulaBuilder = isVisible('formula_builder', userLevel);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProductId = searchParams.get('product') || '';

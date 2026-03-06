@@ -41,7 +41,7 @@ export default function GeneralData() {
       <Tabs defaultValue="time">
         <TabsList>
           <TabsTrigger value="time">Time Settings</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced Parameters</TabsTrigger>
+          {showAdvancedParams && <TabsTrigger value="advanced">Advanced Parameters</TabsTrigger>}
           <TabsTrigger value="comments">Comments</TabsTrigger>
         </TabsList>
 

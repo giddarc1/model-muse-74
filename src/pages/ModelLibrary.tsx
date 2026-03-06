@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Model, defaultParamNames } from '@/stores/modelStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserLevelStore } from '@/hooks/useUserLevel';
+import { UserLevelChip } from '@/components/UserLevelChip';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { saveFullModelToDB } from '@/lib/supabaseData';
 import { Button } from '@/components/ui/button';

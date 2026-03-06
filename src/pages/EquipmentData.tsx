@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 export default function EquipmentData() {
   const model = useModelStore((s) => s.getActiveModel());

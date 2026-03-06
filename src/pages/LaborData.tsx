@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 function InfoTip({ text }: { text: string }) {
   return (

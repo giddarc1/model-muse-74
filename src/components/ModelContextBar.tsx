@@ -287,6 +287,8 @@ export function ModelContextBar() {
 
         <div className="flex-1" />
 
+        <UserLevelChip />
+
         <div className="flex items-center gap-1.5">
           {/* Checkpoint button + dropdown */}
           <div className="flex items-center">
