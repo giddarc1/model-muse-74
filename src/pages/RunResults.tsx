@@ -304,7 +304,7 @@ export default function RunResults() {
   const groupedMCT = useMemo(() => isMultiScenario ? buildGroupedProductMCTData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
   const groupedWIP = useMemo(() => isMultiScenario ? buildGroupedProductWIPData(chartScenarios) : null, [isMultiScenario, chartScenarios]);
 
-  const ibomSelectedProduct = ibomProduct || (model?.products.find(p => p.demand > 0)?.id || '');
+  // ibomSelectedProduct removed — now managed inside IBOMOutput component
 
   // Render a mode card
   const renderModeCard = (opt: {mode: ExtendedRunMode; icon: typeof Play; label: string; description: string}) => {
