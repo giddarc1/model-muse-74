@@ -60,6 +60,12 @@ export default function LaborData() {
   };
 
   const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number | boolean) => {
+    if (activeScenarioId && activeScenario) {
+      const labor = model.labor.find(l => l.id === id);
+      const entityName = labor?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Labor', id, entityName, field, fieldLabel, value as string | number);
+    }
     updateLabor(model.id, id, { [field]: value });
   };
 
