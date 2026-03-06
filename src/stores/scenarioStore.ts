@@ -62,6 +62,13 @@ interface ScenarioStore {
   markCalculated: (scenarioId: string) => void;
 
   promoteToBasecase: (scenarioId: string) => void;
+
+  // Family management
+  createFamily: (modelId: string, name: string) => string;
+  deleteFamily: (familyId: string) => void;
+  addToFamily: (scenarioId: string, familyId: string) => void;
+  removeFromFamily: (scenarioId: string) => void;
+  renameFamily: (familyId: string, name: string) => void;
 }
 
 const uid = () => crypto.randomUUID();
@@ -298,5 +305,38 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       displayScenarioIds: s.displayScenarioIds.filter(id => id !== scenarioId),
     }));
     scenarioDb.delete(scenarioId);
+  },
+
+  // ── Family management ──
+  createFamily: (modelId, name) => {
+    const id = uid();
+    const family: ScenarioFamily = { id, modelId, name };
+    set(s => ({ families: [...s.families, family] }));
+    return id;
+  },
+
+  deleteFamily: (familyId) => {
+    set(s => ({
+      families: s.families.filter(f => f.id !== familyId),
+      scenarios: s.scenarios.map(sc => sc.familyId === familyId ? { ...sc, familyId: null } : sc),
+    }));
+  },
+
+  addToFamily: (scenarioId, familyId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, familyId } : sc),
+    }));
+  },
+
+  removeFromFamily: (scenarioId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, familyId: null } : sc),
+    }));
+  },
+
+  renameFamily: (familyId, name) => {
+    set(s => ({
+      families: s.families.map(f => f.id === familyId ? { ...f, name } : f),
+    }));
   },
 }));

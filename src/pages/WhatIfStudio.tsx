@@ -21,16 +21,20 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
   Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw, ArrowLeft, ChevronUp,
   FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar, ClipboardPaste,
 } from 'lucide-react';
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
 import { scenarioDb } from '@/lib/scenarioDb';
+import FamiliesPanel from '@/components/FamiliesPanel';
 
 export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
@@ -404,9 +408,10 @@ export default function WhatIfStudio() {
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium truncate block">{sc.name}</span>
                     {isVisible('whatif_families', userLevel) && sc.familyId && (
-                      <span className="inline-block mt-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none">
-                        Family
-                      </span>
+                      <FamilyPillPopover
+                        scenario={sc}
+                        families={useScenarioStore.getState().families.filter(f => f.modelId === modelId)}
+                      />
                     )}
                   </div>
                   {/* Status badge */}
@@ -454,40 +459,62 @@ export default function WhatIfStudio() {
         </div>
 
         {/* Centre Panel — Active Scenario (flex fill) */}
-        <CentrePanel
-          model={model}
-          modelId={modelId}
-          scenarios={scenarios}
-          activeScenarioId={activeScenarioId}
-          activeScenario={activeScenario}
-          setActiveScenario={setActiveScenario}
-          onRename={renameScenario}
-          onUpdateDescription={updateScenarioDescription}
-          onRemoveChange={removeChange}
-          onPromote={() => setShowPromoteModal(true)}
-          onRunScenario={handleRunScenario}
-          onSaveAs={handleSaveAs}
-          onDelete={handleDeleteWithConfirmation}
-          onReturnToBasecase={handleReturnToBasecase}
-          showCreateForm={showNewForm}
-          newName={newName}
-          setNewName={setNewName}
-          onCreateSubmit={handleCreate}
-          onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
-          onShowNewForm={() => setShowNewForm(true)}
-          userLevel={userLevel}
-        />
+        {showFamilyRecords && activeScenario?.familyId ? (
+          <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+            <div className="p-3 border-b border-border flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowFamilyRecords(false)}>
+                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back to Scenario
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <FamilyRecordsView
+                familyMembers={scenarios.filter(s => s.familyId === activeScenario.familyId)}
+                activeScenarioId={activeScenarioId}
+                model={model}
+                onClose={() => setShowFamilyRecords(false)}
+                userLevel={userLevel}
+              />
+            </div>
+          </div>
+        ) : (
+          <CentrePanel
+            model={model}
+            modelId={modelId}
+            scenarios={scenarios}
+            activeScenarioId={activeScenarioId}
+            activeScenario={activeScenario}
+            setActiveScenario={setActiveScenario}
+            onRename={renameScenario}
+            onUpdateDescription={updateScenarioDescription}
+            onRemoveChange={removeChange}
+            onPromote={() => setShowPromoteModal(true)}
+            onRunScenario={handleRunScenario}
+            onSaveAs={handleSaveAs}
+            onDelete={handleDeleteWithConfirmation}
+            onReturnToBasecase={handleReturnToBasecase}
+            showCreateForm={showNewForm}
+            newName={newName}
+            setNewName={setNewName}
+            onCreateSubmit={handleCreate}
+            onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
+            onShowNewForm={() => setShowNewForm(true)}
+            userLevel={userLevel}
+          />
+        )}
 
         {/* Right Panel — Families (300px, Advanced only) */}
         {isVisible('whatif_families', userLevel) && (
-          <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto">
-            <div className="p-3 border-b border-border">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Families</h2>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              <p className="text-sm text-muted-foreground text-center mt-8">Family management placeholder</p>
-            </div>
-          </div>
+          <FamiliesPanel
+            modelId={modelId}
+            scenarios={scenarios}
+            activeScenarioId={activeScenarioId}
+            onShowFamilyRecords={(familyId) => {
+              setShowFamilyRecords(true);
+              // Store the familyId for the records view — find any member to select
+              const member = scenarios.find(s => s.familyId === familyId);
+              if (member) setActiveScenario(member.id);
+            }}
+          />
         )}
       </div>
 
@@ -593,6 +620,54 @@ export default function WhatIfStudio() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ─── Family Pill Popover ─────────────────────────────────────────────
+function FamilyPillPopover({ scenario, families }: {
+  scenario: Scenario;
+  families: { id: string; modelId: string; name: string }[];
+}) {
+  const { addToFamily, removeFromFamily } = useScenarioStore();
+  const currentFamily = families.find(f => f.id === scenario.familyId);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          onClick={e => e.stopPropagation()}
+          className="inline-block mt-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none hover:bg-accent/80 transition-colors cursor-pointer"
+        >
+          {currentFamily?.name || 'Family'}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-48 p-2" onClick={e => e.stopPropagation()}>
+        <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1 px-1">Assign to family</p>
+        {families.map(f => (
+          <button
+            key={f.id}
+            onClick={() => addToFamily(scenario.id, f.id)}
+            className={`w-full text-left text-xs rounded px-2 py-1.5 hover:bg-muted transition-colors flex items-center gap-2 ${
+              scenario.familyId === f.id ? 'bg-primary/10 text-primary font-medium' : ''
+            }`}
+          >
+            <Layers className="h-3 w-3 shrink-0" />
+            {f.name}
+          </button>
+        ))}
+        {scenario.familyId && (
+          <>
+            <div className="border-t border-border my-1" />
+            <button
+              onClick={() => removeFromFamily(scenario.id)}
+              className="w-full text-left text-xs rounded px-2 py-1.5 hover:bg-destructive/10 text-destructive transition-colors"
+            >
+              Remove from family
+            </button>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -984,10 +1059,10 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   onClose: () => void;
   userLevel: UserLevel;
 }) {
-  const [directEdits, setDirectEdits] = useState(false);
+  const [editingEnabled, setEditingEnabled] = useState(false);
   const { updateChange, markNeedsRecalc } = useScenarioStore();
+  const [clipboard, setClipboard] = useState<{ paramKey: string; values: Map<string, string | number> } | null>(null);
 
-  // Collect all unique parameter keys across all family members
   const allParams = useMemo(() => {
     const paramMap = new Map<string, { dataType: string; entityId: string; entityName: string; field: string; fieldLabel: string }>();
     familyMembers.forEach(sc => {
@@ -1010,20 +1085,27 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   };
 
   const handleCopyRow = (paramKey: string) => {
-    // Copy the active scenario's value to all other members for this param
-    const activeScenario = familyMembers.find(s => s.id === activeScenarioId);
-    if (!activeScenario) return;
-    const activeChange = activeScenario.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
-    if (!activeChange) return;
+    const values = new Map<string, string | number>();
     familyMembers.forEach(sc => {
-      if (sc.id === activeScenarioId) return;
+      const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
+      if (change) values.set(sc.id, change.whatIfValue);
+    });
+    setClipboard({ paramKey, values });
+    toast.success('Row copied to clipboard');
+  };
+
+  const handlePasteRow = (paramKey: string) => {
+    if (!clipboard) return;
+    clipboard.values.forEach((value, scenarioId) => {
+      const sc = familyMembers.find(s => s.id === scenarioId);
+      if (!sc) return;
       const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
       if (change) {
-        updateChange(sc.id, change.id, activeChange.whatIfValue);
+        updateChange(sc.id, change.id, value);
         markNeedsRecalc(sc.id);
       }
     });
-    toast.success('Value copied to all family members');
+    toast.success('Values pasted');
   };
 
   return (
@@ -1038,13 +1120,19 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
         <div className="flex items-center gap-3">
           {isVisible('allow_edit_whatif', userLevel) && (
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Direct Edits</Label>
-              <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
+              <Label className="text-xs text-muted-foreground">Enable Editing</Label>
+              <Switch checked={editingEnabled} onCheckedChange={setEditingEnabled} className="scale-75" />
             </div>
           )}
-          <Button variant="outline" size="sm" className="text-xs" onClick={onClose}>Close</Button>
         </div>
       </div>
+
+      {editingEnabled && (
+        <div className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          Editing values here is permanent and cannot be undone.
+        </div>
+      )}
 
       {allParams.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -1057,11 +1145,16 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
               <tr className="bg-muted/50 text-muted-foreground">
                 <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 z-10">Parameter</th>
                 {familyMembers.map(sc => (
-                  <th key={sc.id} className={`text-right p-2 font-medium min-w-[100px] ${sc.id === activeScenarioId ? 'bg-primary/10 text-primary' : ''}`}>
+                  <th
+                    key={sc.id}
+                    className={`text-right p-2 font-medium min-w-[100px] ${
+                      sc.id === activeScenarioId ? 'bg-amber-500/15 text-amber-700' : ''
+                    }`}
+                  >
                     {sc.name}
                   </th>
                 ))}
-                <th className="p-2 w-8"></th>
+                {editingEnabled && <th className="p-2 w-16 text-center font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -1075,8 +1168,8 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
                   {familyMembers.map(sc => {
                     const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === key);
                     return (
-                      <td key={sc.id} className={`p-2 text-right font-mono ${sc.id === activeScenarioId ? 'bg-primary/5' : ''}`}>
-                        {directEdits && change ? (
+                      <td key={sc.id} className={`p-2 text-right font-mono ${sc.id === activeScenarioId ? 'bg-amber-500/5' : ''}`}>
+                        {editingEnabled && change ? (
                           <input
                             type="number"
                             defaultValue={change.whatIfValue}
@@ -1091,11 +1184,23 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
                       </td>
                     );
                   })}
-                  <td className="p-2">
-                    <button onClick={() => handleCopyRow(key)} className="text-muted-foreground hover:text-primary transition-colors" title="Copy active value to all">
-                      <Copy className="h-3 w-3" />
-                    </button>
-                  </td>
+                  {editingEnabled && (
+                    <td className="p-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => handleCopyRow(key)} className="text-muted-foreground hover:text-primary transition-colors" title="Copy row">
+                          <Copy className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handlePasteRow(key)}
+                          className={`transition-colors ${clipboard ? 'text-muted-foreground hover:text-primary' : 'text-muted-foreground/30 cursor-not-allowed'}`}
+                          title="Paste row"
+                          disabled={!clipboard}
+                        >
+                          <ClipboardPaste className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
