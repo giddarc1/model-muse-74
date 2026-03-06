@@ -265,10 +265,12 @@ export function ModelContextBar() {
         <div className="h-4 w-px bg-sidebar-border" />
 
         {activeScenario ? (
-          <Badge variant="outline" className="border-warning/40 text-warning text-xs font-mono shrink-0 hidden sm:flex">
-            <FlaskConical className="h-2.5 w-2.5 mr-1" />
-            Editing: {activeScenario.name}
-          </Badge>
+          <button onClick={() => navigate(`/models/${model.id}/whatif`)} className="shrink-0 hidden sm:flex">
+            <Badge variant="outline" className="border-amber-400/60 bg-amber-500/10 text-amber-600 text-xs font-medium cursor-pointer hover:bg-amber-500/20 transition-colors">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
+              What-if: {activeScenario.name}
+            </Badge>
+          </button>
         ) : (
           <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono shrink-0 hidden sm:flex">
             <CircleDot className="h-2.5 w-2.5 mr-1" />

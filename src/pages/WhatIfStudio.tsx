@@ -860,6 +860,19 @@ function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
           </tbody>
         </table>
       </div>
+
+      {/* Lifecycle section — Promote to Basecase */}
+      {isActive && onPromote && (
+        <div className="mt-6 pt-4 border-t border-border">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Lifecycle</h4>
+          <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50" onClick={onPromote}>
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
+          </Button>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Applies all What-if changes permanently to the Basecase. This cannot be undone.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
