@@ -297,120 +297,112 @@ export default function WhatIfStudio() {
   );
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* LEFT PANEL — Scenario Library */}
-      <div className="w-72 shrink-0 border-r border-border bg-card flex flex-col">
-        <div className="p-3 border-b border-border flex items-center justify-between">
-          <h2 className="text-sm font-semibold flex items-center gap-1.5">
-            <FlaskConical className="h-4 w-4 text-primary" /> Scenarios
-          </h2>
-          <Button size="sm" className="h-7 text-xs" onClick={() => setShowNewModal(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> New
-          </Button>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Page Header */}
+      <div className="px-6 py-4 border-b border-border shrink-0">
+        <h1 className="text-lg font-semibold">What-if Studio</h1>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {/* Basecase */}
-          <button
-            onClick={() => { setActiveScenario(null); setShowFamilyRecords(false); }}
-            className={`w-full text-left rounded-md p-2.5 transition-colors ${
-              activeScenarioId === null ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-primary" />
-              <span className="text-sm font-semibold">Basecase</span>
-              <Badge className="ml-auto bg-primary/20 text-primary text-[10px] border-0">BASE</Badge>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">Reference model data</p>
-          </button>
-
-          {/* Ungrouped scenarios */}
-          {familyGroups.ungrouped.map(sc => renderScenarioItem(sc))}
-
-          {/* Family groups */}
-          {[...familyGroups.groups.entries()].map(([familyId, members]) => {
-            const isCollapsed = collapsedFamilies.has(familyId);
-            const familyName = members[0]?.name || 'Family';
-            return (
-              <div key={familyId} className="border border-border/50 rounded-md overflow-hidden">
-                <button
-                  onClick={() => toggleFamilyCollapse(familyId)}
-                  className="w-full text-left p-2 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-                  <Layers className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold truncate flex-1">{familyName}</span>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">{members.length} scenarios</Badge>
-                </button>
-                {!isCollapsed && (
-                  <div className="border-l-2 border-primary/20 ml-2 space-y-0.5 py-0.5">
-                    {members.map(sc => renderScenarioItem(sc, true))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Display Control */}
-        <div className="border-t border-border p-3 space-y-2">
-          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Chart Display</h3>
-          <div className="space-y-1.5 max-h-32 overflow-y-auto">
-            <label className="flex items-center gap-2 text-xs">
-              <Checkbox checked disabled /> Basecase
-            </label>
-            {scenarios.map(sc => (
-              <label key={sc.id} className="flex items-center gap-2 text-xs cursor-pointer">
-                <Checkbox checked={displayIds.includes(sc.id)} onCheckedChange={() => toggleDisplayScenario(sc.id)} />
-                {sc.name}
-              </label>
-            ))}
+      {/* Three-Panel Layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel — Scenario List (260px) */}
+        <div className="w-[260px] shrink-0 border-r border-border flex flex-col overflow-y-auto">
+          <div className="p-3 border-b border-border">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Scenario List</h2>
           </div>
-          <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={handleRecalcAll}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Recalc All
-          </Button>
-        </div>
-      </div>
+          <div className="flex-1 overflow-y-auto p-3">
+            {/* Basecase */}
+            <button
+              onClick={() => { setActiveScenario(null); setShowFamilyRecords(false); }}
+              className={`w-full text-left rounded-md p-2.5 transition-colors ${
+                activeScenarioId === null ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                <span className="text-sm font-semibold">Basecase</span>
+                <Badge className="ml-auto bg-primary/20 text-primary text-[10px] border-0">BASE</Badge>
+              </div>
+            </button>
 
-      {/* CENTER PANEL */}
-      <div className="flex-1 overflow-y-auto bg-background">
-        {showFamilyRecords && activeFamilyId ? (
-          <FamilyRecordsView
-            familyMembers={activeFamilyMembers}
-            activeScenarioId={activeScenarioId}
-            model={model}
-            onClose={() => setShowFamilyRecords(false)}
-            userLevel={userLevel}
-          />
-        ) : activeScenarioId === null ? (
-          <BasecaseView />
-        ) : activeScenario ? (
-          <ScenarioEditorPanel
-            scenario={activeScenario}
-            model={model}
-            onUpdateDescription={updateScenarioDescription}
-            onRename={renameScenario}
-            onRemoveChange={removeChange}
-            onPromote={() => setShowPromoteModal(true)}
-            onRunScenario={handleRunScenario}
-            onSaveAs={handleSaveAs}
-            userLevel={userLevel}
-          />
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
+            <div className="mt-2 space-y-1">
+              {familyGroups.ungrouped.map(sc => renderScenarioItem(sc))}
+
+              {[...familyGroups.groups.entries()].map(([familyId, members]) => {
+                const isCollapsed = collapsedFamilies.has(familyId);
+                const familyName = members[0]?.name || 'Family';
+                return (
+                  <div key={familyId} className="border border-border/50 rounded-md overflow-hidden">
+                    <button
+                      onClick={() => toggleFamilyCollapse(familyId)}
+                      className="w-full text-left p-2 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                      <Layers className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold truncate flex-1">{familyName}</span>
+                      <Badge variant="secondary" className="text-[10px] shrink-0">{members.length}</Badge>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="border-l-2 border-primary/20 ml-2 space-y-0.5 py-0.5">
+                        {members.map(sc => renderScenarioItem(sc, true))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button size="sm" className="w-full mt-3 h-8 text-xs" onClick={() => setShowNewModal(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> New Scenario
+            </Button>
+          </div>
+        </div>
+
+        {/* Centre Panel — Active Scenario (flex fill) */}
+        <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+          <div className="p-3 border-b border-border">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {showFamilyRecords && activeFamilyId ? (
+              <FamilyRecordsView
+                familyMembers={activeFamilyMembers}
+                activeScenarioId={activeScenarioId}
+                model={model}
+                onClose={() => setShowFamilyRecords(false)}
+                userLevel={userLevel}
+              />
+            ) : activeScenarioId === null ? (
+              <BasecaseView />
+            ) : activeScenario ? (
+              <ScenarioEditorPanel
+                scenario={activeScenario}
+                model={model}
+                onUpdateDescription={updateScenarioDescription}
+                onRename={renameScenario}
+                onRemoveChange={removeChange}
+                onPromote={() => setShowPromoteModal(true)}
+                onRunScenario={handleRunScenario}
+                onSaveAs={handleSaveAs}
+                userLevel={userLevel}
+              />
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel — Families (300px, Advanced only) */}
+        {isVisible('whatif_families', userLevel) && (
+          <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto">
+            <div className="p-3 border-b border-border">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Families</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3">
+              <p className="text-sm text-muted-foreground text-center mt-8">Family management placeholder</p>
+            </div>
+          </div>
         )}
-      </div>
-
-      {/* RIGHT PANEL — Quick Input */}
-      <div className="w-80 shrink-0 border-l border-border bg-card flex flex-col">
-        <div className="p-3 border-b border-border">
-          <h2 className="text-sm font-semibold">Quick Input</h2>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            {activeScenarioId ? 'Edits tracked as scenario changes' : 'Editing Basecase directly'}
-          </p>
-        </div>
-        <QuickInputPanel modelId={modelId} activeScenarioId={activeScenarioId} />
       </div>
 
       {/* Modals */}
@@ -443,7 +435,6 @@ export default function WhatIfStudio() {
         </DialogContent>
       </Dialog>
 
-      {/* Family Creation Modal */}
       <Dialog open={showFamilyModal} onOpenChange={setShowFamilyModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
