@@ -436,7 +436,7 @@ export default function WhatIfStudio() {
                     <Button
                       size="sm"
                       className="w-full h-8 text-xs"
-                      onClick={() => setShowNewModal(true)}
+                      onClick={() => setShowNewForm(true)}
                       disabled={activeScenarioId !== null}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> New What-if
