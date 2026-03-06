@@ -187,6 +187,7 @@ export default function IBOMScreen() {
     setSelectedProductId(productId);
     setCheckedAllowable(new Set());
     setConfirmingRemoveId(null);
+    setShowEmptyPicker(false);
   };
 
   const handleAddChecked = () => {
