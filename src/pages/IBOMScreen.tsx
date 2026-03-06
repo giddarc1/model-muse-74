@@ -200,6 +200,14 @@ export default function IBOMScreen() {
 
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
+          <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-sm text-amber-700 font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <h1 className="text-xl font-bold mb-1">Indented Bill of Materials</h1>
       <p className="text-sm text-muted-foreground mb-6">Define parent-child relationships between products and their component parts.</p>
 
