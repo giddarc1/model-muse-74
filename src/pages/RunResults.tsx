@@ -764,59 +764,95 @@ export default function RunResults() {
         {/* ── Equipment Tab ── */}
         {activeTab === 'equipment' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Equipment Utilization</CardTitle>
-                  <CardDescription>
-                    {isMultiScenario
-                      ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
-                      : 'Stacked utilization breakdown by equipment group'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={350}>
-                    {isMultiScenario && groupedEquip ? (
-                      <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                        ))}
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                        ))}
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
-                        ))}
-                        {groupedEquip.bars.map((b, i) => (
-                          <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                        <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
-                        <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
-                      </BarChart>
+            <div className="flex flex-col h-full">
+              {/* Level 2 sub-tab bar */}
+              <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-6 shrink-0">
+                {([
+                  { key: 'util-chart', label: 'Util Chart' },
+                  { key: 'results-table', label: 'Results Table' },
+                  { key: 'wip-chart', label: 'WIP Chart' },
+                  ...(isVisible('oper_details', userLevel) ? [{ key: 'oper-details', label: 'Oper Details' }] : []),
+                ] as const).map(st => (
+                  <button
+                    key={st.key}
+                    onClick={() => setEquipSubTab(st.key)}
+                    className={`h-8 px-4 text-[13px] relative transition-colors ${
+                      equipSubTab === st.key
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {st.label}
+                    {equipSubTab === st.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
                     )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  </button>
+                ))}
+              </div>
 
-              <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
-              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              {equipSubTab === 'util-chart' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Equipment Utilization</CardTitle>
+                    <CardDescription>
+                      {isMultiScenario
+                        ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
+                        : 'Stacked utilization breakdown by equipment group'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={350}>
+                      {isMultiScenario && groupedEquip ? (
+                        <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                          ))}
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                          ))}
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
+                          ))}
+                          {groupedEquip.bars.map((b) => (
+                            <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
+                          ))}
+                        </BarChart>
+                      ) : (
+                        <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                          <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
+                          <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {equipSubTab === 'results-table' && (
+                <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
+              )}
+
+              {equipSubTab === 'wip-chart' && (
+                <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              )}
+
+              {equipSubTab === 'oper-details' && isVisible('oper_details', userLevel) && (
+                <EquipOperDetails model={model} results={results!} />
+              )}
             </div>
           )
         )}
