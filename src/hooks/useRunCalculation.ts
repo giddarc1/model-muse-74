@@ -71,7 +71,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         mode: 'verify',
-        scenarioName: activeScenario?.name || 'Basecase',
+        scenarioName: runScenario?.name || 'Basecase',
         durationMs: Date.now() - startTime,
         status: msgs.errors.length > 0 ? 'error' : msgs.warnings.length > 0 ? 'warning' : 'success',
       };
