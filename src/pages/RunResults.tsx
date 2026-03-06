@@ -1402,6 +1402,181 @@ export default function RunResults() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Optimise Lot Sizes Modal ── */}
+      <Dialog open={olModalOpen} onOpenChange={setOlModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Optimise Lot Sizes and Transfer Batches</DialogTitle>
+            <DialogDescription>MPX will iteratively adjust lot sizes and transfer batches to minimise weighted WIP.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">What-if Name</Label>
+              <Input value={olName} onChange={e => setOlName(e.target.value)} placeholder="Optimised Lot Sizes" />
+            </div>
+
+            <div className="flex gap-4">
+              {/* Product table */}
+              <div className="flex-1 border border-border rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Product Name</TableHead>
+                      <TableHead className="text-xs text-right w-28">Total Unit Value</TableHead>
+                      <TableHead className="text-xs text-center w-24">Opt. Lot Size</TableHead>
+                      <TableHead className="text-xs text-center w-24">Opt. T-Batch</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {model?.products.map(p => (
+                      <TableRow key={p.id}>
+                        <TableCell className="text-sm py-1.5">{p.name}</TableCell>
+                        <TableCell className="py-1.5">
+                          <Input
+                            type="number" min={0} step={0.01}
+                            className="h-7 text-xs text-right w-24 ml-auto"
+                            value={olUnitValues[p.id] ?? 1}
+                            onChange={e => setOlUnitValues(prev => ({ ...prev, [p.id]: Number(e.target.value) }))}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center py-1.5">
+                          <Checkbox
+                            checked={olOptLot.has(p.id)}
+                            onCheckedChange={checked => {
+                              setOlOptLot(prev => { const n = new Set(prev); if (checked) n.add(p.id); else n.delete(p.id); return n; });
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center py-1.5">
+                          <Checkbox
+                            checked={olOptTb.has(p.id)}
+                            onCheckedChange={checked => {
+                              setOlOptTb(prev => { const n = new Set(prev); if (checked) n.add(p.id); else n.delete(p.id); return n; });
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Right-side buttons */}
+              <div className="flex flex-col gap-2 shrink-0 w-44">
+                <Button size="sm" variant="outline" className="text-xs justify-start" onClick={() => setOlOptLot(new Set(model?.products.map(p => p.id) || []))}>Select All Lot Sizes</Button>
+                <Button size="sm" variant="outline" className="text-xs justify-start" onClick={() => setOlOptLot(new Set())}>Deselect All Lot Sizes</Button>
+                <Button size="sm" variant="outline" className="text-xs justify-start mt-2" onClick={() => setOlOptTb(new Set(model?.products.map(p => p.id) || []))}>Select All Transfer Batches</Button>
+                <Button size="sm" variant="outline" className="text-xs justify-start" onClick={() => setOlOptTb(new Set())}>Deselect All Transfer Batches</Button>
+              </div>
+            </div>
+
+            {/* WIP displays */}
+            <div className="flex gap-6 text-sm">
+              <div><span className="text-muted-foreground">Initial WIP Total Unit Value:</span> <span className="font-mono font-medium">{olInitialWip != null ? olInitialWip.toLocaleString() : '—'}</span></div>
+              <div><span className="text-muted-foreground">Current WIP Total Unit Value:</span> <span className="font-mono font-medium">{olCurrentWip != null ? olCurrentWip.toLocaleString() : '—'}</span></div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Results will be real numbers. Round up to whole numbers when applying to your model. The function is flat near the optimum so nearby values give similar results.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOlModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={advRunning || (olOptLot.size === 0 && olOptTb.size === 0)}
+              onClick={async () => {
+                setOlModalOpen(false);
+                if (!model) return;
+                setAdvRunning(true);
+
+                const selectedIds = new Set([...olOptLot, ...olOptTb]);
+                const selectedProducts = model.products.filter(p => selectedIds.has(p.id));
+                if (selectedProducts.length === 0) { setAdvRunning(false); return; }
+
+                const baseCalc = calculate(model);
+                const weightedWip = (r: CalcResults) => r.products.reduce((s, pr) => s + pr.wip * (olUnitValues[pr.id] || 1), 0);
+                let bestWip = weightedWip(baseCalc);
+
+                let bestLots: Record<string, number> = {};
+                let bestTBatches: Record<string, number> = {};
+                model.products.forEach(p => { bestLots[p.id] = p.lot_size; bestTBatches[p.id] = p.tbatch_size; });
+
+                const maxIter = 60;
+                for (let iter = 0; iter < maxIter; iter++) {
+                  setAdvProgress({ current: iter + 1, total: maxIter, label: `Weighted WIP: ${Math.round(bestWip)} (iter ${iter + 1})` });
+                  setOlCurrentWip(Math.round(bestWip * 100) / 100);
+                  let improved = false;
+
+                  for (const p of selectedProducts) {
+                    // Try lot size changes
+                    if (olOptLot.has(p.id)) {
+                      for (const delta of [-Math.max(1, Math.round(bestLots[p.id] * 0.1)), Math.max(1, Math.round(bestLots[p.id] * 0.1))]) {
+                        const newLot = Math.max(1, bestLots[p.id] + delta);
+                        if (newLot === bestLots[p.id]) continue;
+                        const testModel = { ...model, products: model.products.map(pp => ({
+                          ...pp,
+                          lot_size: pp.id === p.id ? newLot : (bestLots[pp.id] ?? pp.lot_size),
+                          tbatch_size: bestTBatches[pp.id] ?? pp.tbatch_size,
+                        })) };
+                        const r = calculate(testModel);
+                        const w = weightedWip(r);
+                        if (w < bestWip && r.overLimitResources.length === 0) {
+                          bestLots[p.id] = newLot; bestWip = w; improved = true;
+                        }
+                      }
+                    }
+                    // Try transfer batch changes
+                    if (olOptTb.has(p.id)) {
+                      for (const delta of [-Math.max(1, Math.round(Math.abs(bestTBatches[p.id]) * 0.15)), Math.max(1, Math.round(Math.abs(bestTBatches[p.id]) * 0.15))]) {
+                        const newTb = Math.max(1, bestTBatches[p.id] + delta);
+                        if (newTb === bestTBatches[p.id]) continue;
+                        const testModel = { ...model, products: model.products.map(pp => ({
+                          ...pp,
+                          lot_size: bestLots[pp.id] ?? pp.lot_size,
+                          tbatch_size: pp.id === p.id ? newTb : (bestTBatches[pp.id] ?? pp.tbatch_size),
+                        })) };
+                        const r = calculate(testModel);
+                        const w = weightedWip(r);
+                        if (w < bestWip && r.overLimitResources.length === 0) {
+                          bestTBatches[p.id] = newTb; bestWip = w; improved = true;
+                        }
+                      }
+                    }
+                  }
+                  if (!improved) break;
+                  await new Promise(r => setTimeout(r, 0));
+                }
+
+                // Save as What-if
+                const scenarioId = await createScenario(model.id, olName || 'Optimised Lot Sizes');
+                for (const p of selectedProducts) {
+                  if (olOptLot.has(p.id) && bestLots[p.id] !== p.lot_size) {
+                    useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', p.id, p.name, 'lot_size', 'Lot Size', bestLots[p.id]);
+                  }
+                  if (olOptTb.has(p.id) && bestTBatches[p.id] !== p.tbatch_size) {
+                    useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', p.id, p.name, 'tbatch_size', 'Transfer Batch Size', bestTBatches[p.id]);
+                  }
+                }
+                const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                if (scenario) {
+                  const r = calculate(model, scenario);
+                  setStoreResults(scenarioId, r);
+                  useScenarioStore.getState().markCalculated(scenarioId);
+                  scenarioDb.saveResults(scenarioId, r);
+                }
+                setOlCurrentWip(Math.round(bestWip * 100) / 100);
+                setAdvProgress(null);
+                setAdvRunning(false);
+                const reduction = olInitialWip ? Math.round((1 - bestWip / olInitialWip) * 100) : 0;
+                toast.success(`Optimisation complete — weighted WIP reduced by ${reduction}%`);
+              }}
+            >
+              Run Optimisation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Product Inclusion Modal ── */}
       <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
         <DialogContent className="max-w-md">
