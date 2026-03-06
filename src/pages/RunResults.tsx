@@ -6,6 +6,7 @@ import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { type CalcResults, type ProductResult, type EquipmentResult, type LaborResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -236,6 +237,7 @@ export default function RunResults() {
   // ibomProduct state removed — now managed inside IBOMOutput component
 
   // Advanced mode state — must be before early return
+  const [piModalOpen, setPiModalOpen] = useState(false);
   const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
   const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
   const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
@@ -645,7 +647,11 @@ export default function RunResults() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem onClick={() => setExtRunMode('product_inclusion')}>
+              <DropdownMenuItem onClick={() => {
+                setPiSelectedProducts(new Set(model?.products.map(p => p.id) || []));
+                setPiScenarioName('Product Inclusion');
+                setPiModalOpen(true);
+              }}>
                 <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExtRunMode('max_throughput')}>
@@ -1183,6 +1189,73 @@ export default function RunResults() {
           </Card>
         )}
       </div>
+
+      {/* ── Product Inclusion Modal ── */}
+      <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Product Inclusion</DialogTitle>
+            <DialogDescription>Select which products to include in the calculation.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pi-name" className="text-sm font-medium">What-if Name</Label>
+              <Input
+                id="pi-name"
+                value={piScenarioName}
+                onChange={e => setPiScenarioName(e.target.value)}
+                placeholder="Product Inclusion"
+              />
+            </div>
+            <div className="border border-border rounded-md max-h-64 overflow-y-auto">
+              {model?.products.map(p => (
+                <label key={p.id} className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 cursor-pointer border-b border-border last:border-b-0">
+                  <Checkbox
+                    checked={piSelectedProducts.has(p.id)}
+                    onCheckedChange={(checked) => {
+                      setPiSelectedProducts(prev => {
+                        const next = new Set(prev);
+                        if (checked) next.add(p.id); else next.delete(p.id);
+                        return next;
+                      });
+                    }}
+                  />
+                  <span className="text-sm">{p.name}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              MPX will automatically create a What-if before calculating, so no existing data will be lost.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPiModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={piSelectedProducts.size === 0 || advRunning}
+              onClick={async () => {
+                setPiModalOpen(false);
+                if (!model) return;
+                const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
+                if (excluded.length === 0) { handleRun('full'); return; }
+                const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
+                excluded.forEach(p => {
+                  useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
+                });
+                const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                if (scenario) {
+                  const calcResults = calculate(model, scenario);
+                  setStoreResults(scenarioId, calcResults);
+                  useScenarioStore.getState().markCalculated(scenarioId);
+                  scenarioDb.saveResults(scenarioId, calcResults);
+                }
+                toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
+              }}
+            >
+              Run
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
