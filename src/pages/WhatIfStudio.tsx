@@ -967,7 +967,7 @@ function CentrePanel({
             <Play className="h-3.5 w-3.5 mr-1" /> Activate for Editing
           </Button>
           <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive hover:text-destructive"
-            onClick={() => { onDelete(activeScenario.id); toast.success('Scenario deleted'); }}>
+            onClick={() => onDelete(activeScenario.id)}>
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
           </Button>
         </div>
