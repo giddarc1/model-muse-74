@@ -1209,6 +1209,8 @@ export default function RunResults() {
         {/* ── IBOM Tab ── */}
         {activeTab === 'ibom' && (
           !hasRun ? <NoResultsPlaceholder /> : (
+            <>
+            <ScenarioContextBar />
             <IBOMTabContent
               model={model}
               results={results!}
