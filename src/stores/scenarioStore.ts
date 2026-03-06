@@ -306,4 +306,37 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
     }));
     scenarioDb.delete(scenarioId);
   },
+
+  // ── Family management ──
+  createFamily: (modelId, name) => {
+    const id = uid();
+    const family: ScenarioFamily = { id, modelId, name };
+    set(s => ({ families: [...s.families, family] }));
+    return id;
+  },
+
+  deleteFamily: (familyId) => {
+    set(s => ({
+      families: s.families.filter(f => f.id !== familyId),
+      scenarios: s.scenarios.map(sc => sc.familyId === familyId ? { ...sc, familyId: null } : sc),
+    }));
+  },
+
+  addToFamily: (scenarioId, familyId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, familyId } : sc),
+    }));
+  },
+
+  removeFromFamily: (scenarioId) => {
+    set(s => ({
+      scenarios: s.scenarios.map(sc => sc.id === scenarioId ? { ...sc, familyId: null } : sc),
+    }));
+  },
+
+  renameFamily: (familyId, name) => {
+    set(s => ({
+      families: s.families.map(f => f.id === familyId ? { ...f, name } : f),
+    }));
+  },
 }));
