@@ -254,15 +254,8 @@ export default function WhatIfStudio() {
         )}
       </div>
 
-      {/* ═══ Families Drawer ═══ */}
-      <FamiliesDrawer
-        open={familiesDrawerOpen}
-        onOpenChange={setFamiliesDrawerOpen}
-        modelId={modelId}
-        scenarios={scenarios}
-        activeScenarioId={activeScenarioId}
-        onShowFamilyRecords={(fId) => { setFamilyRecordsId(fId); setSelectedId(null); setShowNewForm(false); setFamiliesDrawerOpen(false); }}
-      />
+
+
 
       {/* ── Modals ── */}
       {showDeleteModal && (() => {
