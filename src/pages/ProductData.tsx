@@ -281,13 +281,16 @@ export default function ProductData() {
                       </div>
                       <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Make to Stock</Label>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs">Make to Stock</Label>
+                          <InfoTip text="When checked, this component is assumed to be held in stock. Its MCT does not add to the parent assembly MCT. Use for Assemble-to-Order scenarios." />
+                        </div>
                         <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Label className="text-xs">Gather Transfer Batches</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">When checked, the first transfer batch waits for the full lot to complete before moving to STOCK. Affects MCT calculation.</TooltipContent></Tooltip></TooltipProvider>
+                          <InfoTip text="When checked, the first transfer batch waits for the full lot before moving to stock. Uncheck if transfer batches are sent forward immediately as completed." />
                         </div>
                         <Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} />
                       </div>
