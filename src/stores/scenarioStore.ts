@@ -62,6 +62,13 @@ interface ScenarioStore {
   markCalculated: (scenarioId: string) => void;
 
   promoteToBasecase: (scenarioId: string) => void;
+
+  // Family management
+  createFamily: (modelId: string, name: string) => string;
+  deleteFamily: (familyId: string) => void;
+  addToFamily: (scenarioId: string, familyId: string) => void;
+  removeFromFamily: (scenarioId: string) => void;
+  renameFamily: (familyId: string, name: string) => void;
 }
 
 const uid = () => crypto.randomUUID();
