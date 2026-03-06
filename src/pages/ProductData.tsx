@@ -264,8 +264,18 @@ export default function ProductData() {
                     <div className="pt-3 border-t border-border space-y-3">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
                       <div className="grid grid-cols-2 gap-3">
-                        <div><Label className="text-xs">Transfer Batch</Label><Input type="number" className="h-8 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></div>
-                        <div><Label className="text-xs">Demand Factor</Label><Input type="number" className="h-8 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></div>
+                         <div>
+                            <Label className="text-xs">Transfer Batch</Label>
+                            <Input type="number" className="h-8 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} />
+                            <span className="text-[9px] text-muted-foreground">-1 = same as lot size (default)</span>
+                          </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs">Demand Factor</Label>
+                            <InfoTip text="Scales the product demand without changing the stored demand value. Set to 0 to effectively exclude this product from calculations while keeping its data." />
+                          </div>
+                          <Input type="number" className="h-8 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
+                        </div>
                         <div><Label className="text-xs">Lot Factor</Label><Input type="number" className="h-8 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></div>
                         <div><Label className="text-xs">Var Factor</Label><Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></div>
                       </div>
