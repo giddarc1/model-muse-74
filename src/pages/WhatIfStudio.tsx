@@ -88,11 +88,10 @@ export default function WhatIfStudio() {
 
   const handlePromote = () => {
     if (!activeScenarioId || !activeScenario) return;
-    const nm = activeScenario.name;
     promoteToBasecase(activeScenarioId);
     setShowPromoteModal(false);
-    setSelectedId('basecase');
-    toast.success(`Basecase updated from "${nm}".`);
+    setSelectedId(null);
+    toast.success('Basecase updated. Run Full Calculate to see updated results.');
   };
 
   const handleReturnToBasecase = () => {
