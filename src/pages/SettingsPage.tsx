@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Save, UserCircle, Building2, Trash2, Plus, Mail, LogOut } from 'lucide-react';
+import { UserLevelChip } from '@/components/UserLevelChip';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
