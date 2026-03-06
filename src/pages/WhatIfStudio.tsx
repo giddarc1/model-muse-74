@@ -21,6 +21,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
@@ -31,6 +34,7 @@ import {
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
 import { scenarioDb } from '@/lib/scenarioDb';
+import FamiliesPanel from '@/components/FamiliesPanel';
 
 export default function WhatIfStudio() {
   const { modelId } = useParams<{ modelId: string }>();
