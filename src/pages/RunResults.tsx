@@ -664,7 +664,15 @@ export default function RunResults() {
               }}>
                 <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setExtRunMode('max_throughput')}>
+              <DropdownMenuItem onClick={() => {
+                setMtModalProduct(model?.products[0]?.id || '');
+                setMtModalName('');
+                setMtModalMode('max_throughput');
+                setMtModalLsFrom(10);
+                setMtModalLsTo(200);
+                setMtModalLsStep(10);
+                setMtModalOpen(true);
+              }}>
                 <TrendingUp className="h-4 w-4 mr-2" /> Max Throughput + Lot Size Range…
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExtRunMode('optimize_lots')}>
