@@ -123,16 +123,18 @@ export default function IBOMScreen() {
     });
   };
 
-  const handleAddOne = () => {
-    if (!selectedAllowable || !editParentId) return;
-    addIBOM(model.id, {
-      id: crypto.randomUUID(),
-      parent_product_id: editParentId,
-      component_product_id: selectedAllowable,
-      units_per_assy: 1,
+  const handleAddChecked = () => {
+    if (!editParentId || checkedAllowable.size === 0) return;
+    checkedAllowable.forEach(pId => {
+      addIBOM(model.id, {
+        id: crypto.randomUUID(),
+        parent_product_id: editParentId,
+        component_product_id: pId,
+        units_per_assy: 1,
+      });
     });
-    setSelectedAllowable('');
-    toast.success(`Added ${prodName(selectedAllowable)} as component`);
+    toast.success(`Added ${checkedAllowable.size} component(s)`);
+    setCheckedAllowable(new Set());
   };
 
   const handleRemoveOne = () => {
