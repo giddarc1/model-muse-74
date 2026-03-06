@@ -647,7 +647,11 @@ export default function RunResults() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuItem onClick={() => setExtRunMode('product_inclusion')}>
+              <DropdownMenuItem onClick={() => {
+                setPiSelectedProducts(new Set(model?.products.map(p => p.id) || []));
+                setPiScenarioName('Product Inclusion');
+                setPiModalOpen(true);
+              }}>
                 <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExtRunMode('max_throughput')}>
