@@ -1308,8 +1308,6 @@ function IBOMTabContent({ model, results, basecaseResults, isRunning, isUtilOnly
     </div>
   );
 }
-  );
-}
 
 /* ─── Product Results Table ─── */
 function ProductResultsTable({ results, model, displayScenarioResults }: {
