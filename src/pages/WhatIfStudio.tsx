@@ -1331,3 +1331,168 @@ function QuickTable({ rows, dataType, onEdit, activeScenarioId }: {
     </div>
   );
 }
+
+// ─── Delete Confirmation Modal ───────────────────────────────────────
+function DeleteConfirmModal({ scenario, needsTyping, familyName, onConfirm, onCancel }: {
+  scenario: Scenario;
+  needsTyping: boolean;
+  familyName: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [typedName, setTypedName] = useState('');
+  const canDelete = needsTyping ? typedName === scenario.name : true;
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete "{scenario.name}"?</DialogTitle>
+          <DialogDescription>
+            This will permanently remove this scenario and all its changes. This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {familyName && (
+            <div className="flex items-start gap-2 rounded-md px-3 py-2 text-xs" style={{ backgroundColor: 'rgba(245,158,11,0.08)', color: '#92400E' }}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+              <span>This What-if is a member of {familyName}. Deleting it will remove it from the family.</span>
+            </div>
+          )}
+          {needsTyping && (
+            <div>
+              <Label className="text-xs">Type the What-if name to confirm:</Label>
+              <Input
+                value={typedName}
+                onChange={e => setTypedName(e.target.value)}
+                placeholder={scenario.name}
+                className="h-8 mt-1 font-mono"
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={!canDelete}>Delete Permanently</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Promote to Basecase Full-Screen Modal ───────────────────────────
+function PromoteModal({ scenario, onConfirm, onCancel }: {
+  scenario: Scenario;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [typedName, setTypedName] = useState('');
+  const canPromote = typedName === scenario.name;
+
+  const getChangeDelta = (c: ScenarioChange) => {
+    const base = Number(c.basecaseValue); const wi = Number(c.whatIfValue);
+    if (isNaN(base) || isNaN(wi)) return null;
+    return wi - base;
+  };
+  const screenBadgeColor = (dt: string) => {
+    if (dt === 'Labor') return 'bg-blue-100 text-blue-700';
+    if (dt === 'Equipment') return 'bg-purple-100 text-purple-700';
+    if (dt === 'Product') return 'bg-green-100 text-green-700';
+    return 'bg-muted text-muted-foreground';
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-background border border-border rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col items-center text-center gap-3">
+          <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+            <AlertTriangle className="h-8 w-8" style={{ color: '#F59E0B' }} />
+          </div>
+          <h2 className="text-xl font-bold">Promote "{scenario.name}" to Basecase?</h2>
+        </div>
+
+        {/* Section 1: Changes */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2">The following changes will become permanent:</h3>
+          {scenario.changes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No changes recorded.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 text-muted-foreground text-xs sticky top-0">
+                    <th className="text-left p-2 font-medium w-8">#</th>
+                    <th className="text-left p-2 font-medium">Parameter</th>
+                    <th className="text-left p-2 font-medium">Screen</th>
+                    <th className="text-right p-2 font-medium">Basecase</th>
+                    <th className="text-right p-2 font-medium">What-if</th>
+                    <th className="text-right p-2 font-medium">Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scenario.changes.map((c, idx) => {
+                    const delta = getChangeDelta(c);
+                    return (
+                      <tr key={c.id} className="border-t border-border text-xs">
+                        <td className="p-2 text-muted-foreground">{idx + 1}</td>
+                        <td className="p-2">
+                          <span className="font-medium">{c.entityName}</span>
+                          <span className="text-muted-foreground"> · {c.fieldLabel}</span>
+                        </td>
+                        <td className="p-2">
+                          <span className={`inline-block text-[10px] font-medium rounded px-1.5 py-0.5 ${screenBadgeColor(c.dataType)}`}>
+                            {c.dataType}
+                          </span>
+                        </td>
+                        <td className="p-2 text-right font-mono text-muted-foreground">{c.basecaseValue}</td>
+                        <td className="p-2 text-right font-mono font-semibold text-primary">{c.whatIfValue}</td>
+                        <td className="p-2 text-right font-mono">
+                          {delta !== null ? (
+                            <span className={delta >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                              {delta >= 0 ? '+' : ''}{delta % 1 === 0 ? delta : delta.toFixed(2)}
+                            </span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Section 2: Warning */}
+        <p className="text-sm font-bold text-red-600">
+          This action is permanent. Your current Basecase data will be overwritten. You cannot undo this.
+        </p>
+
+        {/* Section 3: Confirm by typing */}
+        <div>
+          <Label className="text-xs">Type the What-if name to confirm:</Label>
+          <Input
+            value={typedName}
+            onChange={e => setTypedName(e.target.value)}
+            placeholder={scenario.name}
+            className="h-8 mt-1 font-mono max-w-sm"
+            autoFocus
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button
+            onClick={onConfirm}
+            disabled={!canPromote}
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            <ArrowUpCircle className="h-4 w-4 mr-2" /> Promote to Basecase
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
