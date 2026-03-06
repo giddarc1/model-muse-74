@@ -1104,7 +1104,17 @@ export default function RunResults() {
         {/* ── IBOM Tab ── */}
         {activeTab === 'ibom' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <IBOMOutput model={model} isRunning={isRunning} />
+            <IBOMTabContent
+              model={model}
+              results={results!}
+              basecaseResults={basecaseResults}
+              isRunning={isRunning}
+              isUtilOnly={isUtilOnly}
+              ibomSubTab={ibomSubTab}
+              setIbomSubTab={setIbomSubTab}
+              ibomZoom={ibomZoom}
+              setIbomZoom={setIbomZoom}
+            />
           )
         )}
 
