@@ -35,6 +35,9 @@ export default function LaborData() {
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   if (!model) return (
     <div className="p-6 space-y-4">
