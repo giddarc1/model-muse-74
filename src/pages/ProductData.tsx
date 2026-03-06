@@ -122,7 +122,7 @@ export default function ProductData() {
       {model.products.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground"><p>No products defined.</p><Button className="mt-4" onClick={() => setShowAdd(true)}><Plus className="h-4 w-4 mr-1" /> Add First Product</Button></CardContent></Card>
       ) : viewMode === 'table' ? (
-        <Card>
+        <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
