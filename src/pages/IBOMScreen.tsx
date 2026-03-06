@@ -25,6 +25,8 @@ export default function IBOMScreen() {
   const addIBOM = useModelStore((s) => s.addIBOM);
   const updateIBOM = useModelStore((s) => s.updateIBOM);
   const deleteIBOM = useModelStore((s) => s.deleteIBOM);
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
 
   const [viewAssemblyId, setViewAssemblyId] = useState('');
   const [editParentId, setEditParentId] = useState('');
