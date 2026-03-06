@@ -1208,6 +1208,116 @@ export default function RunResults() {
         )}
       </div>
 
+      {/* ── Max Throughput + Lot Size Range Modal ── */}
+      <Dialog open={mtModalOpen} onOpenChange={setMtModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Max. Throughput + Lot Size Range</DialogTitle>
+            <DialogDescription>Find max production or sweep lot sizes for a product.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Section 1 — Choose Product */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Choose Product</Label>
+              <Select value={mtModalProduct} onValueChange={setMtModalProduct}>
+                <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                <SelectContent>
+                  {model?.products.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Section 2 — What-if Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">What-if Name</Label>
+              <Input
+                value={mtModalName}
+                onChange={e => setMtModalName(e.target.value)}
+                placeholder={mtModalMode === 'max_throughput' ? 'Max Throughput' : 'Lot Size Range'}
+              />
+            </div>
+
+            {/* Section 3 — Choose Mode */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Choose Mode</Label>
+              <RadioGroup value={mtModalMode} onValueChange={(v) => setMtModalMode(v as any)}>
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="max_throughput" id="mt-mode-max" className="mt-0.5" />
+                  <Label htmlFor="mt-mode-max" className="text-sm font-normal cursor-pointer">
+                    <span className="font-medium">Maximise Production</span>
+                    <span className="block text-xs text-muted-foreground">Finds the maximum possible production quantity given current constraints.</span>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="lot_size_range" id="mt-mode-ls" className="mt-0.5" />
+                  <Label htmlFor="mt-mode-ls" className="text-sm font-normal cursor-pointer">
+                    <span className="font-medium">Run a Range of Lot Sizes</span>
+                    <span className="block text-xs text-muted-foreground">Runs a series of calculations across a range of lot sizes.</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {mtModalMode === 'lot_size_range' && (
+                <div className="ml-6 mt-2 space-y-3 p-3 bg-muted/40 rounded-md border border-border">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">From lot size</Label>
+                      <Input type="number" min={1} value={mtModalLsFrom} onChange={e => setMtModalLsFrom(Number(e.target.value))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">To lot size</Label>
+                      <Input type="number" min={1} value={mtModalLsTo} onChange={e => setMtModalLsTo(Number(e.target.value))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Step size</Label>
+                      <Input type="number" min={1} value={mtModalLsStep} onChange={e => setMtModalLsStep(Number(e.target.value))} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Will run lot sizes: {(() => {
+                      const sizes: number[] = [];
+                      for (let s = mtModalLsFrom; s <= mtModalLsTo && sizes.length < 5; s += mtModalLsStep) sizes.push(s);
+                      return sizes.join(', ') + (mtModalLsTo > (mtModalLsFrom + mtModalLsStep * 4) ? '…' : '') + ' (one What-if per lot size)';
+                    })()}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMtModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!mtModalProduct || advRunning}
+              onClick={async () => {
+                setMtModalOpen(false);
+                if (!model) return;
+                const product = model.products.find(p => p.id === mtModalProduct);
+                if (!product) return;
+
+                if (mtModalMode === 'max_throughput') {
+                  setExtRunMode('max_throughput');
+                  setMtProduct(mtModalProduct);
+                  setMtScenarioName(mtModalName || `Max Throughput — ${product.name}`);
+                  // Trigger the run via existing handler
+                  setTimeout(() => handleAdvancedRun(), 50);
+                } else {
+                  setExtRunMode('lot_size_range');
+                  setLsrProduct(mtModalProduct);
+                  setLsrMin(mtModalLsFrom);
+                  setLsrMax(mtModalLsTo);
+                  setLsrStep(mtModalLsStep);
+                  setTimeout(() => handleAdvancedRun(), 50);
+                }
+              }}
+            >
+              Run
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Product Inclusion Modal ── */}
       <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
         <DialogContent className="max-w-md">
