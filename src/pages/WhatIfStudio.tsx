@@ -491,35 +491,59 @@ export default function WhatIfStudio() {
         )}
       </div>
 
-      {/* Modals */}
-      <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteModal && (() => {
+        const scToDelete = scenarios.find(s => s.id === showDeleteModal);
+        if (!scToDelete) return null;
+        const needsTyping = scToDelete.changes.length > 5;
+        const familyName = scToDelete.familyId ? 'a family' : null;
+        return (
+          <DeleteConfirmModal
+            scenario={scToDelete}
+            needsTyping={needsTyping}
+            familyName={familyName}
+            onConfirm={() => { deleteScenario(showDeleteModal); setShowDeleteModal(null); toast.success(`"${scToDelete.name}" deleted`); }}
+            onCancel={() => setShowDeleteModal(null)}
+          />
+        );
+      })()}
+
+      {/* ── Return to Basecase Modal ── */}
+      <Dialog open={showReturnModal} onOpenChange={setShowReturnModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Scenario</DialogTitle>
-            <DialogDescription>Create a What-If scenario to explore changes without affecting the Basecase.</DialogDescription>
+            <DialogTitle>Return to Basecase?</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes in "{activeScenario?.name}". What would you like to do?
+            </DialogDescription>
           </DialogHeader>
-          <Input placeholder="Scenario name" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }} autoFocus />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewModal(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!newName.trim()}>Create & Activate</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="ghost" onClick={() => setShowReturnModal(false)}>Stay in What-if</Button>
+            <Button variant="secondary" className="border border-amber-400 text-amber-700" onClick={() => {
+              // Discard: just deactivate without saving
+              setActiveScenario(null);
+              setShowReturnModal(false);
+            }}>Discard Changes and Return</Button>
+            <Button onClick={() => {
+              // Save first, then deactivate
+              if (activeScenario) {
+                handleRunScenario(activeScenario);
+              }
+              setActiveScenario(null);
+              setShowReturnModal(false);
+            }}>Save and Return</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Promote to Basecase</DialogTitle>
-            <DialogDescription>
-              This will apply all changes from "{activeScenario?.name}" to the Basecase and clear this scenario's change list. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPromoteModal(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handlePromote}>Promote</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Promote to Basecase Full-Screen Modal ── */}
+      {showPromoteModal && activeScenario && (
+        <PromoteModal
+          scenario={activeScenario}
+          onConfirm={handlePromote}
+          onCancel={() => setShowPromoteModal(false)}
+        />
+      )}
 
       <Dialog open={showFamilyModal} onOpenChange={setShowFamilyModal}>
         <DialogContent className="max-w-md">
