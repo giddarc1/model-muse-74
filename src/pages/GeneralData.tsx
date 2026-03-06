@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
-import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
+import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 function InfoTip({ text }: { text: string }) {
   return (
