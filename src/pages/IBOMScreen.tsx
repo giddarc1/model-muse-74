@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -23,6 +24,8 @@ interface TreeNode {
 }
 
 export default function IBOMScreen() {
+  const navigate = useNavigate();
+  const { modelId } = useParams<{ modelId: string }>();
   const model = useModelStore((s) => s.getActiveModel());
   const addIBOM = useModelStore((s) => s.addIBOM);
   const updateIBOM = useModelStore((s) => s.updateIBOM);
@@ -36,6 +39,11 @@ export default function IBOMScreen() {
   const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
   const [showRemoveAllDialog, setShowRemoveAllDialog] = useState(false);
+  const [filterText, setFilterText] = useState('');
+  const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
+
+  // Track previous valid values for revert on blur
+  const prevUpaValues = useRef<Map<string, number>>(new Map());
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
     if (!model || visited.has(parentId)) return [];
@@ -67,6 +75,15 @@ export default function IBOMScreen() {
     return buildTree(viewAssemblyId, 0, new Set());
   }, [viewAssemblyId, buildTree]);
 
+  // Compute max depth of tree
+  const maxDepth = useMemo(() => {
+    function getDepth(nodes: TreeNode[]): number {
+      if (nodes.length === 0) return 0;
+      return 1 + Math.max(...nodes.map(n => getDepth(n.children)));
+    }
+    return getDepth(tree);
+  }, [tree]);
+
   // Compute Units / Final Assembly for each component
   const unitsPerFinalAssy = useMemo(() => {
     if (!model || !viewAssemblyId) return new Map<string, number>();
@@ -87,6 +104,21 @@ export default function IBOMScreen() {
     return result;
   }, [model, viewAssemblyId]);
 
+  // Filter tree nodes
+  const filterTree = useCallback((nodes: TreeNode[], query: string): TreeNode[] => {
+    if (!query) return nodes;
+    const lq = query.toLowerCase();
+    return nodes.reduce<TreeNode[]>((acc, node) => {
+      const filteredChildren = filterTree(node.children, query);
+      if (node.productName.toLowerCase().includes(lq) || filteredChildren.length > 0) {
+        acc.push({ ...node, children: filteredChildren });
+      }
+      return acc;
+    }, []);
+  }, []);
+
+  const filteredTree = useMemo(() => filterTree(tree, filterText), [tree, filterText, filterTree]);
+
   // Bottom panel: components of selected product
   const editParentId = selectedProductId || '';
   const currentComponents = useMemo(() => {
@@ -106,7 +138,37 @@ export default function IBOMScreen() {
     });
   }, [model, editParentId, currentComponents, getAncestors]);
 
+  // Check if selected product is a what-if edit target
+  const isWhatIfTarget = useMemo(() => {
+    if (!activeScenario || !editParentId) return false;
+    return activeScenario.changes.some(c => c.entityId === editParentId);
+  }, [activeScenario, editParentId]);
+
+  // No products empty state
   if (!model) return null;
+
+  if (model.products.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center animate-fade-in gap-4 px-6">
+        <div className="rounded-full bg-muted p-6">
+          <Package className="h-12 w-12 text-muted-foreground/50" />
+        </div>
+        <div className="text-center space-y-1.5">
+          <h2 className="text-lg font-semibold">No products defined yet</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Add products in the Products tab before building your IBOM structure.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/models/${modelId}/products`)}
+          className="gap-2"
+        >
+          Go to Products
+        </Button>
+      </div>
+    );
+  }
 
   const prodName = (id: string) => model.products.find((p) => p.id === id)?.name || '???';
   const allProducts = model.products;
@@ -123,6 +185,7 @@ export default function IBOMScreen() {
   const handleSelectRow = (productId: string) => {
     setSelectedProductId(productId);
     setCheckedAllowable(new Set());
+    setConfirmingRemoveId(null);
   };
 
   const handleAddChecked = () => {
@@ -168,6 +231,33 @@ export default function IBOMScreen() {
     collectKeys(tree, 'root');
     setExpandedNodes(allKeys);
   };
+
+  const handleUpaChange = (entryId: string, value: string, currentValid: number) => {
+    const num = Number(value);
+    if (!prevUpaValues.current.has(entryId)) {
+      prevUpaValues.current.set(entryId, currentValid);
+    }
+    if (value === '' || num <= 0) {
+      setUpaErrors(prev => new Set(prev).add(entryId));
+      return;
+    }
+    setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
+    updateIBOM(model.id, entryId, { units_per_assy: num });
+    prevUpaValues.current.set(entryId, num);
+  };
+
+  const handleUpaBlur = (entryId: string) => {
+    if (upaErrors.has(entryId)) {
+      const revert = prevUpaValues.current.get(entryId) || 1;
+      updateIBOM(model.id, entryId, { units_per_assy: revert });
+      setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
+    }
+  };
+
+  // Filter dropdown products too
+  const filteredDropdownProducts = filterText
+    ? allProducts.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()))
+    : allProducts;
 
   const renderTreeNode = (node: TreeNode, parentKey: string, index: number) => {
     const key = `${parentKey}-${node.productId}-${index}`;
@@ -227,8 +317,21 @@ export default function IBOMScreen() {
             </span>
           </div>
         )}
-        <h1 className="text-xl font-bold">Indented Bill of Materials</h1>
-        <p className="text-sm text-muted-foreground">Define parent–child relationships between products and their component parts.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Indented Bill of Materials</h1>
+            <p className="text-sm text-muted-foreground">Define parent–child relationships between products and their component parts.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Go to:</span>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => navigate(`/models/${modelId}/products`)}>
+              Product Form
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => navigate(`/models/${modelId}/operations`)}>
+              Operations
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* ═══ TOP PANEL — IBOM Structure Tree ═══ */}
@@ -236,10 +339,18 @@ export default function IBOMScreen() {
         <Card className="h-full flex flex-col">
           <CardHeader className="pb-2 shrink-0">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">IBOM Structure</CardTitle>
               <div className="flex items-center gap-2">
+                <CardTitle className="text-base">IBOM Structure</CardTitle>
+                {viewAssemblyId && tree.length > 0 && maxDepth > 0 && (
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal">
+                    {maxDepth} level{maxDepth !== 1 ? 's' : ''} deep
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Network className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">View assembly:</span>
-                <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); }}>
+                <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); setFilterText(''); }}>
                   <SelectTrigger className="h-7 w-48 text-xs">
                     <SelectValue placeholder="Select assembly…" />
                   </SelectTrigger>
@@ -256,12 +367,32 @@ export default function IBOMScreen() {
                   </SelectContent>
                 </Select>
                 {viewAssemblyId && (
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setViewAssemblyId(''); setSelectedProductId(''); setExpandedNodes(new Set()); }}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setViewAssemblyId(''); setSelectedProductId(''); setExpandedNodes(new Set()); setFilterText(''); }}>
                     <X className="h-3 w-3 mr-1" /> Clear
                   </Button>
                 )}
               </div>
             </div>
+            {/* Filter input */}
+            {viewAssemblyId && tree.length > 0 && (
+              <div className="relative mt-2">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Filter products…"
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="h-7 text-xs pl-7 pr-7"
+                />
+                {filterText && (
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setFilterText('')}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto p-0">
             {!viewAssemblyId ? (
@@ -310,7 +441,12 @@ export default function IBOMScreen() {
                   <span className="w-20 text-right font-mono text-xs text-muted-foreground/60">—</span>
                 </div>
                 {/* Tree nodes */}
-                {tree.map((node, i) => renderTreeNode(node, 'root', i))}
+                {filteredTree.map((node, i) => renderTreeNode(node, 'root', i))}
+                {filterText && filteredTree.length === 0 && (
+                  <div className="flex items-center justify-center py-6 text-muted-foreground text-xs">
+                    No matching products found.
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -321,12 +457,19 @@ export default function IBOMScreen() {
       <div className="flex-1 min-h-0 px-6 pt-2 pb-4">
         <Card className="h-full flex flex-col">
           <CardHeader className="pb-2 shrink-0">
-            <CardTitle className="text-base">
-              {editParentId
-                ? <>Components for: <span className="font-mono text-primary">{prodName(editParentId)}</span></>
-                : 'Edit Components'
-              }
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">
+                {editParentId
+                  ? <>Components for: <span className="font-mono text-primary">{prodName(editParentId)}</span></>
+                  : 'Edit Components'
+                }
+              </CardTitle>
+              {editParentId && isWhatIfTarget && (
+                <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-warning/40 text-warning bg-warning/10">
+                  ● What-if active
+                </Badge>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto p-4 pt-0">
             {!editParentId ? (
@@ -353,6 +496,7 @@ export default function IBOMScreen() {
                         <TableBody>
                           {currentComponents.map((c) => {
                             const isConfirming = confirmingRemoveId === c.id;
+                            const hasError = upaErrors.has(c.id);
                             return (
                               <TableRow key={c.id} className={isConfirming ? 'bg-destructive/10' : ''}>
                                 {isConfirming ? (
@@ -389,13 +533,19 @@ export default function IBOMScreen() {
                                   <>
                                     <TableCell className="font-mono text-xs py-1">{prodName(c.component_product_id)}</TableCell>
                                     <TableCell className="py-1">
-                                      <Input
-                                        type="number"
-                                        className="h-6 w-16 font-mono text-xs"
-                                        value={c.units_per_assy}
-                                        min={1}
-                                        onChange={(e) => updateIBOM(model.id, c.id, { units_per_assy: Math.max(1, +e.target.value) })}
-                                      />
+                                      <div>
+                                        <Input
+                                          type="number"
+                                          className={`h-6 w-16 font-mono text-xs ${hasError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                          defaultValue={c.units_per_assy}
+                                          min={1}
+                                          onChange={(e) => handleUpaChange(c.id, e.target.value, c.units_per_assy)}
+                                          onBlur={() => handleUpaBlur(c.id)}
+                                        />
+                                        {hasError && (
+                                          <p className="text-[10px] text-destructive mt-0.5">Must be greater than 0</p>
+                                        )}
+                                      </div>
                                     </TableCell>
                                     <TableCell className="py-1 text-right">
                                       <Button
