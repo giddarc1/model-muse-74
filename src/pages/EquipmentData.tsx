@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useModelStore, type EquipmentGroup } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,10 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+const FIELD_LABELS: Record<string, string> = {
+  count: 'Count', equip_type: 'Type', mttf: 'MTTF', mttr: 'MTTR',
+  overtime_pct: 'OT %', labor_group_id: 'Labor Group', dept_code: 'Dept/Area',
+  out_of_area: 'Out of Area', unavail_pct: 'Unavail %',
+  setup_factor: 'Setup Factor', run_factor: 'Run Factor', var_factor: 'Var Factor',
+  eq1: 'Eq1', eq2: 'Eq2', eq3: 'Eq3', eq4: 'Eq4', comments: 'Comments',
+};
 
 export default function EquipmentData() {
   const model = useModelStore((s) => s.getActiveModel());
