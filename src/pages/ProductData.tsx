@@ -303,15 +303,15 @@ export default function ProductData() {
                       </div>
                       {/* Prod1-4 parameter variables */}
                       <div className="pt-2 border-t border-border">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Specific Product Variables</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">User-defined variables for this product. Reference them in operation time formulas using the Formula Builder.</TooltipContent></Tooltip></TooltipProvider>
-                        </div>
+                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
                         <div className="grid grid-cols-4 gap-3 mt-1.5">
-                          <div><Label className="text-xs">{model.param_names.prod1_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod1} onChange={(e) => handleCellChange(p.id, 'prod1', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod2_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod2} onChange={(e) => handleCellChange(p.id, 'prod2', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod3_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod3} onChange={(e) => handleCellChange(p.id, 'prod3', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod4_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod4} onChange={(e) => handleCellChange(p.id, 'prod4', +e.target.value)} /></div>
+                          {(['prod1', 'prod2', 'prod3', 'prod4'] as const).map(key => (
+                            <div key={key}>
+                              <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                              <Input type="number" className="h-8 font-mono" value={p[key]} onChange={(e) => handleCellChange(p.id, key, +e.target.value)} />
+                              <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
