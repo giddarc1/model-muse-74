@@ -2976,7 +2976,8 @@ function ProductionChart({ results, model, isMultiScenario, chartScenarios }: {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
