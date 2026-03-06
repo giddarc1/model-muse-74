@@ -197,7 +197,7 @@ export default function WhatIfStudio() {
             );
           })}
         </div>
-        <div className="p-3 border-t border-border shrink-0">
+        <div className="p-3 border-t border-border shrink-0 space-y-2">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -210,6 +210,16 @@ export default function WhatIfStudio() {
               {activeScenarioId !== null && <TooltipContent side="top"><p className="text-xs">Save or return to Basecase first.</p></TooltipContent>}
             </Tooltip>
           </TooltipProvider>
+          {showFamilies && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-8 text-xs"
+              onClick={() => setFamiliesDrawerOpen(true)}
+            >
+              <Layers className="h-3.5 w-3.5 mr-1" /> Families
+            </Button>
+          )}
         </div>
       </div>
 
