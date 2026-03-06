@@ -1008,7 +1008,8 @@ export default function RunResults() {
                         : 'Utilization breakdown by labor group'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
+                    <ChartScenarioLabel />
                     <ResponsiveContainer width="100%" height={300}>
                       {isMultiScenario && groupedLabor ? (
                         <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
