@@ -74,7 +74,7 @@ export default function GeneralData() {
         </TabsList>
 
         <TabsContent value="time" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader>
               <CardTitle className="text-base">Time Settings</CardTitle>
               <CardDescription>Define time units and conversion factors for this model.</CardDescription>
