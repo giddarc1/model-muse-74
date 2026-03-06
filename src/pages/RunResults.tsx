@@ -142,6 +142,8 @@ function buildGroupedProductWIPData(scenarios: ScenarioEntry[]) {
   return { data, bars };
 }
 
+// Re-export RechartsTooltip as Tooltip for chart usage (ShadTooltip used for UI tooltips)
+const Tooltip = RechartsTooltip;
 const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 6, fontSize: 12 };
 const axisStyle = { fontSize: 11, fontFamily: 'JetBrains Mono' };
 
