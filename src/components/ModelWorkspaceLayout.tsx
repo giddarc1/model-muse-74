@@ -14,6 +14,12 @@ const SCREEN_NAMES: Record<string, string> = {
   ibom: 'IBOM', run: 'Run & Results', whatif: 'What-If Studio', reports: 'Reports', settings: 'Model Settings',
 };
 
+// Map route segments to their gating feature (null = always visible)
+const ROUTE_GATING: Record<string, FeatureKey | null> = {
+  'all-operations': 'all_operations',
+  'param-names': 'parameter_names',
+};
+
 export function ModelWorkspaceLayout() {
   const { modelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
@@ -23,6 +29,7 @@ export function ModelWorkspaceLayout() {
   const modelsLoaded = useModelStore((s) => s.modelsLoaded);
   const loadModels = useModelStore((s) => s.loadModels);
   const loadScenariosFromDb = useScenarioStore((s) => s.loadScenariosFromDb);
+  const userLevel = useUserLevelStore((s) => s.userLevel);
 
   const model = models.find(m => m.id === modelId);
   const screenSegment = location.pathname.split('/').pop() || 'overview';
@@ -44,6 +51,14 @@ export function ModelWorkspaceLayout() {
     loadScenariosFromDb(modelId!);
     return () => setActiveModel(null);
   }, [modelId, models, modelsLoaded, navigate, setActiveModel, loadModels, loadScenariosFromDb]);
+
+  // Redirect away from gated screens when user level changes
+  useEffect(() => {
+    const feature = ROUTE_GATING[screenSegment];
+    if (feature && !isVisible(feature, userLevel)) {
+      navigate(`/models/${modelId}/overview`, { replace: true });
+    }
+  }, [userLevel, screenSegment, modelId, navigate]);
 
   if (!modelsLoaded) {
     return (
