@@ -154,6 +154,7 @@ export default function IBOMScreen() {
   const handleRemoveAll = () => {
     currentComponents.forEach((c) => deleteIBOM(model.id, c.id));
     toast.success('All components removed');
+    setShowRemoveAllDialog(false);
   };
 
   const expandAll = () => {
