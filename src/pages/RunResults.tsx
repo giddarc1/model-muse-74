@@ -624,8 +624,8 @@ export default function RunResults() {
 
       {/* ── Run Control Bar ── */}
       <div className="h-[52px] shrink-0 flex items-center gap-3 px-6 bg-muted/40 border-b border-border">
-        {/* Left — run buttons */}
-        <Button size="sm" className="h-9 gap-1.5 px-4" onClick={() => isAdvancedMode ? handleAdvancedRun() : handleRun(runMode)} disabled={isRunning || advRunning}>
+        {/* Left — standard run buttons */}
+        <Button size="sm" className="h-9 gap-1.5 px-4" onClick={() => handleRun('full')} disabled={isRunning || advRunning}>
           {isRunning || advRunning ? (
             <><span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground border-t-transparent rounded-full" /> Running…</>
           ) : (
@@ -642,30 +642,24 @@ export default function RunResults() {
                 <Gauge className="h-3.5 w-3.5" /> Calc. Util Only
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Calculates utilisation only — faster than Full Calculate</TooltipContent>
+            <TooltipContent side="bottom" className="text-xs">Calculates equipment and labor utilisation only — faster than Full Calculate.</TooltipContent>
           </ShadTooltip>
         )}
 
-        {/* Centre — status */}
-        <div className="flex items-center gap-3 ml-4">
-          <Badge variant="outline" className={`gap-1.5 text-xs font-medium ${statusChip.color}`}>
-            {statusChip.icon}
-            {statusChip.label}
-          </Badge>
-          <span className="text-xs text-muted-foreground">{lastRunText}</span>
-        </div>
+        {/* Vertical divider before Advanced section */}
+        {isVisible('product_inclusion', userLevel) && (
+          <div className="h-[60%] w-px bg-border self-center" />
+        )}
 
-        <div className="flex-1" />
-
-        {/* Right — Advanced dropdown */}
+        {/* Advanced dropdown — Advanced users only */}
         {isVisible('product_inclusion', userLevel) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-9 gap-1.5 px-3 text-xs">
-                Advanced <ChevronRight className="h-3 w-3 rotate-90" />
+                <Settings2 className="h-3.5 w-3.5" /> Advanced <ChevronRight className="h-3 w-3 rotate-90" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuItem onClick={() => {
                 setPiSelectedProducts(new Set(model?.products.map(p => p.id) || []));
                 setPiScenarioName('Product Inclusion');
@@ -691,7 +685,6 @@ export default function RunResults() {
                 setOlOptLot(new Set(model?.products.map(p => p.id) || []));
                 setOlOptTb(new Set(model?.products.map(p => p.id) || []));
                 setOlName('Optimised Lot Sizes');
-                // Compute initial weighted WIP
                 const baseCalc = calculate(model!);
                 const initWip = baseCalc.products.reduce((s, pr) => s + pr.wip * (vals[pr.id] || 1), 0);
                 setOlInitialWip(Math.round(initWip * 100) / 100);
@@ -700,13 +693,21 @@ export default function RunResults() {
               }}>
                 <Settings2 className="h-4 w-4 mr-2" /> Optimise Lot Sizes &amp; Transfer Batches…
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => {}}>
                 <AlertTriangle className="h-4 w-4 mr-2" /> Errors &amp; Warning Messages
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+
+        <div className="flex-1" />
+
+        {/* Far right — status chip + last run */}
+        <Badge variant="outline" className={`gap-1.5 text-xs font-medium ${statusChip.color}`}>
+          {statusChip.icon}
+          {statusChip.label}
+        </Badge>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">{lastRunText}</span>
       </div>
 
       {/* ── Primary Tab Bar ── */}
