@@ -1059,10 +1059,10 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   onClose: () => void;
   userLevel: UserLevel;
 }) {
-  const [directEdits, setDirectEdits] = useState(false);
+  const [editingEnabled, setEditingEnabled] = useState(false);
   const { updateChange, markNeedsRecalc } = useScenarioStore();
+  const [clipboard, setClipboard] = useState<{ paramKey: string; values: Map<string, string | number> } | null>(null);
 
-  // Collect all unique parameter keys across all family members
   const allParams = useMemo(() => {
     const paramMap = new Map<string, { dataType: string; entityId: string; entityName: string; field: string; fieldLabel: string }>();
     familyMembers.forEach(sc => {
@@ -1085,20 +1085,27 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
   };
 
   const handleCopyRow = (paramKey: string) => {
-    // Copy the active scenario's value to all other members for this param
-    const activeScenario = familyMembers.find(s => s.id === activeScenarioId);
-    if (!activeScenario) return;
-    const activeChange = activeScenario.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
-    if (!activeChange) return;
+    const values = new Map<string, string | number>();
     familyMembers.forEach(sc => {
-      if (sc.id === activeScenarioId) return;
+      const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
+      if (change) values.set(sc.id, change.whatIfValue);
+    });
+    setClipboard({ paramKey, values });
+    toast.success('Row copied to clipboard');
+  };
+
+  const handlePasteRow = (paramKey: string) => {
+    if (!clipboard) return;
+    clipboard.values.forEach((value, scenarioId) => {
+      const sc = familyMembers.find(s => s.id === scenarioId);
+      if (!sc) return;
       const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === paramKey);
       if (change) {
-        updateChange(sc.id, change.id, activeChange.whatIfValue);
+        updateChange(sc.id, change.id, value);
         markNeedsRecalc(sc.id);
       }
     });
-    toast.success('Value copied to all family members');
+    toast.success('Values pasted');
   };
 
   return (
@@ -1113,13 +1120,19 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
         <div className="flex items-center gap-3">
           {isVisible('allow_edit_whatif', userLevel) && (
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Direct Edits</Label>
-              <Switch checked={directEdits} onCheckedChange={setDirectEdits} className="scale-75" />
+              <Label className="text-xs text-muted-foreground">Enable Editing</Label>
+              <Switch checked={editingEnabled} onCheckedChange={setEditingEnabled} className="scale-75" />
             </div>
           )}
-          <Button variant="outline" size="sm" className="text-xs" onClick={onClose}>Close</Button>
         </div>
       </div>
+
+      {editingEnabled && (
+        <div className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium bg-destructive/10 text-destructive">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          Editing values here is permanent and cannot be undone.
+        </div>
+      )}
 
       {allParams.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
@@ -1132,11 +1145,16 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
               <tr className="bg-muted/50 text-muted-foreground">
                 <th className="text-left p-2 font-medium sticky left-0 bg-muted/50 z-10">Parameter</th>
                 {familyMembers.map(sc => (
-                  <th key={sc.id} className={`text-right p-2 font-medium min-w-[100px] ${sc.id === activeScenarioId ? 'bg-primary/10 text-primary' : ''}`}>
+                  <th
+                    key={sc.id}
+                    className={`text-right p-2 font-medium min-w-[100px] ${
+                      sc.id === activeScenarioId ? 'bg-amber-500/15 text-amber-700' : ''
+                    }`}
+                  >
                     {sc.name}
                   </th>
                 ))}
-                <th className="p-2 w-8"></th>
+                {editingEnabled && <th className="p-2 w-16 text-center font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -1150,8 +1168,8 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
                   {familyMembers.map(sc => {
                     const change = sc.changes.find(c => `${c.dataType}|${c.entityId}|${c.field}` === key);
                     return (
-                      <td key={sc.id} className={`p-2 text-right font-mono ${sc.id === activeScenarioId ? 'bg-primary/5' : ''}`}>
-                        {directEdits && change ? (
+                      <td key={sc.id} className={`p-2 text-right font-mono ${sc.id === activeScenarioId ? 'bg-amber-500/5' : ''}`}>
+                        {editingEnabled && change ? (
                           <input
                             type="number"
                             defaultValue={change.whatIfValue}
@@ -1166,11 +1184,23 @@ function FamilyRecordsView({ familyMembers, activeScenarioId, model, onClose, us
                       </td>
                     );
                   })}
-                  <td className="p-2">
-                    <button onClick={() => handleCopyRow(key)} className="text-muted-foreground hover:text-primary transition-colors" title="Copy active value to all">
-                      <Copy className="h-3 w-3" />
-                    </button>
-                  </td>
+                  {editingEnabled && (
+                    <td className="p-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => handleCopyRow(key)} className="text-muted-foreground hover:text-primary transition-colors" title="Copy row">
+                          <Copy className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handlePasteRow(key)}
+                          className={`transition-colors ${clipboard ? 'text-muted-foreground hover:text-primary' : 'text-muted-foreground/30 cursor-not-allowed'}`}
+                          title="Paste row"
+                          disabled={!clipboard}
+                        >
+                          <ClipboardPaste className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
