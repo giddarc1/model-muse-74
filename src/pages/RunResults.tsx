@@ -2311,7 +2311,8 @@ function LaborWaitChart({ results, model }: { results: CalcResults; model: Model
         <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
         <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
