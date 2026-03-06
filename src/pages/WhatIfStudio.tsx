@@ -273,7 +273,7 @@ export default function WhatIfStudio() {
                     <Layers className="h-3.5 w-3.5 mr-2" /> Create Family
                   </DropdownMenuItem>
                 )}
-                {canAccess(userLevel, 'whatif-families') && sc.familyId && (
+                {isVisible('whatif_families', userLevel) && sc.familyId && (
                   <DropdownMenuItem onClick={() => { setActiveScenario(sc.id); setShowFamilyRecords(true); }}>
                     <Layers className="h-3.5 w-3.5 mr-2" /> View Family Records
                   </DropdownMenuItem>
