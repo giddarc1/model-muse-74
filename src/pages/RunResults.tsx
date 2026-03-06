@@ -1154,6 +1154,210 @@ export default function RunResults() {
   );
 }
 
+/* ─── Util-Only Banner ─── */
+function UtilOnlyBanner() {
+  return (
+    <div className="flex items-center gap-2 p-3 mb-4 bg-warning/10 border border-warning/30 rounded-md">
+      <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+      <span className="text-sm text-warning font-medium">WIP and MCT results require Full Calculate. These results show utilisation data only.</span>
+    </div>
+  );
+}
+
+/* ─── Product Results Table ─── */
+function ProductResultsTable({ results, model, displayScenarioResults }: {
+  results: CalcResults; model: any;
+  displayScenarioResults: { id: string; scenario: any; results: CalcResults }[];
+}) {
+  const { sorted, sort, handleSort } = useSortableTable(results.products, 'mct', 'desc');
+  const hasScenarios = displayScenarioResults.length > 0;
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base">Product Results Table</CardTitle></CardHeader>
+      <CardContent className="p-0 overflow-x-auto">
+        <Table>
+          <TableHeader><TableRow>
+            <SortHead label="Product" sortKey="name" current={sort} onSort={handleSort} align="left" />
+            <SortHead label="Demand" sortKey="demand" current={sort} onSort={handleSort} />
+            <SortHead label="Good Made" sortKey="goodMade" current={sort} onSort={handleSort} />
+            <SortHead label="Good Shipped" sortKey="goodShipped" current={sort} onSort={handleSort} />
+            <SortHead label="Started" sortKey="started" current={sort} onSort={handleSort} />
+            <SortHead label="Scrap" sortKey="scrap" current={sort} onSort={handleSort} />
+            <SortHead label="WIP" sortKey="wip" current={sort} onSort={handleSort} />
+            <SortHead label="MCT" sortKey="mct" current={sort} onSort={handleSort} />
+            {hasScenarios && displayScenarioResults.map(sr => (
+              <React.Fragment key={sr.id}>
+                <TableHead className="font-mono text-xs text-right">{sr.scenario.name} WIP</TableHead>
+                <TableHead className="font-mono text-xs text-right">{sr.scenario.name} MCT</TableHead>
+              </React.Fragment>
+            ))}
+          </TableRow></TableHeader>
+          <TableBody>
+            {sorted.map((row: any) => (
+              <TableRow key={row.id}>
+                <TableCell className="font-mono font-medium">{row.name}</TableCell>
+                <TableCell className="font-mono text-right">{row.demand?.toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-right">{row.goodMade.toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-right">{row.goodShipped.toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-right">{row.started.toLocaleString()}</TableCell>
+                <TableCell className="font-mono text-right">{row.scrap > 0 ? row.scrap.toLocaleString() : '—'}</TableCell>
+                <TableCell className="font-mono text-right">{row.wip}</TableCell>
+                <TableCell className="font-mono text-right font-medium">{row.mct.toFixed(4)}</TableCell>
+                {hasScenarios && displayScenarioResults.map(sr => {
+                  const sp = sr.results.products.find((p: any) => p.id === row.id);
+                  return (
+                    <React.Fragment key={sr.id}>
+                      <TableCell className="font-mono text-right text-xs">{sp?.wip ?? '—'}</TableCell>
+                      <TableCell className={`font-mono text-right text-xs ${sp && sp.mct < row.mct ? 'text-success' : sp && sp.mct > row.mct ? 'text-destructive' : ''}`}>
+                        {sp?.mct.toFixed(4) || '—'}
+                      </TableCell>
+                    </React.Fragment>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Product Oper Details (for Products tab sub-tab) ─── */
+function ProductOperDetails({ model, results }: { model: Model; results: CalcResults }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
+
+  const allMetrics = useMemo(() => {
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const eqSetupTime = numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
+      const eqRunTime = numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
+      const eqCount = eq.count > 0 ? eq.count : 1;
+      const eqAvail = eqCount * (1 + eq.overtime_pct / 100) * (1 - (eq.unavail_pct || 0) / 100) * opsPerPeriod;
+      let repairFrac = 0;
+      if (eq.mttf > 0 && eq.mttr > 0) repairFrac = eq.mttr / (eq.mttf + eq.mttr);
+      const eqEffAvail = eqAvail * (1 - repairFrac);
+      const eqSetupUtil = eqEffAvail > 0 ? (eqSetupTime / eqEffAvail) * 100 : 0;
+      const eqRunUtil = eqEffAvail > 0 ? (eqRunTime / eqEffAvail) * 100 : 0;
+      const labSetupTime = lab ? numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor : 0;
+      const labRunTime = lab ? numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor : 0;
+      const labAvail = lab ? lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod : 0;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? (eqSetupTime / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? (eqRunTime / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab?.name || '—', laborId: lab?.id || '',
+        pctAssigned: op.pct_assigned,
+        eqSetupUtil: Math.round(eqSetupUtil * 10) / 10,
+        eqRunUtil: Math.round(eqRunUtil * 10) / 10,
+        eqSetupTime: Math.round(eqSetupTime * 1000) / 1000,
+        eqRunTime: Math.round(eqRunTime * 1000) / 1000,
+        waitLaborUtil: er?.waitLaborUtil || 0,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
+
+  const prodOps = useMemo(() => allMetrics.filter((m: any) => m.productId === selectedId), [allMetrics, selectedId]);
+  const prodSort = useSortableTable(prodOps, 'opNumber', 'asc');
+
+  const prod = model.products.find((p: any) => p.id === selectedId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details — By Product</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Select product…" /></SelectTrigger>
+            <SelectContent>
+              {model.products.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant={showTimeUnits ? 'secondary' : 'outline'} size="sm" className="text-xs gap-1 h-7" onClick={() => setShowTimeUnits(!showTimeUnits)}>
+            <Clock className="h-3 w-3" />
+            {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+          </Button>
+        </div>
+        {!prod ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Select a product to view operation details.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <SortHead label="Operation" sortKey="opName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+                <SortHead label="Equipment" sortKey="equipName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+                <SortHead label="Labor" sortKey="laborName" current={prodSort.sort} onSort={prodSort.handleSort} align="left" />
+                <SortHead label="% Assign" sortKey="pctAssigned" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label="WIP" sortKey="wip" current={prodSort.sort} onSort={prodSort.handleSort} />
+                <SortHead label="MCT at Op" sortKey="mctAtOp" current={prodSort.sort} onSort={prodSort.handleSort} />
+              </TableRow></TableHeader>
+              <TableBody>
+                {prodSort.sorted.map((m: any) => (
+                  <TableRow key={m.opId}>
+                    <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.laborName}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ─── Shared sub-components ─── */
 
 function NoResultsPlaceholder() {
