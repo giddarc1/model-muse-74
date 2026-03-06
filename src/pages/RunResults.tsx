@@ -287,7 +287,9 @@ export default function RunResults() {
 
   const activeScenario = model ? (allScenarios.find(s => s.id === activeScenarioId) || null) : null;
   const modelScenarios = model ? allScenarios.filter(s => s.modelId === model.id) : [];
-  const resultKey = activeScenario ? activeScenario.id : 'basecase';
+  const resultKey = selectedRunScenarioId && selectedRunScenarioId !== 'basecase'
+    ? selectedRunScenarioId
+    : (activeScenario ? activeScenario.id : 'basecase');
   const results = getResults(resultKey);
   const basecaseResults = getResults('basecase');
   const hasRun = !!results;
