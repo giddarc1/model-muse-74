@@ -806,6 +806,7 @@ export default function RunResults() {
         {/* ── Summary Tab ── */}
         {activeTab === 'summary' && (
           <>
+            <ScenarioContextBar />
             {/* Quick Stats Row */}
             <div className="grid grid-cols-4 gap-4 mb-6">
               <QuickStatCard
