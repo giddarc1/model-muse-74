@@ -2232,7 +2232,8 @@ function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: 
         <CardTitle className="text-base">Equipment WIP</CardTitle>
         <CardDescription>Work-in-progress at each equipment group</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
