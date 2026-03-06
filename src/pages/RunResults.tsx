@@ -577,32 +577,37 @@ export default function RunResults() {
           {/* ── Standard Analysis ── */}
           <div>
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Standard Analysis</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 gap-3 ${isVisible('calculate_util_only', userLevel) ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {STANDARD_MODES.map(opt => {
-                if (opt.mode === 'util_only' && userLevel === 'novice') return null;
+                if (opt.mode === 'util_only' && !isVisible('calculate_util_only', userLevel)) return null;
                 return renderModeCard(opt);
               })}
             </div>
+            {!isVisible('calculate_util_only', userLevel) && (
+              <p className="text-xs text-muted-foreground/60 mt-2">Select a mode above, then click Run to calculate.</p>
+            )}
           </div>
 
-          {/* ── Scenario Analysis ── */}
-          {userLevel !== 'novice' && (
-            <div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {SCENARIO_MODES.map(opt => renderModeCard(opt, true))}
+          {/* ── Advanced Analysis — advanced users only ── */}
+          {isVisible('product_inclusion', userLevel) && (
+            <>
+              <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center"><span className="bg-card px-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Advanced Analysis</span></div>
               </div>
-            </div>
-          )}
-
-          {/* ── Optimization ── */}
-          {userLevel !== 'novice' && (
-            <div>
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {OPTIMIZATION_MODES.map(opt => renderModeCard(opt, true))}
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scenario Analysis</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SCENARIO_MODES.map(opt => renderModeCard(opt))}
+                </div>
               </div>
-            </div>
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Optimization</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {OPTIMIZATION_MODES.map(opt => renderModeCard(opt))}
+                </div>
+              </div>
+            </>
           )}
 
           {/* ── Advanced Mode Config Panels ── */}
