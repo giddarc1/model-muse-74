@@ -1094,6 +1094,7 @@ export default function RunResults() {
                   </button>
                 ))}
               </div>
+              <ScenarioContextBar />
 
               {productsSubTab === 'mct-chart' && (
                 <>
