@@ -173,7 +173,7 @@ export default function GeneralData() {
           </Card>
 
           {showAdvancedParams && (
-            <Card>
+            <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
               <CardHeader>
                 <CardTitle className="text-base">Global Parameters</CardTitle>
                 <CardDescription>Global variables that can be referenced in operation time formulas. Rename them in Parameter Names for clarity.</CardDescription>
