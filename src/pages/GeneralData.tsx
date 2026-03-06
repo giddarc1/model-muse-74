@@ -43,7 +43,15 @@ export default function GeneralData() {
 
   const g = model.general;
   const pn = model.param_names;
-  const update = (data: Partial<typeof g>) => updateGeneral(model.id, data);
+  const update = (data: Partial<typeof g>) => {
+    if (activeScenarioId && activeScenario) {
+      Object.entries(data).forEach(([field, value]) => {
+        const fieldLabel = FIELD_LABELS[field] || field;
+        applyScenarioChange(activeScenarioId, 'General', model.id, 'General', field, fieldLabel, value as string | number);
+      });
+    }
+    updateGeneral(model.id, data);
+  };
 
   return (
     <div className="p-6 max-w-3xl animate-fade-in">
