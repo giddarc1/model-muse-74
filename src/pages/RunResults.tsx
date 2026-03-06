@@ -860,55 +860,96 @@ export default function RunResults() {
         {/* ── Labor Tab ── */}
         {activeTab === 'labor' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Labor Utilization</CardTitle>
-                  <CardDescription>
-                    {isMultiScenario
-                      ? `Comparing ${chartScenarios.length} scenarios`
-                      : 'Utilization breakdown by labor group'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {isMultiScenario && groupedLabor ? (
-                      <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                        ))}
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                        ))}
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                        <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
-                      </BarChart>
+            <div className="flex flex-col h-full">
+              {/* Level 2 sub-tab bar */}
+              <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-6 shrink-0">
+                {([
+                  { key: 'util-chart', label: 'Util Chart' },
+                  { key: 'results-table', label: 'Results Table' },
+                  { key: 'equip-wait', label: 'Equip Wait Chart' },
+                  ...(isVisible('oper_details', userLevel) ? [{ key: 'oper-details', label: 'Oper Details' }] : []),
+                ] as const).map(st => (
+                  <button
+                    key={st.key}
+                    onClick={() => setLaborSubTab(st.key)}
+                    className={`h-8 px-4 text-[13px] relative transition-colors ${
+                      laborSubTab === st.key
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {st.label}
+                    {laborSubTab === st.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
                     )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  </button>
+                ))}
+              </div>
 
-              <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
-              <LaborWaitChart results={results!} model={model} />
+              {laborSubTab === 'util-chart' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Labor Utilization</CardTitle>
+                    <CardDescription>
+                      {isMultiScenario
+                        ? `Comparing ${chartScenarios.length} scenarios`
+                        : 'Utilization breakdown by labor group'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      {isMultiScenario && groupedLabor ? (
+                        <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                          ))}
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                          ))}
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
+                          ))}
+                        </BarChart>
+                      ) : (
+                        <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                          <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {laborSubTab === 'results-table' && (
+                <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
+              )}
+
+              {laborSubTab === 'equip-wait' && (
+                <>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Shows the average number of machines waiting for each labor group. Large values indicate understaffing or misallocated labor.
+                  </p>
+                  <LaborWaitChart results={results!} model={model} />
+                </>
+              )}
+
+              {laborSubTab === 'oper-details' && isVisible('oper_details', userLevel) && (
+                <LaborOperDetails model={model} results={results!} />
+              )}
             </div>
           )
         )}
