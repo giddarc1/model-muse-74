@@ -549,15 +549,18 @@ export default function RunResults() {
 
   // Auto-navigate to Summary on Full Calculate completion; toast on background recalc
   const prevRunLogLenRef = useRef(runLog.length);
+  const wasViewingTabRef = useRef(activeTab);
+  // Track which tab user is on before a run starts
+  useEffect(() => { wasViewingTabRef.current = activeTab; }, [activeTab]);
   useEffect(() => {
     if (runLog.length > prevRunLogLenRef.current) {
       const latest = runLog[0];
       if (latest && latest.mode === 'full' && latest.status !== 'error') {
-        if (activeTab === 'summary' || !hasRun) {
-          // First run or already on summary — navigate
+        // If user was on summary or had no results, go to summary
+        if (wasViewingTabRef.current === 'summary') {
           setActiveTab('summary');
         } else {
-          // Background recalc while viewing another tab — just toast
+          // User is on a specific tab — don't navigate, just toast
           toast.success('Results updated', { duration: 2000 });
         }
       }
