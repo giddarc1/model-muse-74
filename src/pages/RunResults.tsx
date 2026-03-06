@@ -259,6 +259,15 @@ export default function RunResults() {
   const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
   const [advRunning, setAdvRunning] = useState(false);
 
+  // Max Throughput + Lot Size Range modal state
+  const [mtModalOpen, setMtModalOpen] = useState(false);
+  const [mtModalMode, setMtModalMode] = useState<'max_throughput' | 'lot_size_range'>('max_throughput');
+  const [mtModalProduct, setMtModalProduct] = useState(model?.products[0]?.id || '');
+  const [mtModalName, setMtModalName] = useState('');
+  const [mtModalLsFrom, setMtModalLsFrom] = useState(10);
+  const [mtModalLsTo, setMtModalLsTo] = useState(200);
+  const [mtModalLsStep, setMtModalLsStep] = useState(10);
+
   const { createScenario } = useScenarioStore();
   const { setResults: setStoreResults } = useResultsStore();
 
