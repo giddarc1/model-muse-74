@@ -34,6 +34,9 @@ import {
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { scenarioDb } from '@/lib/scenarioDb';
+import ScenarioContextBar from '@/components/ScenarioContextBar';
+import ChartScenarioLabel from '@/components/ChartScenarioLabel';
+import { scenarioDb } from '@/lib/scenarioDb';
 
 // ── Scenario color palettes for grouped charts ──
 const SCENARIO_PALETTES = [
