@@ -34,6 +34,8 @@ export default function IBOMScreen() {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [showRemoveAllDialog, setShowRemoveAllDialog] = useState(false);
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
     if (!model || visited.has(parentId)) return [];
