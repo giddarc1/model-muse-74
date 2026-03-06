@@ -331,7 +331,7 @@ export default function IBOMScreen() {
           <CardContent className="space-y-4">
             <div>
               <Label className="text-xs">Choose Parent Product</Label>
-              <Select value={editParentId} onValueChange={(v) => { setEditParentId(v); setSelectedAllowable(''); setSelectedComponent(''); }}>
+              <Select value={editParentId} onValueChange={(v) => { setEditParentId(v); setCheckedAllowable(new Set()); setSelectedComponent(''); }}>
                 <SelectTrigger><SelectValue placeholder="Select a parent product..." /></SelectTrigger>
                 <SelectContent>
                   {allProducts.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
