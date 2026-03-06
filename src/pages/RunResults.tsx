@@ -539,6 +539,11 @@ export default function RunResults() {
   const [activeTab, setActiveTab] = useState('summary');
   const [equipSubTab, setEquipSubTab] = useState('util-chart');
   const [laborSubTab, setLaborSubTab] = useState('util-chart');
+  const [productsSubTab, setProductsSubTab] = useState('mct-chart');
+
+  // Detect if last run was util-only (MCT/WIP not available)
+  const lastRunMode = runLog.length > 0 ? runLog[0].mode : null;
+  const isUtilOnly = lastRunMode === 'util_only';
 
   if (!model) return (
     <div className="p-6 space-y-4">
