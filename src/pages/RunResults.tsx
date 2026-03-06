@@ -922,9 +922,7 @@ export default function RunResults() {
             <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
 
             {/* Equipment WIP Chart */}
-            {canAccess(userLevel, 'equip-wip-chart') && (
-              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
-            )}
+            <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
           </TabsContent>
 
           {/* Labor Tab */}
