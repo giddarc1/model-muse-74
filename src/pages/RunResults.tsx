@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip as ShadTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -257,6 +258,15 @@ export default function RunResults() {
   const [optResult, setOptResult] = useState<{original: {name:string;lot:number;wip:number}[]; optimized: {name:string;lot:number;wip:number}[]; wipReduction: number} | null>(null);
   const [advProgress, setAdvProgress] = useState<{current:number; total:number; label:string} | null>(null);
   const [advRunning, setAdvRunning] = useState(false);
+
+  // Max Throughput + Lot Size Range modal state
+  const [mtModalOpen, setMtModalOpen] = useState(false);
+  const [mtModalMode, setMtModalMode] = useState<'max_throughput' | 'lot_size_range'>('max_throughput');
+  const [mtModalProduct, setMtModalProduct] = useState(model?.products[0]?.id || '');
+  const [mtModalName, setMtModalName] = useState('');
+  const [mtModalLsFrom, setMtModalLsFrom] = useState(10);
+  const [mtModalLsTo, setMtModalLsTo] = useState(200);
+  const [mtModalLsStep, setMtModalLsStep] = useState(10);
 
   const { createScenario } = useScenarioStore();
   const { setResults: setStoreResults } = useResultsStore();
@@ -654,7 +664,15 @@ export default function RunResults() {
               }}>
                 <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setExtRunMode('max_throughput')}>
+              <DropdownMenuItem onClick={() => {
+                setMtModalProduct(model?.products[0]?.id || '');
+                setMtModalName('');
+                setMtModalMode('max_throughput');
+                setMtModalLsFrom(10);
+                setMtModalLsTo(200);
+                setMtModalLsStep(10);
+                setMtModalOpen(true);
+              }}>
                 <TrendingUp className="h-4 w-4 mr-2" /> Max Throughput + Lot Size Range…
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setExtRunMode('optimize_lots')}>
@@ -1189,6 +1207,178 @@ export default function RunResults() {
           </Card>
         )}
       </div>
+
+      {/* ── Max Throughput + Lot Size Range Modal ── */}
+      <Dialog open={mtModalOpen} onOpenChange={setMtModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Max. Throughput + Lot Size Range</DialogTitle>
+            <DialogDescription>Find max production or sweep lot sizes for a product.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Section 1 — Choose Product */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Choose Product</Label>
+              <Select value={mtModalProduct} onValueChange={setMtModalProduct}>
+                <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                <SelectContent>
+                  {model?.products.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Section 2 — What-if Name */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">What-if Name</Label>
+              <Input
+                value={mtModalName}
+                onChange={e => setMtModalName(e.target.value)}
+                placeholder={mtModalMode === 'max_throughput' ? 'Max Throughput' : 'Lot Size Range'}
+              />
+            </div>
+
+            {/* Section 3 — Choose Mode */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Choose Mode</Label>
+              <RadioGroup value={mtModalMode} onValueChange={(v) => setMtModalMode(v as any)}>
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="max_throughput" id="mt-mode-max" className="mt-0.5" />
+                  <Label htmlFor="mt-mode-max" className="text-sm font-normal cursor-pointer">
+                    <span className="font-medium">Maximise Production</span>
+                    <span className="block text-xs text-muted-foreground">Finds the maximum possible production quantity given current constraints.</span>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="lot_size_range" id="mt-mode-ls" className="mt-0.5" />
+                  <Label htmlFor="mt-mode-ls" className="text-sm font-normal cursor-pointer">
+                    <span className="font-medium">Run a Range of Lot Sizes</span>
+                    <span className="block text-xs text-muted-foreground">Runs a series of calculations across a range of lot sizes.</span>
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {mtModalMode === 'lot_size_range' && (
+                <div className="ml-6 mt-2 space-y-3 p-3 bg-muted/40 rounded-md border border-border">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">From lot size</Label>
+                      <Input type="number" min={1} value={mtModalLsFrom} onChange={e => setMtModalLsFrom(Number(e.target.value))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">To lot size</Label>
+                      <Input type="number" min={1} value={mtModalLsTo} onChange={e => setMtModalLsTo(Number(e.target.value))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Step size</Label>
+                      <Input type="number" min={1} value={mtModalLsStep} onChange={e => setMtModalLsStep(Number(e.target.value))} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Will run lot sizes: {(() => {
+                      const sizes: number[] = [];
+                      for (let s = mtModalLsFrom; s <= mtModalLsTo && sizes.length < 5; s += mtModalLsStep) sizes.push(s);
+                      return sizes.join(', ') + (mtModalLsTo > (mtModalLsFrom + mtModalLsStep * 4) ? '…' : '') + ' (one What-if per lot size)';
+                    })()}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMtModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!mtModalProduct || advRunning}
+              onClick={async () => {
+                setMtModalOpen(false);
+                if (!model) return;
+                const product = model.products.find(p => p.id === mtModalProduct);
+                if (!product) return;
+
+                if (mtModalMode === 'max_throughput') {
+                  // Inline max throughput logic
+                  setAdvRunning(true);
+                  let demand = product.demand > 0 ? product.demand : 100;
+                  let lastValidDemand = demand;
+                  let limitingResource = '';
+                  const step = Math.max(1, Math.round(demand * 0.1));
+                  let iterations = 0;
+                  const maxIter = 200;
+
+                  while (iterations < maxIter) {
+                    iterations++;
+                    setAdvProgress({ current: iterations, total: maxIter, label: `Testing demand: ${Math.round(demand)}` });
+                    const testModel = { ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, demand } : p) };
+                    const r = calculate(testModel);
+                    if (r.overLimitResources.length > 0) {
+                      limitingResource = r.overLimitResources[0];
+                      let lo = lastValidDemand, hi = demand;
+                      for (let i = 0; i < 20; i++) {
+                        const mid = Math.round((lo + hi) / 2);
+                        const tr = calculate({ ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, demand: mid } : p) });
+                        if (tr.overLimitResources.length > 0) { hi = mid; limitingResource = tr.overLimitResources[0]; }
+                        else { lo = mid; lastValidDemand = mid; }
+                        if (hi - lo <= 1) break;
+                      }
+                      break;
+                    }
+                    lastValidDemand = demand;
+                    demand += step;
+                    await new Promise(r => setTimeout(r, 0));
+                  }
+
+                  const name = mtModalName || `Max Throughput — ${product.name}`;
+                  const scenarioId = await createScenario(model.id, name);
+                  useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtModalProduct, product.name, 'demand', 'Demand', lastValidDemand);
+                  const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                  if (scenario) {
+                    const r = calculate(model, scenario);
+                    setStoreResults(scenarioId, r);
+                    useScenarioStore.getState().markCalculated(scenarioId);
+                    scenarioDb.saveResults(scenarioId, r);
+                  }
+                  setMtResult({ demand: lastValidDemand, limitingResource });
+                  setAdvProgress(null);
+                  setAdvRunning(false);
+                  toast.success(`Max throughput for ${product.name}: ${lastValidDemand} units`);
+                } else {
+                  // Inline lot size range logic
+                  setAdvRunning(true);
+                  const steps: number[] = [];
+                  for (let ls = mtModalLsFrom; ls <= mtModalLsTo; ls += mtModalLsStep) steps.push(ls);
+                  const curResults: {lotSize: number; mct: number}[] = [];
+
+                  for (let i = 0; i < steps.length; i++) {
+                    setAdvProgress({ current: i + 1, total: steps.length, label: `Lot size: ${steps[i]}` });
+                    const testModel = { ...model, products: model.products.map(p => p.id === mtModalProduct ? { ...p, lot_size: steps[i] } : p) };
+                    const r = calculate(testModel);
+                    const pr = r.products.find(p => p.id === mtModalProduct);
+                    curResults.push({ lotSize: steps[i], mct: pr?.mct || 0 });
+
+                    const scName = `${mtModalName || product.name} — Lot ${steps[i]}`;
+                    const scenarioId = await createScenario(model.id, scName);
+                    useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product', mtModalProduct, product.name, 'lot_size', 'Lot Size', steps[i]);
+                    const sc = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
+                    if (sc) {
+                      setStoreResults(scenarioId, r);
+                      useScenarioStore.getState().markCalculated(scenarioId);
+                      scenarioDb.saveResults(scenarioId, r);
+                    }
+                    await new Promise(r => setTimeout(r, 0));
+                  }
+                  setLsrResults(curResults);
+                  setAdvProgress(null);
+                  setAdvRunning(false);
+                  toast.success(`Created ${steps.length} lot size scenarios for ${product.name}`);
+                }
+              }}
+            >
+              Run
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Product Inclusion Modal ── */}
       <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
