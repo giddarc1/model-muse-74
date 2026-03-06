@@ -910,7 +910,8 @@ export default function RunResults() {
                         : 'Stacked utilization breakdown by equipment group'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
+                    <ChartScenarioLabel />
                     <ResponsiveContainer width="100%" height={350}>
                       {isMultiScenario && groupedEquip ? (
                         <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
