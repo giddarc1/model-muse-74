@@ -1674,7 +1674,273 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   );
 }
 
-/* ─── Equipment Results Table (sortable) ─── */
+/* ─── Equipment Oper Details (for Equipment tab sub-tab) ─── */
+function EquipOperDetails({ model, results }: { model: Model; results: CalcResults }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
+
+  const allMetrics = useMemo(() => {
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const eqSetupTime = numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
+      const eqRunTime = numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
+      const eqCount = eq.count > 0 ? eq.count : 1;
+      const eqAvail = eqCount * (1 + eq.overtime_pct / 100) * (1 - (eq.unavail_pct || 0) / 100) * opsPerPeriod;
+      let repairFrac = 0;
+      if (eq.mttf > 0 && eq.mttr > 0) repairFrac = eq.mttr / (eq.mttf + eq.mttr);
+      const eqEffAvail = eqAvail * (1 - repairFrac);
+      const eqSetupUtil = eqEffAvail > 0 ? (eqSetupTime / eqEffAvail) * 100 : 0;
+      const eqRunUtil = eqEffAvail > 0 ? (eqRunTime / eqEffAvail) * 100 : 0;
+      const labSetupTime = lab ? numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor : 0;
+      const labRunTime = lab ? numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor : 0;
+      const labAvail = lab ? lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod : 0;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? (eqSetupTime / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? (eqRunTime / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      const visits = demand > 0 ? (numLots * lotSize / demand) * 100 : 100;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab?.name || '—', laborId: lab?.id || '',
+        pctAssigned: op.pct_assigned,
+        eqSetupUtil: Math.round(eqSetupUtil * 10) / 10,
+        eqRunUtil: Math.round(eqRunUtil * 10) / 10,
+        eqSetupTime: Math.round(eqSetupTime * 1000) / 1000,
+        eqRunTime: Math.round(eqRunTime * 1000) / 1000,
+        waitLaborUtil: er?.waitLaborUtil || 0,
+        repairUtil: er?.repairUtil || 0,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+        visits: Math.round(visits * 10) / 10,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
+
+  const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
+  const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
+
+  const eq = model.equipment.find(e => e.id === selectedId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details — By Equipment</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Select equipment group…" /></SelectTrigger>
+            <SelectContent>
+              {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant={showTimeUnits ? 'secondary' : 'outline'} size="sm" className="text-xs gap-1 h-7" onClick={() => setShowTimeUnits(!showTimeUnits)}>
+            <Clock className="h-3 w-3" />
+            {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+          </Button>
+        </div>
+        {!eq ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+                <SortHead label="Operation" sortKey="opName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+                <SortHead label="Op #" sortKey="opNumber" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="% Assign" sortKey="pctAssigned" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Repair${unitSuffix}`} sortKey="repairUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="WIP" sortKey="wip" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="MCT at Op" sortKey="mctAtOp" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="Visits/100" sortKey="visits" current={eqSort.sort} onSort={eqSort.handleSort} />
+              </TableRow></TableHeader>
+              <TableBody>
+                {eqSort.sorted.map((m: any) => (
+                  <TableRow key={m.opId}>
+                    <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.opNumber}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.repairUtil}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.visits}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Labor Oper Details (for Labor tab sub-tab) ─── */
+function LaborOperDetails({ model, results }: { model: Model; results: CalcResults }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
+
+  const allMetrics = useMemo(() => {
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq || !lab) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const labSetupTime = numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor;
+      const labRunTime = numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor;
+      const labAvail = lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const eqModel = model.equipment.find(e => e.id === eq.id);
+      const tended = er ? Math.min(1, (er.setupUtil + er.runUtil) / 100) * (eqModel?.count || 1) : 0;
+      const waiting = er ? (er.waitLaborUtil / 100) * (eqModel?.count || 1) : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? ((numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor) / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? ((numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor) / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab.name, laborId: lab.id,
+        pctAssigned: op.pct_assigned,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
+        eqTended: Math.round(tended * 10) / 10,
+        eqWaiting: Math.round(waiting * 10) / 10,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
+
+  const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
+  const labSort = useSortableTable(labOps, 'opNumber', 'asc');
+
+  const lab = model.labor.find(l => l.id === selectedId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details — By Labor</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Select labor group…" /></SelectTrigger>
+            <SelectContent>
+              {model.labor.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant={showTimeUnits ? 'secondary' : 'outline'} size="sm" className="text-xs gap-1 h-7" onClick={() => setShowTimeUnits(!showTimeUnits)}>
+            <Clock className="h-3 w-3" />
+            {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+          </Button>
+        </div>
+        {!lab ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Select a labor group to view operation details.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <SortHead label="Product" sortKey="productName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="Operation" sortKey="opName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="Equipment" sortKey="equipName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="% Assign" sortKey="pctAssigned" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="Eq Tended" sortKey="eqTended" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="Eq Waiting" sortKey="eqWaiting" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="WIP" sortKey="wip" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="MCT at Op" sortKey="mctAtOp" current={labSort.sort} onSort={labSort.handleSort} />
+              </TableRow></TableHeader>
+              <TableBody>
+                {labSort.sorted.map((m: any) => (
+                  <TableRow key={m.opId}>
+                    <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.eqTended}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.eqWaiting}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 function EquipmentResultsTable({ equipment, utilLimit }: { equipment: EquipmentResult[]; utilLimit: number }) {
   const { sorted, sort, handleSort } = useSortableTable(equipment, 'totalUtil', 'desc');
   return (
