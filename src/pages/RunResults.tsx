@@ -537,6 +537,8 @@ export default function RunResults() {
   const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   const [activeTab, setActiveTab] = useState('summary');
+  const [equipSubTab, setEquipSubTab] = useState('util-chart');
+  const [laborSubTab, setLaborSubTab] = useState('util-chart');
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -762,59 +764,95 @@ export default function RunResults() {
         {/* ── Equipment Tab ── */}
         {activeTab === 'equipment' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Equipment Utilization</CardTitle>
-                  <CardDescription>
-                    {isMultiScenario
-                      ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
-                      : 'Stacked utilization breakdown by equipment group'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={350}>
-                    {isMultiScenario && groupedEquip ? (
-                      <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                        ))}
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                        ))}
-                        {groupedEquip.bars.map(b => (
-                          <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
-                        ))}
-                        {groupedEquip.bars.map((b, i) => (
-                          <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                        <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
-                        <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
-                      </BarChart>
+            <div className="flex flex-col h-full">
+              {/* Level 2 sub-tab bar */}
+              <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-6 shrink-0">
+                {([
+                  { key: 'util-chart', label: 'Util Chart' },
+                  { key: 'results-table', label: 'Results Table' },
+                  { key: 'wip-chart', label: 'WIP Chart' },
+                  ...(isVisible('oper_details', userLevel) ? [{ key: 'oper-details', label: 'Oper Details' }] : []),
+                ] as const).map(st => (
+                  <button
+                    key={st.key}
+                    onClick={() => setEquipSubTab(st.key)}
+                    className={`h-8 px-4 text-[13px] relative transition-colors ${
+                      equipSubTab === st.key
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {st.label}
+                    {equipSubTab === st.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
                     )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  </button>
+                ))}
+              </div>
 
-              <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
-              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              {equipSubTab === 'util-chart' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Equipment Utilization</CardTitle>
+                    <CardDescription>
+                      {isMultiScenario
+                        ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
+                        : 'Stacked utilization breakdown by equipment group'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={350}>
+                      {isMultiScenario && groupedEquip ? (
+                        <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                          ))}
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                          ))}
+                          {groupedEquip.bars.map(b => (
+                            <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
+                          ))}
+                          {groupedEquip.bars.map((b) => (
+                            <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
+                          ))}
+                        </BarChart>
+                      ) : (
+                        <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                          <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
+                          <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {equipSubTab === 'results-table' && (
+                <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
+              )}
+
+              {equipSubTab === 'wip-chart' && (
+                <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+              )}
+
+              {equipSubTab === 'oper-details' && isVisible('oper_details', userLevel) && (
+                <EquipOperDetails model={model} results={results!} />
+              )}
             </div>
           )
         )}
@@ -822,55 +860,96 @@ export default function RunResults() {
         {/* ── Labor Tab ── */}
         {activeTab === 'labor' && (
           !hasRun ? <NoResultsPlaceholder /> : (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Labor Utilization</CardTitle>
-                  <CardDescription>
-                    {isMultiScenario
-                      ? `Comparing ${chartScenarios.length} scenarios`
-                      : 'Utilization breakdown by labor group'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {isMultiScenario && groupedLabor ? (
-                      <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                        ))}
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                        ))}
-                        {groupedLabor.bars.map(b => (
-                          <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
-                        ))}
-                      </BarChart>
-                    ) : (
-                      <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                        <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
-                      </BarChart>
+            <div className="flex flex-col h-full">
+              {/* Level 2 sub-tab bar */}
+              <div className="flex h-8 items-center gap-0 border-b border-border/50 -mx-6 px-6 mb-6 shrink-0">
+                {([
+                  { key: 'util-chart', label: 'Util Chart' },
+                  { key: 'results-table', label: 'Results Table' },
+                  { key: 'equip-wait', label: 'Equip Wait Chart' },
+                  ...(isVisible('oper_details', userLevel) ? [{ key: 'oper-details', label: 'Oper Details' }] : []),
+                ] as const).map(st => (
+                  <button
+                    key={st.key}
+                    onClick={() => setLaborSubTab(st.key)}
+                    className={`h-8 px-4 text-[13px] relative transition-colors ${
+                      laborSubTab === st.key
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {st.label}
+                    {laborSubTab === st.key && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/60" />
                     )}
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  </button>
+                ))}
+              </div>
 
-              <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
-              <LaborWaitChart results={results!} model={model} />
+              {laborSubTab === 'util-chart' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Labor Utilization</CardTitle>
+                    <CardDescription>
+                      {isMultiScenario
+                        ? `Comparing ${chartScenarios.length} scenarios`
+                        : 'Utilization breakdown by labor group'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      {isMultiScenario && groupedLabor ? (
+                        <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                          ))}
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                          ))}
+                          {groupedLabor.bars.map(b => (
+                            <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
+                          ))}
+                        </BarChart>
+                      ) : (
+                        <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip contentStyle={tooltipStyle} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                          <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {laborSubTab === 'results-table' && (
+                <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
+              )}
+
+              {laborSubTab === 'equip-wait' && (
+                <>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Shows the average number of machines waiting for each labor group. Large values indicate understaffing or misallocated labor.
+                  </p>
+                  <LaborWaitChart results={results!} model={model} />
+                </>
+              )}
+
+              {laborSubTab === 'oper-details' && isVisible('oper_details', userLevel) && (
+                <LaborOperDetails model={model} results={results!} />
+              )}
             </div>
           )
         )}
@@ -1222,15 +1301,8 @@ function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Equipment WIP</CardTitle>
-            <CardDescription>Work-in-progress at each equipment group</CardDescription>
-          </div>
-          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setShowTable(!showTable)}>
-            {showTable ? 'Show Chart' : 'Show as Table'}
-          </Button>
-        </div>
+        <CardTitle className="text-base">Equipment WIP</CardTitle>
+        <CardDescription>Work-in-progress at each equipment group</CardDescription>
       </CardHeader>
       <CardContent>
         {showTable ? (
@@ -1307,13 +1379,8 @@ function LaborWaitChart({ results, model }: { results: CalcResults; model: Model
   return (
     <Card>
       <CardHeader>
-        <div>
-          <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
-          <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
-        </div>
-        <Button variant="outline" size="sm" className="text-xs gap-1 self-start" onClick={() => setShowTable(!showTable)}>
-          {showTable ? 'Show Chart' : 'Show as Table'}
-        </Button>
+        <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
+        <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
       </CardHeader>
       <CardContent>
         {showTable ? (
@@ -1607,7 +1674,273 @@ function OperDetailsTab({ model, results }: { model: Model; results: CalcResults
   );
 }
 
-/* ─── Equipment Results Table (sortable) ─── */
+/* ─── Equipment Oper Details (for Equipment tab sub-tab) ─── */
+function EquipOperDetails({ model, results }: { model: Model; results: CalcResults }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
+
+  const allMetrics = useMemo(() => {
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const eqSetupTime = numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor;
+      const eqRunTime = numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor;
+      const eqCount = eq.count > 0 ? eq.count : 1;
+      const eqAvail = eqCount * (1 + eq.overtime_pct / 100) * (1 - (eq.unavail_pct || 0) / 100) * opsPerPeriod;
+      let repairFrac = 0;
+      if (eq.mttf > 0 && eq.mttr > 0) repairFrac = eq.mttr / (eq.mttf + eq.mttr);
+      const eqEffAvail = eqAvail * (1 - repairFrac);
+      const eqSetupUtil = eqEffAvail > 0 ? (eqSetupTime / eqEffAvail) * 100 : 0;
+      const eqRunUtil = eqEffAvail > 0 ? (eqRunTime / eqEffAvail) * 100 : 0;
+      const labSetupTime = lab ? numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor : 0;
+      const labRunTime = lab ? numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor : 0;
+      const labAvail = lab ? lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod : 0;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? (eqSetupTime / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? (eqRunTime / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      const visits = demand > 0 ? (numLots * lotSize / demand) * 100 : 100;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab?.name || '—', laborId: lab?.id || '',
+        pctAssigned: op.pct_assigned,
+        eqSetupUtil: Math.round(eqSetupUtil * 10) / 10,
+        eqRunUtil: Math.round(eqRunUtil * 10) / 10,
+        eqSetupTime: Math.round(eqSetupTime * 1000) / 1000,
+        eqRunTime: Math.round(eqRunTime * 1000) / 1000,
+        waitLaborUtil: er?.waitLaborUtil || 0,
+        repairUtil: er?.repairUtil || 0,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+        visits: Math.round(visits * 10) / 10,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
+
+  const eqOps = useMemo(() => allMetrics.filter((m: any) => m.equipId === selectedId), [allMetrics, selectedId]);
+  const eqSort = useSortableTable(eqOps, 'opNumber', 'asc');
+
+  const eq = model.equipment.find(e => e.id === selectedId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details — By Equipment</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Select equipment group…" /></SelectTrigger>
+            <SelectContent>
+              {model.equipment.map(eq => <SelectItem key={eq.id} value={eq.id}>{eq.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant={showTimeUnits ? 'secondary' : 'outline'} size="sm" className="text-xs gap-1 h-7" onClick={() => setShowTimeUnits(!showTimeUnits)}>
+            <Clock className="h-3 w-3" />
+            {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+          </Button>
+        </div>
+        {!eq ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Select an equipment group to view operation details.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <SortHead label="Product" sortKey="productName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+                <SortHead label="Operation" sortKey="opName" current={eqSort.sort} onSort={eqSort.handleSort} align="left" />
+                <SortHead label="Op #" sortKey="opNumber" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="% Assign" sortKey="pctAssigned" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Eq Setup${unitSuffix}`} sortKey="eqSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Eq Run${unitSuffix}`} sortKey="eqRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Wait Labor${unitSuffix}`} sortKey="waitLaborUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Repair${unitSuffix}`} sortKey="repairUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="WIP" sortKey="wip" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="MCT at Op" sortKey="mctAtOp" current={eqSort.sort} onSort={eqSort.handleSort} />
+                <SortHead label="Visits/100" sortKey="visits" current={eqSort.sort} onSort={eqSort.handleSort} />
+              </TableRow></TableHeader>
+              <TableBody>
+                {eqSort.sorted.map((m: any) => (
+                  <TableRow key={m.opId}>
+                    <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.opNumber}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqSetupUtil, m.eqSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.eqRunUtil, m.eqRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.waitLaborUtil}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.repairUtil}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.visits}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Labor Oper Details (for Labor tab sub-tab) ─── */
+function LaborOperDetails({ model, results }: { model: Model; results: CalcResults }) {
+  const [selectedId, setSelectedId] = useState('');
+  const [showTimeUnits, setShowTimeUnits] = useState(false);
+
+  const g = model.general;
+  const conv1 = Math.max(g.conv1, 0.001);
+  const conv2 = Math.max(g.conv2, 0.001);
+  const opsPerPeriod = conv1 * conv2;
+
+  const allMetrics = useMemo(() => {
+    return model.operations.map(op => {
+      const eq = model.equipment.find(e => e.id === op.equip_id);
+      const prod = model.products.find(p => p.id === op.product_id);
+      const pr = results.products.find(p => p.id === op.product_id);
+      const er = eq ? results.equipment.find(e => e.id === eq.id) : null;
+      const lab = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
+      if (!prod || !pr || !eq || !lab) return null;
+      const demand = pr.demand;
+      if (demand <= 0) return null;
+      const lotSize = Math.max(1, prod.lot_size * prod.lot_factor);
+      const tbatchSize = prod.tbatch_size === -1 ? lotSize : Math.max(1, prod.tbatch_size);
+      const numTbatches = Math.ceil(lotSize / tbatchSize);
+      const assignFrac = op.pct_assigned / 100;
+      const numLots = (demand / lotSize) * assignFrac;
+      const prodSetupFactor = prod.setup_factor || 1;
+      const labSetupTime = numLots * (op.labor_setup_lot + op.labor_setup_piece * lotSize + op.labor_setup_tbatch * numTbatches) * lab.setup_factor * prodSetupFactor;
+      const labRunTime = numLots * (op.labor_run_piece * lotSize + op.labor_run_lot + op.labor_run_tbatch * numTbatches) * lab.run_factor;
+      const labAvail = lab.count * (1 + lab.overtime_pct / 100) * (1 - lab.unavail_pct / 100) * opsPerPeriod;
+      const labSetupUtil = labAvail > 0 ? (labSetupTime / labAvail) * 100 : 0;
+      const labRunUtil = labAvail > 0 ? (labRunTime / labAvail) * 100 : 0;
+      const eqModel = model.equipment.find(e => e.id === eq.id);
+      const tended = er ? Math.min(1, (er.setupUtil + er.runUtil) / 100) * (eqModel?.count || 1) : 0;
+      const waiting = er ? (er.waitLaborUtil / 100) * (eqModel?.count || 1) : 0;
+      const allOpsForProd = model.operations.filter(o => o.product_id === op.product_id);
+      const wipShare = pr.wip / Math.max(1, allOpsForProd.length);
+      const perPieceSetup = numLots > 0 ? ((numLots * (op.equip_setup_lot + op.equip_setup_piece * lotSize + op.equip_setup_tbatch * numTbatches) * eq.setup_factor * prodSetupFactor) / numLots) / lotSize : 0;
+      const perPieceRun = numLots > 0 ? ((numLots * (op.equip_run_piece * lotSize + op.equip_run_lot + op.equip_run_tbatch * numTbatches) * eq.run_factor) / numLots) / lotSize : 0;
+      const mctAtOp = ((perPieceSetup + perPieceRun) / conv1) * assignFrac;
+      return {
+        opId: op.id, opName: op.op_name, opNumber: op.op_number,
+        productName: prod.name, productId: prod.id,
+        equipName: eq.name, equipId: eq.id,
+        laborName: lab.name, laborId: lab.id,
+        pctAssigned: op.pct_assigned,
+        labSetupUtil: Math.round(labSetupUtil * 10) / 10,
+        labRunUtil: Math.round(labRunUtil * 10) / 10,
+        labSetupTime: Math.round(labSetupTime * 1000) / 1000,
+        labRunTime: Math.round(labRunTime * 1000) / 1000,
+        eqTended: Math.round(tended * 10) / 10,
+        eqWaiting: Math.round(waiting * 10) / 10,
+        wip: Math.round(wipShare * 10) / 10,
+        mctAtOp: Math.round(mctAtOp * 10000) / 10000,
+      };
+    }).filter(Boolean) as any[];
+  }, [model, results, conv1, opsPerPeriod]);
+
+  const fmtVal = (pct: number, time: number) => showTimeUnits ? time.toFixed(3) : pct.toString();
+  const unitSuffix = showTimeUnits ? ` (${g.ops_time_unit})` : ' %';
+
+  const labOps = useMemo(() => allMetrics.filter((m: any) => m.laborId === selectedId), [allMetrics, selectedId]);
+  const labSort = useSortableTable(labOps, 'opNumber', 'asc');
+
+  const lab = model.labor.find(l => l.id === selectedId);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Oper Details — By Labor</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-3 mb-4">
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="w-56 h-8 text-xs"><SelectValue placeholder="Select labor group…" /></SelectTrigger>
+            <SelectContent>
+              {model.labor.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant={showTimeUnits ? 'secondary' : 'outline'} size="sm" className="text-xs gap-1 h-7" onClick={() => setShowTimeUnits(!showTimeUnits)}>
+            <Clock className="h-3 w-3" />
+            {showTimeUnits ? `Time (${g.ops_time_unit})` : '% Time'}
+          </Button>
+        </div>
+        {!lab ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Select a labor group to view operation details.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <SortHead label="Product" sortKey="productName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="Operation" sortKey="opName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="Equipment" sortKey="equipName" current={labSort.sort} onSort={labSort.handleSort} align="left" />
+                <SortHead label="% Assign" sortKey="pctAssigned" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label={`Lab Setup${unitSuffix}`} sortKey="labSetupUtil" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label={`Lab Run${unitSuffix}`} sortKey="labRunUtil" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="Eq Tended" sortKey="eqTended" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="Eq Waiting" sortKey="eqWaiting" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="WIP" sortKey="wip" current={labSort.sort} onSort={labSort.handleSort} />
+                <SortHead label="MCT at Op" sortKey="mctAtOp" current={labSort.sort} onSort={labSort.handleSort} />
+              </TableRow></TableHeader>
+              <TableBody>
+                {labSort.sorted.map((m: any) => (
+                  <TableRow key={m.opId}>
+                    <TableCell className="font-mono text-xs">{m.productName}</TableCell>
+                    <TableCell className="font-mono text-xs font-medium">{m.opName}</TableCell>
+                    <TableCell className="font-mono text-xs">{m.equipName}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.pctAssigned}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labSetupUtil, m.labSetupTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{fmtVal(m.labRunUtil, m.labRunTime)}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.eqTended}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.eqWaiting}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.wip}</TableCell>
+                    <TableCell className="font-mono text-xs text-right">{m.mctAtOp.toFixed(4)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+
 function EquipmentResultsTable({ equipment, utilLimit }: { equipment: EquipmentResult[]; utilLimit: number }) {
   const { sorted, sort, handleSort } = useSortableTable(equipment, 'totalUtil', 'desc');
   return (
