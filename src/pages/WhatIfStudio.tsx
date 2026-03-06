@@ -61,8 +61,10 @@ export default function WhatIfStudio() {
   const activeScenario = scenarios.find(s => s.id === activeScenarioId) || null;
 
   const [newName, setNewName] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
+  const [showNewForm, setShowNewForm] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [showFamilyModal, setShowFamilyModal] = useState(false);
@@ -128,9 +130,10 @@ export default function WhatIfStudio() {
     if (!newName.trim()) return;
     const id = await createScenario(modelId, newName.trim());
     setActiveScenario(id);
+    const nm = newName.trim();
     setNewName('');
-    setShowNewModal(false);
-    toast.success(`Scenario "${newName.trim()}" created`);
+    setShowNewForm(false);
+    toast.success(`What-if "${nm}" is now active. Go to any Input screen to make changes.`);
   };
 
   const handleRunScenario = (scenario: Scenario) => {
@@ -159,10 +162,24 @@ export default function WhatIfStudio() {
   };
 
   const handlePromote = () => {
-    if (!activeScenarioId) return;
+    if (!activeScenarioId || !activeScenario) return;
+    const nm = activeScenario.name;
     promoteToBasecase(activeScenarioId);
     setShowPromoteModal(false);
-    toast.success('Scenario promoted to Basecase');
+    toast.success(`Basecase updated from "${nm}". Run Full Calculate to see updated results.`);
+  };
+
+  const handleReturnToBasecase = () => {
+    // Check if active scenario has unsaved changes (changes.length > 0 means edits exist)
+    if (activeScenario && activeScenario.changes.length > 0) {
+      setShowReturnModal(true);
+    } else {
+      setActiveScenario(null);
+    }
+  };
+
+  const handleDeleteWithConfirmation = (scenarioId: string) => {
+    setShowDeleteModal(scenarioId);
   };
 
   const handleSaveAs = async (scenario: Scenario) => {
@@ -419,7 +436,7 @@ export default function WhatIfStudio() {
                     <Button
                       size="sm"
                       className="w-full h-8 text-xs"
-                      onClick={() => setShowNewModal(true)}
+                      onClick={() => setShowNewForm(true)}
                       disabled={activeScenarioId !== null}
                     >
                       <Plus className="h-3.5 w-3.5 mr-1" /> New What-if
@@ -450,8 +467,14 @@ export default function WhatIfStudio() {
           onPromote={() => setShowPromoteModal(true)}
           onRunScenario={handleRunScenario}
           onSaveAs={handleSaveAs}
-          onDelete={deleteScenario}
-          onShowNewModal={() => setShowNewModal(true)}
+          onDelete={handleDeleteWithConfirmation}
+          onReturnToBasecase={handleReturnToBasecase}
+          showCreateForm={showNewForm}
+          newName={newName}
+          setNewName={setNewName}
+          onCreateSubmit={handleCreate}
+          onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
+          onShowNewForm={() => setShowNewForm(true)}
           userLevel={userLevel}
         />
 
@@ -468,35 +491,59 @@ export default function WhatIfStudio() {
         )}
       </div>
 
-      {/* Modals */}
-      <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteModal && (() => {
+        const scToDelete = scenarios.find(s => s.id === showDeleteModal);
+        if (!scToDelete) return null;
+        const needsTyping = scToDelete.changes.length > 5;
+        const familyName = scToDelete.familyId ? 'a family' : null;
+        return (
+          <DeleteConfirmModal
+            scenario={scToDelete}
+            needsTyping={needsTyping}
+            familyName={familyName}
+            onConfirm={() => { deleteScenario(showDeleteModal); setShowDeleteModal(null); toast.success(`"${scToDelete.name}" deleted`); }}
+            onCancel={() => setShowDeleteModal(null)}
+          />
+        );
+      })()}
+
+      {/* ── Return to Basecase Modal ── */}
+      <Dialog open={showReturnModal} onOpenChange={setShowReturnModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Scenario</DialogTitle>
-            <DialogDescription>Create a What-If scenario to explore changes without affecting the Basecase.</DialogDescription>
+            <DialogTitle>Return to Basecase?</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes in "{activeScenario?.name}". What would you like to do?
+            </DialogDescription>
           </DialogHeader>
-          <Input placeholder="Scenario name" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }} autoFocus />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewModal(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!newName.trim()}>Create & Activate</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="ghost" onClick={() => setShowReturnModal(false)}>Stay in What-if</Button>
+            <Button variant="secondary" className="border border-amber-400 text-amber-700" onClick={() => {
+              // Discard: just deactivate without saving
+              setActiveScenario(null);
+              setShowReturnModal(false);
+            }}>Discard Changes and Return</Button>
+            <Button onClick={() => {
+              // Save first, then deactivate
+              if (activeScenario) {
+                handleRunScenario(activeScenario);
+              }
+              setActiveScenario(null);
+              setShowReturnModal(false);
+            }}>Save and Return</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showPromoteModal} onOpenChange={setShowPromoteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Promote to Basecase</DialogTitle>
-            <DialogDescription>
-              This will apply all changes from "{activeScenario?.name}" to the Basecase and clear this scenario's change list. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPromoteModal(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handlePromote}>Promote</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ── Promote to Basecase Full-Screen Modal ── */}
+      {showPromoteModal && activeScenario && (
+        <PromoteModal
+          scenario={activeScenario}
+          onConfirm={handlePromote}
+          onCancel={() => setShowPromoteModal(false)}
+        />
+      )}
 
       <Dialog open={showFamilyModal} onOpenChange={setShowFamilyModal}>
         <DialogContent className="max-w-md">
@@ -553,7 +600,9 @@ export default function WhatIfStudio() {
 function CentrePanel({
   model, modelId, scenarios, activeScenarioId, activeScenario,
   setActiveScenario, onRename, onUpdateDescription, onRemoveChange,
-  onPromote, onRunScenario, onSaveAs, onDelete, onShowNewModal, userLevel,
+  onPromote, onRunScenario, onSaveAs, onDelete, onReturnToBasecase,
+  showCreateForm, newName, setNewName, onCreateSubmit, onCancelCreate, onShowNewForm,
+  userLevel,
 }: {
   model: any;
   modelId: string;
@@ -568,7 +617,13 @@ function CentrePanel({
   onRunScenario: (scenario: Scenario) => void;
   onSaveAs: (scenario: Scenario) => void;
   onDelete: (id: string) => void;
-  onShowNewModal: () => void;
+  onReturnToBasecase: () => void;
+  showCreateForm: boolean;
+  newName: string;
+  setNewName: (v: string) => void;
+  onCreateSubmit: () => void;
+  onCancelCreate: () => void;
+  onShowNewForm: () => void;
   userLevel: UserLevel;
 }) {
   const [editingName, setEditingName] = useState(false);
@@ -587,7 +642,7 @@ function CentrePanel({
 
   const isActive = activeScenarioId !== null && activeScenario?.id === activeScenarioId;
 
-  // ── STATE A: Basecase selected ──
+  // ── STATE A: Basecase selected (or inline create form) ──
   if (activeScenarioId === null) {
     const lastModified = model.updated_at ? new Date(model.updated_at).toLocaleDateString() : '—';
     return (
@@ -622,15 +677,44 @@ function CentrePanel({
             </div>
           </div>
 
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold mb-1">What-if Scenarios</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {scenarios.length} saved What-if{scenarios.length !== 1 ? 's' : ''}
-            </p>
-            <Button onClick={onShowNewModal} className="h-10 text-sm px-6">
-              <Plus className="h-4 w-4 mr-2" /> New What-if
-            </Button>
-          </div>
+          {showCreateForm ? (
+            <div className="mt-6 rounded-lg border border-primary/30 bg-primary/5 p-5 space-y-3">
+              <h3 className="text-sm font-semibold">New What-if</h3>
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onCreateSubmit(); if (e.key === 'Escape') onCancelCreate(); }}
+                  placeholder="e.g. Higher demand scenario"
+                  className="h-8 mt-1"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Comment (optional)</Label>
+                <Textarea placeholder="Describe what you want to explore…" className="mt-1 text-sm min-h-[40px] resize-none" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="h-8 text-xs" onClick={onCreateSubmit} disabled={!newName.trim()}>
+                  <Play className="h-3.5 w-3.5 mr-1" /> Start Editing
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onCancelCreate}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold mb-1">What-if Scenarios</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {scenarios.length} saved What-if{scenarios.length !== 1 ? 's' : ''}
+              </p>
+              <Button onClick={onShowNewForm} className="h-10 text-sm px-6">
+                <Plus className="h-4 w-4 mr-2" /> New What-if
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -820,7 +904,7 @@ function CentrePanel({
               <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => onSaveAs(activeScenario)}>
                 <Copy className="h-3.5 w-3.5 mr-1" /> Save As New What-if…
               </Button>
-              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setActiveScenario(null)}>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onReturnToBasecase}>
                 <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Return to Basecase
               </Button>
               <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50" onClick={onPromote}>
@@ -883,7 +967,7 @@ function CentrePanel({
             <Play className="h-3.5 w-3.5 mr-1" /> Activate for Editing
           </Button>
           <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive hover:text-destructive"
-            onClick={() => { onDelete(activeScenario.id); toast.success('Scenario deleted'); }}>
+            onClick={() => onDelete(activeScenario.id)}>
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
           </Button>
         </div>
@@ -1244,6 +1328,171 @@ function QuickTable({ rows, dataType, onEdit, activeScenarioId }: {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ─── Delete Confirmation Modal ───────────────────────────────────────
+function DeleteConfirmModal({ scenario, needsTyping, familyName, onConfirm, onCancel }: {
+  scenario: Scenario;
+  needsTyping: boolean;
+  familyName: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [typedName, setTypedName] = useState('');
+  const canDelete = needsTyping ? typedName === scenario.name : true;
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete "{scenario.name}"?</DialogTitle>
+          <DialogDescription>
+            This will permanently remove this scenario and all its changes. This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {familyName && (
+            <div className="flex items-start gap-2 rounded-md px-3 py-2 text-xs" style={{ backgroundColor: 'rgba(245,158,11,0.08)', color: '#92400E' }}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+              <span>This What-if is a member of {familyName}. Deleting it will remove it from the family.</span>
+            </div>
+          )}
+          {needsTyping && (
+            <div>
+              <Label className="text-xs">Type the What-if name to confirm:</Label>
+              <Input
+                value={typedName}
+                onChange={e => setTypedName(e.target.value)}
+                placeholder={scenario.name}
+                className="h-8 mt-1 font-mono"
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm} disabled={!canDelete}>Delete Permanently</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Promote to Basecase Full-Screen Modal ───────────────────────────
+function PromoteModal({ scenario, onConfirm, onCancel }: {
+  scenario: Scenario;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [typedName, setTypedName] = useState('');
+  const canPromote = typedName === scenario.name;
+
+  const getChangeDelta = (c: ScenarioChange) => {
+    const base = Number(c.basecaseValue); const wi = Number(c.whatIfValue);
+    if (isNaN(base) || isNaN(wi)) return null;
+    return wi - base;
+  };
+  const screenBadgeColor = (dt: string) => {
+    if (dt === 'Labor') return 'bg-blue-100 text-blue-700';
+    if (dt === 'Equipment') return 'bg-purple-100 text-purple-700';
+    if (dt === 'Product') return 'bg-green-100 text-green-700';
+    return 'bg-muted text-muted-foreground';
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-background border border-border rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col items-center text-center gap-3">
+          <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+            <AlertTriangle className="h-8 w-8" style={{ color: '#F59E0B' }} />
+          </div>
+          <h2 className="text-xl font-bold">Promote "{scenario.name}" to Basecase?</h2>
+        </div>
+
+        {/* Section 1: Changes */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2">The following changes will become permanent:</h3>
+          {scenario.changes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No changes recorded.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 text-muted-foreground text-xs sticky top-0">
+                    <th className="text-left p-2 font-medium w-8">#</th>
+                    <th className="text-left p-2 font-medium">Parameter</th>
+                    <th className="text-left p-2 font-medium">Screen</th>
+                    <th className="text-right p-2 font-medium">Basecase</th>
+                    <th className="text-right p-2 font-medium">What-if</th>
+                    <th className="text-right p-2 font-medium">Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scenario.changes.map((c, idx) => {
+                    const delta = getChangeDelta(c);
+                    return (
+                      <tr key={c.id} className="border-t border-border text-xs">
+                        <td className="p-2 text-muted-foreground">{idx + 1}</td>
+                        <td className="p-2">
+                          <span className="font-medium">{c.entityName}</span>
+                          <span className="text-muted-foreground"> · {c.fieldLabel}</span>
+                        </td>
+                        <td className="p-2">
+                          <span className={`inline-block text-[10px] font-medium rounded px-1.5 py-0.5 ${screenBadgeColor(c.dataType)}`}>
+                            {c.dataType}
+                          </span>
+                        </td>
+                        <td className="p-2 text-right font-mono text-muted-foreground">{c.basecaseValue}</td>
+                        <td className="p-2 text-right font-mono font-semibold text-primary">{c.whatIfValue}</td>
+                        <td className="p-2 text-right font-mono">
+                          {delta !== null ? (
+                            <span className={delta >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                              {delta >= 0 ? '+' : ''}{delta % 1 === 0 ? delta : delta.toFixed(2)}
+                            </span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Section 2: Warning */}
+        <p className="text-sm font-bold text-red-600">
+          This action is permanent. Your current Basecase data will be overwritten. You cannot undo this.
+        </p>
+
+        {/* Section 3: Confirm by typing */}
+        <div>
+          <Label className="text-xs">Type the What-if name to confirm:</Label>
+          <Input
+            value={typedName}
+            onChange={e => setTypedName(e.target.value)}
+            placeholder={scenario.name}
+            className="h-8 mt-1 font-mono max-w-sm"
+            autoFocus
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button
+            onClick={onConfirm}
+            disabled={!canPromote}
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            <ArrowUpCircle className="h-4 w-4 mr-2" /> Promote to Basecase
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
