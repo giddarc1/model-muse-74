@@ -42,9 +42,16 @@ function setGlobalIsRunning(v: boolean) { _isRunning = v; notifyIsRunning(); }
 export function useRunCalculation(): UseRunCalculationReturn {
   const model = useModelStore(s => s.getActiveModel());
   const setRunStatus = useModelStore(s => s.setRunStatus);
+  const allScenarios = useScenarioStore(s => s.scenarios);
   const activeScenario = useScenarioStore(s => s.getActiveScenario());
   const markCalculated = useScenarioStore(s => s.markCalculated);
   const { setResults } = useResultsStore();
+  const selectedRunScenarioId = useResultsStore(s => s.selectedRunScenarioId);
+
+  // Determine which scenario to run for — dropdown selection overrides activeScenario
+  const runScenario = selectedRunScenarioId && selectedRunScenarioId !== 'basecase'
+    ? allScenarios.find(s => s.id === selectedRunScenarioId) || activeScenario
+    : activeScenario;
 
   const [verifyMessages, setVerifyMessages] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
@@ -64,7 +71,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
         mode: 'verify',
-        scenarioName: activeScenario?.name || 'Basecase',
+        scenarioName: runScenario?.name || 'Basecase',
         durationMs: Date.now() - startTime,
         status: msgs.errors.length > 0 ? 'error' : msgs.warnings.length > 0 ? 'warning' : 'success',
       };
@@ -102,14 +109,14 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
     setGlobalIsRunning(true);
     const startTime = Date.now();
-    const resultKey = activeScenario ? activeScenario.id : 'basecase';
+    const resultKey = runScenario ? runScenario.id : 'basecase';
 
     return new Promise<void>(resolve => {
       setTimeout(async () => {
-        const calcResults = calculate(model, activeScenario || undefined);
+        const calcResults = calculate(model, runScenario || undefined);
         setResults(resultKey, calcResults);
         setRunStatus(model.id, 'current');
-        if (activeScenario) markCalculated(activeScenario.id);
+        if (runScenario) markCalculated(runScenario.id);
         setGlobalIsRunning(false);
         setVerifyMessages(null);
 
@@ -121,7 +128,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
           id: crypto.randomUUID(),
           timestamp: new Date().toISOString(),
           mode,
-          scenarioName: activeScenario?.name || 'Basecase',
+          scenarioName: runScenario?.name || 'Basecase',
           durationMs,
           status: hasErrors ? 'error' : hasWarnings ? 'warning' : 'success',
         };
@@ -130,8 +137,8 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
         // Persist to Supabase
         const { scenarioDb } = await import('@/lib/scenarioDb');
-        if (activeScenario) {
-          scenarioDb.saveResults(activeScenario.id, calcResults);
+        if (runScenario) {
+          scenarioDb.saveResults(runScenario.id, calcResults);
         } else {
           scenarioDb.saveBasecaseResults(model.id, calcResults);
         }
@@ -148,7 +155,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
         resolve();
       }, 100);
     });
-  }, [model, activeScenario, setResults, setRunStatus, markCalculated]);
+  }, [model, runScenario, setResults, setRunStatus, markCalculated]);
 
   return {
     isRunning,

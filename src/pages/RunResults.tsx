@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Lock } from 'lucide-react';
 import { useSortableTable, type SortDir } from '@/hooks/useSortableTable';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
+import { getScenarioColor } from '@/lib/scenarioColors';
 import { type CalcResults, type ProductResult, type EquipmentResult, type LaborResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -33,6 +34,8 @@ import {
 import { useRunCalculation, type RunMode } from '@/hooks/useRunCalculation';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { scenarioDb } from '@/lib/scenarioDb';
+import ScenarioContextBar from '@/components/ScenarioContextBar';
+import ChartScenarioLabel from '@/components/ChartScenarioLabel';
 
 // ── Scenario color palettes for grouped charts ──
 const SCENARIO_PALETTES = [
@@ -228,6 +231,8 @@ export default function RunResults() {
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
   const { getResults } = useResultsStore();
+  const selectedRunScenarioId = useResultsStore(s => s.selectedRunScenarioId);
+  const setSelectedRunScenarioId = useResultsStore(s => s.setSelectedRunScenarioId);
   const { userLevel } = useUserLevelStore();
 
   const { isRunning, runLog, verifyMessages, handleRun } = useRunCalculation();
@@ -282,7 +287,9 @@ export default function RunResults() {
 
   const activeScenario = model ? (allScenarios.find(s => s.id === activeScenarioId) || null) : null;
   const modelScenarios = model ? allScenarios.filter(s => s.modelId === model.id) : [];
-  const resultKey = activeScenario ? activeScenario.id : 'basecase';
+  const resultKey = selectedRunScenarioId && selectedRunScenarioId !== 'basecase'
+    ? selectedRunScenarioId
+    : (activeScenario ? activeScenario.id : 'basecase');
   const results = getResults(resultKey);
   const basecaseResults = getResults('basecase');
   const hasRun = !!results;
@@ -700,6 +707,32 @@ export default function RunResults() {
           </DropdownMenu>
         )}
 
+        {/* Scenario context dropdown */}
+        <div className="h-[60%] w-px bg-border self-center" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">Running for:</span>
+          <Select value={selectedRunScenarioId} onValueChange={setSelectedRunScenarioId}>
+            <SelectTrigger className={`h-7 w-auto min-w-[140px] max-w-[220px] text-xs gap-1 ${selectedRunScenarioId !== 'basecase' ? 'text-warning border-warning/40' : ''}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basecase">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Basecase
+                </span>
+              </SelectItem>
+              {modelScenarios.map((sc, idx) => (
+                <SelectItem key={sc.id} value={sc.id}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: getScenarioColor(idx) }} />
+                    {sc.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex-1" />
 
         {/* Far right — status chip + last run */}
@@ -773,6 +806,7 @@ export default function RunResults() {
         {/* ── Summary Tab ── */}
         {activeTab === 'summary' && (
           <>
+            <ScenarioContextBar />
             {/* Quick Stats Row */}
             <div className="grid grid-cols-4 gap-4 mb-6">
               <QuickStatCard
@@ -864,6 +898,7 @@ export default function RunResults() {
                   </button>
                 ))}
               </div>
+              <ScenarioContextBar />
 
               {equipSubTab === 'util-chart' && (
                 <Card>
@@ -875,7 +910,8 @@ export default function RunResults() {
                         : 'Stacked utilization breakdown by equipment group'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
+                    <ChartScenarioLabel />
                     <ResponsiveContainer width="100%" height={350}>
                       {isMultiScenario && groupedEquip ? (
                         <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
@@ -960,6 +996,7 @@ export default function RunResults() {
                   </button>
                 ))}
               </div>
+              <ScenarioContextBar />
 
               {laborSubTab === 'util-chart' && (
                 <Card>
@@ -971,7 +1008,8 @@ export default function RunResults() {
                         : 'Utilization breakdown by labor group'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
+                    <ChartScenarioLabel />
                     <ResponsiveContainer width="100%" height={300}>
                       {isMultiScenario && groupedLabor ? (
                         <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
@@ -1058,6 +1096,7 @@ export default function RunResults() {
                   </button>
                 ))}
               </div>
+              <ScenarioContextBar />
 
               {productsSubTab === 'mct-chart' && (
                 <>
@@ -1071,7 +1110,8 @@ export default function RunResults() {
                           : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
+                      <ChartScenarioLabel />
                       <ResponsiveContainer width="100%" height={350}>
                         {isMultiScenario && groupedMCT ? (
                           <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
@@ -1131,7 +1171,8 @@ export default function RunResults() {
                     <CardHeader>
                       <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
+                      <ChartScenarioLabel />
                       <ResponsiveContainer width="100%" height={300}>
                         {isMultiScenario && groupedWIP ? (
                           <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
@@ -1172,6 +1213,8 @@ export default function RunResults() {
         {/* ── IBOM Tab ── */}
         {activeTab === 'ibom' && (
           !hasRun ? <NoResultsPlaceholder /> : (
+            <>
+            <ScenarioContextBar />
             <IBOMTabContent
               model={model}
               results={results!}
@@ -1183,6 +1226,7 @@ export default function RunResults() {
               ibomZoom={ibomZoom}
               setIbomZoom={setIbomZoom}
             />
+            </>
           )
         )}
 
@@ -2188,7 +2232,8 @@ function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: 
         <CardTitle className="text-base">Equipment WIP</CardTitle>
         <CardDescription>Work-in-progress at each equipment group</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
@@ -2266,7 +2311,8 @@ function LaborWaitChart({ results, model }: { results: CalcResults; model: Model
         <CardTitle className="text-base">Equipment Wait Chart</CardTitle>
         <CardDescription>High 'Waiting' bars indicate a labor shortage — machines are idle waiting for operators.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
@@ -2932,7 +2978,8 @@ function ProductionChart({ results, model, isMultiScenario, chartScenarios }: {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
+        <ChartScenarioLabel />
         {showTable ? (
           <Table>
             <TableHeader><TableRow>
