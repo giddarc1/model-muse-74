@@ -173,7 +173,12 @@ export default function ProductData() {
                         <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
                       </TableCell>
                       <TableCell><Input className="h-8 w-24" value={p.dept_code} onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
+                          <InfoTip text="Scales the product demand without changing the stored demand value. Set to 0 to effectively exclude this product from calculations while keeping its data." />
+                        </div>
+                      </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></TableCell>
