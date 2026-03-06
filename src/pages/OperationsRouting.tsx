@@ -322,17 +322,17 @@ export default function OperationsRouting() {
                         L.Run/Pc
                         {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
                       </TableHead>
-                      {showAdvancedTimes && <>
+                      {showAdvancedTimes && (
                         <TableHead colSpan={8} className="text-center text-[10px] text-amber-700 bg-amber-50 border-b-0 font-normal py-1">
                           ⚠ These time fields are additive. Only fill in fields that apply. Do not enter the same time in multiple fields — it will be double-counted.
                         </TableHead>
-                      </>}
+                      )}
+                      {!showAdvancedTimes && showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
+                      {!showAdvancedTimes && <TableHead className="w-10"></TableHead>}
                     </TableRow>
                     {showAdvancedTimes && (
                       <TableRow>
-                        <TableHead className="font-mono text-xs" colSpan={4}></TableHead>
-                        {!viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
-                        {viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
+                        <TableHead className="font-mono text-xs" colSpan={8}></TableHead>
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
                         <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
                         <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
@@ -349,9 +349,6 @@ export default function OperationsRouting() {
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     )}
-                      {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
                   </TableHeader>
                   <TableBody>
                     {productOps.map((op) => {
