@@ -604,6 +604,54 @@ export default function WhatIfStudio() {
   );
 }
 
+// ─── Family Pill Popover ─────────────────────────────────────────────
+function FamilyPillPopover({ scenario, families }: {
+  scenario: Scenario;
+  families: { id: string; modelId: string; name: string }[];
+}) {
+  const { addToFamily, removeFromFamily } = useScenarioStore();
+  const currentFamily = families.find(f => f.id === scenario.familyId);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          onClick={e => e.stopPropagation()}
+          className="inline-block mt-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none hover:bg-accent/80 transition-colors cursor-pointer"
+        >
+          {currentFamily?.name || 'Family'}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-48 p-2" onClick={e => e.stopPropagation()}>
+        <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1 px-1">Assign to family</p>
+        {families.map(f => (
+          <button
+            key={f.id}
+            onClick={() => addToFamily(scenario.id, f.id)}
+            className={`w-full text-left text-xs rounded px-2 py-1.5 hover:bg-muted transition-colors flex items-center gap-2 ${
+              scenario.familyId === f.id ? 'bg-primary/10 text-primary font-medium' : ''
+            }`}
+          >
+            <Layers className="h-3 w-3 shrink-0" />
+            {f.name}
+          </button>
+        ))}
+        {scenario.familyId && (
+          <>
+            <div className="border-t border-border my-1" />
+            <button
+              onClick={() => removeFromFamily(scenario.id)}
+              className="w-full text-left text-xs rounded px-2 py-1.5 hover:bg-destructive/10 text-destructive transition-colors"
+            >
+              Remove from family
+            </button>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Centre Panel ────────────────────────────────────────────────────
 function CentrePanel({
   model, modelId, scenarios, activeScenarioId, activeScenario,
