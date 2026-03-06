@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Lock } from 'lucide-react';
 import { useSortableTable, type SortDir } from '@/hooks/useSortableTable';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
+import { getScenarioColor } from '@/lib/scenarioColors';
 import { type CalcResults, type ProductResult, type EquipmentResult, type LaborResult, calculate } from '@/lib/calculationEngine';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
