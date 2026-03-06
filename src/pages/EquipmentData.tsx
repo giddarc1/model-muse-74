@@ -8,10 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
+
+const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', equip_type: 'Type', mttf: 'MTTF', mttr: 'MTTR',
@@ -42,6 +51,8 @@ export default function EquipmentData() {
       <div className="h-64 bg-muted animate-pulse rounded-lg" />
     </div>
   );
+
+  const opsTimeUnit = model.general.ops_time_unit || 'MIN';
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -109,10 +120,12 @@ export default function EquipmentData() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="font-mono text-xs">Name</TableHead>
-                  <TableHead className="font-mono text-xs">Type</TableHead>
+                  <TableHead className="font-mono text-xs">
+                    <div className="flex items-center gap-1">Type <InfoTip text="Standard: normal equipment with capacity and queue. Delay: use for operations where capacity is not a constraint (e.g. transit, heat treat). Setting to Delay disables No. in Group." /></div>
+                  </TableHead>
                   <TableHead className="font-mono text-xs">Count</TableHead>
-                  <TableHead className="font-mono text-xs">MTTF</TableHead>
-                  <TableHead className="font-mono text-xs">MTTR</TableHead>
+                  <TableHead className="font-mono text-xs">MTTF ({opsTimeUnit})</TableHead>
+                  <TableHead className="font-mono text-xs">MTTR ({opsTimeUnit})</TableHead>
                   <TableHead className="font-mono text-xs">OT %</TableHead>
                   <TableHead className="font-mono text-xs">Labor</TableHead>
                   {showAdvanced && <>
@@ -158,7 +171,9 @@ export default function EquipmentData() {
                     </TableCell>
                     {showAdvanced && <>
                       <TableCell><Input className="h-8 w-24" value={eq.dept_code} onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} /></TableCell>
-                      <TableCell><Switch checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', v)} /></TableCell>
+                      <TableCell>
+                        <Checkbox checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)} />
+                      </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /></TableCell>
@@ -187,9 +202,9 @@ export default function EquipmentData() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
-                  <div><Label className="text-xs">Count</Label><Input type="number" className="h-8 font-mono" value={eq.count} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></div>
-                  <div><Label className="text-xs">MTTF</Label><Input type="number" className="h-8 font-mono" value={eq.mttf} onChange={(e) => handleCellChange(eq.id, 'mttf', +e.target.value)} /></div>
-                  <div><Label className="text-xs">MTTR</Label><Input type="number" className="h-8 font-mono" value={eq.mttr} onChange={(e) => handleCellChange(eq.id, 'mttr', +e.target.value)} /></div>
+                  <div><Label className="text-xs">Count</Label><Input type="number" className="h-8 font-mono" value={eq.count} disabled={eq.equip_type === 'delay'} onChange={(e) => handleCellChange(eq.id, 'count', +e.target.value)} /></div>
+                  <div><Label className="text-xs">MTTF ({opsTimeUnit})</Label><Input type="number" className="h-8 font-mono" value={eq.mttf} onChange={(e) => handleCellChange(eq.id, 'mttf', +e.target.value)} /></div>
+                  <div><Label className="text-xs">MTTR ({opsTimeUnit})</Label><Input type="number" className="h-8 font-mono" value={eq.mttr} onChange={(e) => handleCellChange(eq.id, 'mttr', +e.target.value)} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label className="text-xs">Overtime %</Label><Input type="number" className="h-8 font-mono" value={eq.overtime_pct} onChange={(e) => handleCellChange(eq.id, 'overtime_pct', +e.target.value)} /></div>
@@ -210,7 +225,10 @@ export default function EquipmentData() {
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-xs">Equipment Type</Label>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs">Equipment Type</Label>
+                            <InfoTip text="Standard: normal equipment with capacity and queue. Delay: use for operations where capacity is not a constraint (e.g. transit, heat treat). Setting to Delay disables No. in Group." />
+                          </div>
                           <Select value={eq.equip_type} onValueChange={(v) => handleCellChange(eq.id, 'equip_type', v)}>
                             <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -236,32 +254,30 @@ export default function EquipmentData() {
                     </div>
                     <div className="pt-2 border-t border-border space-y-3">
                       <div>
-                        <div className="flex items-center gap-1">
-                          <Label className="text-xs">Group / Dept / Area</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">Optional label for this equipment group. Type 'Out of Area' to show this equipment's MCT contribution in a distinct color on IBOM charts.</TooltipContent></Tooltip></TooltipProvider>
-                        </div>
-                        <Input className="h-8" value={eq.dept_code} placeholder="e.g. Cell 1, Out of Area" onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} />
+                        <Label className="text-xs">Group / Dept / Area</Label>
+                        <Input className="h-8" value={eq.dept_code} placeholder="e.g. Cell 1" onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-xs">Out of Area</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Mark this equipment as out-of-area for IBOM chart highlighting.</TooltipContent></Tooltip></TooltipProvider>
-                        </div>
-                        <Switch checked={eq.out_of_area} onCheckedChange={(v) => {
-                          handleCellChange(eq.id, 'out_of_area', v);
-                          if (v) handleCellChange(eq.id, 'dept_code', 'Out of Area');
-                          else if (eq.dept_code === 'Out of Area') handleCellChange(eq.id, 'dept_code', '');
-                        }} />
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`ooa-${eq.id}`}
+                          checked={eq.out_of_area}
+                          onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)}
+                        />
+                        <Label htmlFor={`ooa-${eq.id}`} className="text-xs cursor-pointer">Out of Area equipment</Label>
+                        <InfoTip text="When checked, this equipment is treated as out-of-area for MCT chart colour coding." />
                       </div>
                     </div>
                     {/* Eq1-4 parameter variables */}
                     <div className="pt-2 border-t border-border">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
                       <div className="grid grid-cols-4 gap-3 mt-1.5">
-                        <div><Label className="text-xs">{model.param_names.eq1_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq1} onChange={(e) => handleCellChange(eq.id, 'eq1', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.eq2_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq2} onChange={(e) => handleCellChange(eq.id, 'eq2', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.eq3_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq3} onChange={(e) => handleCellChange(eq.id, 'eq3', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.eq4_name}</Label><Input type="number" className="h-8 font-mono" value={eq.eq4} onChange={(e) => handleCellChange(eq.id, 'eq4', +e.target.value)} /></div>
+                        {(['eq1', 'eq2', 'eq3', 'eq4'] as const).map((key, i) => (
+                          <div key={key}>
+                            <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                            <Input type="number" className="h-8 font-mono" value={eq[key]} onChange={(e) => handleCellChange(eq.id, key, +e.target.value)} />
+                            <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </>

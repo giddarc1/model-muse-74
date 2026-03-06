@@ -1,9 +1,9 @@
 import { useModelStore, type ParamNames } from '@/stores/modelStore';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tag } from 'lucide-react';
+import { Tag, Info } from 'lucide-react';
 
 const ROWS: { key: keyof ParamNames; variable: string; category: string }[] = [
   { key: 'gen1_name', variable: 'Gen1', category: 'General' },
@@ -46,9 +46,16 @@ export default function ParameterNames() {
       <h1 className="text-xl font-bold flex items-center gap-2 mb-1">
         <Tag className="h-5 w-5 text-primary" /> Parameter Names
       </h1>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-2">
         Renaming a parameter updates its label throughout the app. Names are saved per model.
       </p>
+
+      <div className="mb-6 flex items-start gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground bg-muted/50 border border-border">
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+        <span>
+          Rename the custom variables (Gen1–Gen4, Lab1–Lab4, Eq1–Eq4, Prod1–Prod4, Oper1–Oper4) used in the Formula Builder in Operations/Routing. Once renamed, the new labels appear throughout the app.
+        </span>
+      </div>
 
       <Card>
         <CardContent className="p-0">
