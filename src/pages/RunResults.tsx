@@ -540,6 +540,8 @@ export default function RunResults() {
   const [equipSubTab, setEquipSubTab] = useState('util-chart');
   const [laborSubTab, setLaborSubTab] = useState('util-chart');
   const [productsSubTab, setProductsSubTab] = useState('mct-chart');
+  const [ibomSubTab, setIbomSubTab] = useState('tree-chart');
+  const [ibomZoom, setIbomZoom] = useState(100);
 
   // Detect if last run was util-only (MCT/WIP not available)
   const lastRunMode = runLog.length > 0 ? runLog[0].mode : null;
