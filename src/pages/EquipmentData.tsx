@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, LayoutGrid, List, Cpu, Info } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, canAccess } from '@/hooks/useUserLevel';
@@ -20,8 +20,8 @@ export default function EquipmentData() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
-  const showAdvanced = canAccess(userLevel, 'advanced-params');
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -45,7 +45,6 @@ export default function EquipmentData() {
   };
 
   const handleCellChange = (id: string, field: keyof EquipmentGroup, value: any) => {
-    // Auto-set count when switching to delay type
     if (field === 'equip_type' && value === 'delay') {
       updateEquipment(model.id, id, { [field]: value, count: -1 });
     } else {
@@ -63,6 +62,10 @@ export default function EquipmentData() {
           <p className="text-sm text-muted-foreground">{model.equipment.length} groups defined</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+          </Button>
           <div className="flex border rounded-md overflow-hidden">
             <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('table')}><List className="h-4 w-4" /></Button>
             <Button variant={viewMode === 'form' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('form')}><LayoutGrid className="h-4 w-4" /></Button>
@@ -86,6 +89,18 @@ export default function EquipmentData() {
                   <TableHead className="font-mono text-xs">MTTR</TableHead>
                   <TableHead className="font-mono text-xs">OT %</TableHead>
                   <TableHead className="font-mono text-xs">Labor</TableHead>
+                  {showAdvanced && <>
+                    <TableHead className="font-mono text-xs">Dept/Area</TableHead>
+                    <TableHead className="font-mono text-xs">Out of Area</TableHead>
+                    <TableHead className="font-mono text-xs">Unavail %</TableHead>
+                    <TableHead className="font-mono text-xs">Setup Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Run Fac</TableHead>
+                    <TableHead className="font-mono text-xs">Var Fac</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.eq1_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.eq2_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.eq3_name}</TableHead>
+                    <TableHead className="font-mono text-xs">{model.param_names.eq4_name}</TableHead>
+                  </>}
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -115,6 +130,18 @@ export default function EquipmentData() {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    {showAdvanced && <>
+                      <TableCell><Input className="h-8 w-24" value={eq.dept_code} onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} /></TableCell>
+                      <TableCell><Switch checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', v)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq1} onChange={(e) => handleCellChange(eq.id, 'eq1', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq2} onChange={(e) => handleCellChange(eq.id, 'eq2', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq3} onChange={(e) => handleCellChange(eq.id, 'eq3', +e.target.value)} /></TableCell>
+                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq4} onChange={(e) => handleCellChange(eq.id, 'eq4', +e.target.value)} /></TableCell>
+                    </>}
                     <TableCell><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteEquipment(model.id, eq.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
                   </TableRow>
                 ))}
@@ -153,6 +180,22 @@ export default function EquipmentData() {
                 </div>
                 {showAdvanced && (
                   <>
+                    <div className="pt-2 border-t border-border space-y-3">
+                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Equipment Type</Label>
+                          <Select value={eq.equip_type} onValueChange={(v) => handleCellChange(eq.id, 'equip_type', v)}>
+                            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="standard">Standard</SelectItem>
+                              <SelectItem value="delay">Delay Station</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div><Label className="text-xs">% Time Unavailable</Label><Input type="number" className="h-8 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></div>
+                      </div>
+                    </div>
                     <div className="pt-2 border-t border-border">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Scaling Factors</Label>
                       <div className="grid grid-cols-3 gap-3 mt-1.5">
@@ -166,8 +209,6 @@ export default function EquipmentData() {
                       </div>
                     </div>
                     <div className="pt-2 border-t border-border space-y-3">
-                      <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
-                      <div><Label className="text-xs">% Time Unavailable</Label><Input type="number" className="h-8 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></div>
                       <div>
                         <div className="flex items-center gap-1">
                           <Label className="text-xs">Group / Dept / Area</Label>
