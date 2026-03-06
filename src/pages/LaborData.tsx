@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { useModelStore, type LaborGroup } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+const FIELD_LABELS: Record<string, string> = {
+  count: 'Count', overtime_pct: 'Overtime %', unavail_pct: 'Unavail %',
+  dept_code: 'Dept/Area', setup_factor: 'Setup Factor', run_factor: 'Run Factor',
+  var_factor: 'Var Factor', prioritize_use: 'Prioritize Use',
+  lab1: 'Lab1', lab2: 'Lab2', lab3: 'Lab3', lab4: 'Lab4', comments: 'Comments',
+};
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -27,6 +35,9 @@ export default function LaborData() {
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -49,11 +60,25 @@ export default function LaborData() {
   };
 
   const handleCellChange = (id: string, field: keyof LaborGroup, value: string | number | boolean) => {
+    if (activeScenarioId && activeScenario) {
+      const labor = model.labor.find(l => l.id === id);
+      const entityName = labor?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Labor', id, entityName, field, fieldLabel, value as string | number);
+    }
     updateLabor(model.id, id, { [field]: value });
   };
 
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Labor Groups</h1>

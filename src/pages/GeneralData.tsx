@@ -1,4 +1,5 @@
 import { useModelStore } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,8 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Info, FlaskConical } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+const FIELD_LABELS: Record<string, string> = {
+  model_title: 'Model Title', ops_time_unit: 'Ops Time Unit', mct_time_unit: 'MCT Time Unit',
+  prod_period_unit: 'Prod Period', conv1: 'MCT Conversion', conv2: 'Prod Conversion',
+  util_limit: 'Util Limit', var_equip: 'Equipment Variability', var_labor: 'Labor Variability',
+  var_prod: 'Product Variability', gen1: 'Gen1', gen2: 'Gen2', gen3: 'Gen3', gen4: 'Gen4',
+  author: 'Author', comments: 'Comments',
+};
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -20,6 +29,9 @@ export default function GeneralData() {
   const updateGeneral = useModelStore((s) => s.updateGeneral);
   const { userLevel } = useUserLevelStore();
   const showAdvancedParams = isVisible('advanced_parameters', userLevel);
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   if (!model) return (
     <div className="p-6 max-w-3xl space-y-4">
@@ -31,10 +43,26 @@ export default function GeneralData() {
 
   const g = model.general;
   const pn = model.param_names;
-  const update = (data: Partial<typeof g>) => updateGeneral(model.id, data);
+  const update = (data: Partial<typeof g>) => {
+    if (activeScenarioId && activeScenario) {
+      Object.entries(data).forEach(([field, value]) => {
+        const fieldLabel = FIELD_LABELS[field] || field;
+        applyScenarioChange(activeScenarioId, 'General', model.id, 'General', field, fieldLabel, value as string | number);
+      });
+    }
+    updateGeneral(model.id, data);
+  };
 
   return (
     <div className="p-6 max-w-3xl animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <h1 className="text-xl font-bold mb-1">General Data</h1>
       <p className="text-sm text-muted-foreground mb-6">Configure time settings, variability parameters, and model metadata.</p>
 

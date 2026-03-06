@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Product } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +12,16 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink, Info } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink, Info, FlaskConical } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
+
+const FIELD_LABELS: Record<string, string> = {
+  demand: 'Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
+  demand_factor: 'Demand Factor', lot_factor: 'Lot Factor', var_factor: 'Var Factor',
+  setup_factor: 'Setup Factor', make_to_stock: 'Make to Stock', gather_tbatches: 'Gather TBatches',
+  dept_code: 'Dept/Area', prod1: 'Prod1', prod2: 'Prod2', prod3: 'Prod3', prod4: 'Prod4', comments: 'Comments',
+};
 
 export default function ProductData() {
   const model = useModelStore((s) => s.getActiveModel());
@@ -27,6 +35,9 @@ export default function ProductData() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
   const showAdvancedParams = isVisible('advanced_parameters', userLevel);
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -60,6 +71,12 @@ export default function ProductData() {
   };
 
   const handleCellChange = (id: string, field: keyof Product, value: any) => {
+    if (activeScenarioId && activeScenario) {
+      const prod = model.products.find(p => p.id === id);
+      const entityName = prod?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Product', id, entityName, field, fieldLabel, value as string | number);
+    }
     updateProduct(model.id, id, { [field]: value });
   };
 
@@ -76,6 +93,14 @@ export default function ProductData() {
 
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Products</h1>

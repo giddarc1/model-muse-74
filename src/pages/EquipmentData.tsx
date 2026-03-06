@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useModelStore, type EquipmentGroup } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,10 +8,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+const FIELD_LABELS: Record<string, string> = {
+  count: 'Count', equip_type: 'Type', mttf: 'MTTF', mttr: 'MTTR',
+  overtime_pct: 'OT %', labor_group_id: 'Labor Group', dept_code: 'Dept/Area',
+  out_of_area: 'Out of Area', unavail_pct: 'Unavail %',
+  setup_factor: 'Setup Factor', run_factor: 'Run Factor', var_factor: 'Var Factor',
+  eq1: 'Eq1', eq2: 'Eq2', eq3: 'Eq3', eq4: 'Eq4', comments: 'Comments',
+};
 
 export default function EquipmentData() {
   const model = useModelStore((s) => s.getActiveModel());
@@ -22,6 +31,9 @@ export default function EquipmentData() {
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { userLevel } = useUserLevelStore();
+  const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
+  const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
+  const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
   if (!model) return (
     <div className="p-6 space-y-4">
@@ -45,6 +57,12 @@ export default function EquipmentData() {
   };
 
   const handleCellChange = (id: string, field: keyof EquipmentGroup, value: any) => {
+    if (activeScenarioId && activeScenario) {
+      const eq = model.equipment.find(e => e.id === id);
+      const entityName = eq?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Equipment', id, entityName, field, fieldLabel, value as string | number);
+    }
     if (field === 'equip_type' && value === 'delay') {
       updateEquipment(model.id, id, { [field]: value, count: -1 });
     } else {
@@ -56,6 +74,14 @@ export default function EquipmentData() {
 
   return (
     <div className="p-6 animate-fade-in">
+      {activeScenarioId && activeScenario && (
+        <div className="mb-4 flex items-center gap-2 p-2.5 bg-primary/5 border border-primary/20 rounded-md">
+          <FlaskConical className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-primary font-medium">
+            Changes are being recorded to <span className="font-semibold">{activeScenario.name}</span>
+          </span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Equipment Groups</h1>

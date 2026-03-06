@@ -169,13 +169,22 @@ export default function OperationsRouting() {
     return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
   };
 
+  const handleOpFieldChange = (op: Operation, field: string, value: number) => {
+    if (activeScenarioId && activeScenario) {
+      const productName = model.products.find(p => p.id === op.product_id)?.name || '';
+      const entityName = `${productName}: ${op.op_name}`;
+      applyScenarioChange(activeScenarioId, 'Routing', op.id, entityName, field, field, value);
+    }
+    updateOperation(model.id, op.id, { [field]: value });
+  };
+
   const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
-    updateRouting(model.id, routeId, { [field]: value });
     if (activeScenarioId && activeScenario) {
       const productName = selectedProduct?.name || '';
       const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
       applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
     }
+    updateRouting(model.id, routeId, { [field]: value });
   };
 
   const openFormulaBuilder = (op: Operation, field: string, label: string) => {
@@ -184,7 +193,7 @@ export default function OperationsRouting() {
 
   const handleFormulaApply = (value: number, _formula: string) => {
     if (!formulaTarget) return;
-    updateOperation(model.id, formulaTarget.op.id, { [formulaTarget.field]: value });
+    handleOpFieldChange(formulaTarget.op, formulaTarget.field, value);
     toast.success(`Formula applied: ${formulaTarget.label} = ${value}`);
   };
 
@@ -326,7 +335,7 @@ export default function OperationsRouting() {
                       const actual = viewActualTimes ? getActualTimes(op) : null;
                       return (
                         <TableRow key={op.id}>
-                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => updateOperation(model.id, op.id, { op_number: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} /></TableCell>
                           <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
                           <TableCell>
                             <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
@@ -337,7 +346,7 @@ export default function OperationsRouting() {
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => updateOperation(model.id, op.id, { pct_assigned: +e.target.value })} /></TableCell>
+                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => handleOpFieldChange(op, 'pct_assigned', +e.target.value)} /></TableCell>
 
                           {/* Main time fields — show actual or input */}
                           {viewActualTimes && actual ? (
@@ -349,26 +358,26 @@ export default function OperationsRouting() {
                             </>
                           ) : (
                             <>
-                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_lot: +e.target.value })} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_piece: +e.target.value })} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_lot: +e.target.value })} /></TableCell>
-                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_piece: +e.target.value })} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => handleOpFieldChange(op, 'equip_setup_lot', +e.target.value)} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_piece} step="0.01" onChange={(e) => handleOpFieldChange(op, 'equip_run_piece', +e.target.value)} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_lot} step="0.1" onChange={(e) => handleOpFieldChange(op, 'labor_setup_lot', +e.target.value)} /></TableCell>
+                              <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_piece} step="0.01" onChange={(e) => handleOpFieldChange(op, 'labor_run_piece', +e.target.value)} /></TableCell>
                             </>
                           )}
 
                           {showAdvancedTimes && <>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_piece: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_setup_tbatch: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { equip_run_lot: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { equip_run_tbatch: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_piece: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_setup_tbatch: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => updateOperation(model.id, op.id, { labor_run_lot: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { labor_run_tbatch: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper1} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper1: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper2} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper2: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper3} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper3: +e.target.value })} /></TableCell>
-                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper4} step="0.01" onChange={(e) => updateOperation(model.id, op.id, { oper4: +e.target.value })} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_piece} step="0.01" onChange={(e) => handleOpFieldChange(op, 'equip_setup_piece', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_tbatch} step="0.1" onChange={(e) => handleOpFieldChange(op, 'equip_setup_tbatch', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_lot} step="0.1" onChange={(e) => handleOpFieldChange(op, 'equip_run_lot', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_run_tbatch} step="0.01" onChange={(e) => handleOpFieldChange(op, 'equip_run_tbatch', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_piece} step="0.01" onChange={(e) => handleOpFieldChange(op, 'labor_setup_piece', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_setup_tbatch} step="0.1" onChange={(e) => handleOpFieldChange(op, 'labor_setup_tbatch', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_lot} step="0.1" onChange={(e) => handleOpFieldChange(op, 'labor_run_lot', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.labor_run_tbatch} step="0.01" onChange={(e) => handleOpFieldChange(op, 'labor_run_tbatch', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper1} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper1', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper2} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper2', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper3} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper3', +e.target.value)} /></TableCell>
+                            <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.oper4} step="0.01" onChange={(e) => handleOpFieldChange(op, 'oper4', +e.target.value)} /></TableCell>
                           </>}
 
                           {/* Formula Builder trigger */}
