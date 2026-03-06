@@ -169,13 +169,22 @@ export default function OperationsRouting() {
     return <span className="flex items-center gap-0.5 text-xs text-destructive font-mono"><XCircle className="h-3 w-3" /> {sum}%</span>;
   };
 
+  const handleOpFieldChange = (op: Operation, field: string, value: number) => {
+    if (activeScenarioId && activeScenario) {
+      const productName = model.products.find(p => p.id === op.product_id)?.name || '';
+      const entityName = `${productName}: ${op.op_name}`;
+      applyScenarioChange(activeScenarioId, 'Routing', op.id, entityName, field, field, value);
+    }
+    updateOperation(model.id, op.id, { [field]: value });
+  };
+
   const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
-    updateRouting(model.id, routeId, { [field]: value });
     if (activeScenarioId && activeScenario) {
       const productName = selectedProduct?.name || '';
       const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
       applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
     }
+    updateRouting(model.id, routeId, { [field]: value });
   };
 
   const openFormulaBuilder = (op: Operation, field: string, label: string) => {
