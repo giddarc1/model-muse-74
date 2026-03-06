@@ -904,7 +904,7 @@ function CentrePanel({
               <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => onSaveAs(activeScenario)}>
                 <Copy className="h-3.5 w-3.5 mr-1" /> Save As New What-if…
               </Button>
-              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setActiveScenario(null)}>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onReturnToBasecase}>
                 <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Return to Basecase
               </Button>
               <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50" onClick={onPromote}>
