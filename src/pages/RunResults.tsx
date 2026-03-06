@@ -39,11 +39,11 @@ const SCENARIO_PALETTES = [
   { setup: 'hsl(0, 70%, 75%)', run: 'hsl(0, 70%, 55%)', repair: 'hsl(0, 55%, 40%)', waitLabor: 'hsl(0, 45%, 30%)', unavail: 'hsl(0, 25%, 45%)', lotWait: 'hsl(0, 70%, 80%)', queue: 'hsl(0, 55%, 45%)', single: 'hsl(0, 70%, 55%)' },
 ];
 
-// Single-scenario colors (legacy)
+// Single-scenario colors — use consistent 5-segment MCT colours for product charts
 const chartColors = {
-  setup: 'hsl(217, 91%, 60%)', run: 'hsl(142, 71%, 45%)',
-  repair: 'hsl(0, 72%, 51%)', waitLabor: 'hsl(38, 92%, 50%)',
-  unavail: 'hsl(220, 9%, 46%)', lotWait: 'hsl(270, 50%, 60%)', queue: 'hsl(0, 72%, 51%)',
+  setup: MCT_COLORS.setup, run: MCT_COLORS.run,
+  repair: 'hsl(0, 72%, 51%)', waitLabor: MCT_COLORS.waitLabor,
+  unavail: 'hsl(220, 9%, 46%)', lotWait: MCT_COLORS.lotWait, queue: MCT_COLORS.waitEquip,
 };
 
 type ScenarioEntry = { id: string; name: string; results: CalcResults };
