@@ -24,9 +24,9 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw,
+  Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw, ArrowLeft, ChevronUp,
   FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck, Calendar,
 } from 'lucide-react';
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
