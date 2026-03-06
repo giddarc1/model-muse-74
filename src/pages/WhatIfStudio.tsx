@@ -485,14 +485,17 @@ export default function WhatIfStudio() {
 
         {/* Right Panel — Families (300px, Advanced only) */}
         {isVisible('whatif_families', userLevel) && (
-          <div className="w-[300px] shrink-0 flex flex-col overflow-y-auto">
-            <div className="p-3 border-b border-border">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Families</h2>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              <p className="text-sm text-muted-foreground text-center mt-8">Family management placeholder</p>
-            </div>
-          </div>
+          <FamiliesPanel
+            modelId={modelId}
+            scenarios={scenarios}
+            activeScenarioId={activeScenarioId}
+            onShowFamilyRecords={(familyId) => {
+              setShowFamilyRecords(true);
+              // Store the familyId for the records view — find any member to select
+              const member = scenarios.find(s => s.familyId === familyId);
+              if (member) setActiveScenario(member.id);
+            }}
+          />
         )}
       </div>
 
