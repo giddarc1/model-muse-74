@@ -88,11 +88,10 @@ export default function WhatIfStudio() {
 
   const handlePromote = () => {
     if (!activeScenarioId || !activeScenario) return;
-    const nm = activeScenario.name;
     promoteToBasecase(activeScenarioId);
     setShowPromoteModal(false);
-    setSelectedId('basecase');
-    toast.success(`Basecase updated from "${nm}".`);
+    setSelectedId(null);
+    toast.success('Basecase updated. Run Full Calculate to see updated results.');
   };
 
   const handleReturnToBasecase = () => {
@@ -118,6 +117,10 @@ export default function WhatIfStudio() {
 
   const handleRunAndView = (scenario: Scenario) => {
     handleRunScenario(scenario);
+    // Ensure this scenario's eye icon is toggled on so results are visible in charts
+    if (!displayIds.includes(scenario.id)) {
+      toggleDisplayScenario(scenario.id);
+    }
     if (modelId) navigate(`/models/${modelId}/run`);
   };
 
@@ -265,14 +268,14 @@ function NewWhatIfForm({ newName, newComment, setNewName, setNewComment, onSubmi
         <h3 className="text-base font-semibold">New What-if</h3>
         <div>
           <Label className="text-xs">Name</Label>
-          <Input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onSubmit(); if (e.key === 'Escape') onCancel(); }} placeholder="e.g. Higher demand scenario" className="h-9 mt-1" autoFocus />
+          <Input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onSubmit(); if (e.key === 'Escape') onCancel(); }} placeholder="e.g. Reduce Setup Times" className="h-9 mt-1" autoFocus />
         </div>
         <div>
           <Label className="text-xs">Comment (optional)</Label>
-          <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe what you want to explore…" className="mt-1 text-sm min-h-[48px] resize-none" />
+          <Textarea value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Brief description" className="mt-1 text-sm min-h-[48px] resize-none" />
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={onSubmit} disabled={!newName.trim()}><Play className="h-3.5 w-3.5 mr-1" /> Create & Activate</Button>
+          <Button size="sm" onClick={onSubmit} disabled={!newName.trim()}><Play className="h-3.5 w-3.5 mr-1" /> Start Editing</Button>
           <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
         </div>
       </div>
@@ -390,6 +393,7 @@ function ScenarioView({
   onReturnToBasecase: () => void; onPromote: () => void;
   onRunAndView: (s: Scenario) => void;
   userLevel: UserLevel;
+  // Note: Delete button absent in active state, Promote moved to Changes tab
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
@@ -535,7 +539,7 @@ function ScenarioView({
             {activeTab === 'equipment' && <EditableEquipmentTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'operations' && <EditableOperationsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} />}
+            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
         ) : (
           <>
@@ -544,7 +548,7 @@ function ScenarioView({
             {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
             {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
             {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
-            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} />}
+            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
         )}
       </div>
@@ -735,8 +739,8 @@ function EditableOperationsTab({ model, scenario, getWhatIfValue, onBlur }: Edit
 // ═══════════════════════════════════════════════════════════════════════
 // Changes Tab (audit trail)
 // ═══════════════════════════════════════════════════════════════════════
-function ChangesTab({ scenario, isActive, userLevel, modelId }: {
-  scenario: Scenario; isActive: boolean; userLevel: UserLevel; modelId: string;
+function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
+  scenario: Scenario; isActive: boolean; userLevel: UserLevel; modelId: string; onPromote?: () => void;
 }) {
   const [directEdits, setDirectEdits] = useState(false);
   const { removeChange, updateChange, markNeedsRecalc } = useScenarioStore();
@@ -856,6 +860,19 @@ function ChangesTab({ scenario, isActive, userLevel, modelId }: {
           </tbody>
         </table>
       </div>
+
+      {/* Lifecycle section — Promote to Basecase */}
+      {isActive && onPromote && (
+        <div className="mt-6 pt-4 border-t border-border">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Lifecycle</h4>
+          <Button size="sm" variant="outline" className="h-8 text-xs border-amber-400 text-amber-700 hover:bg-amber-50" onClick={onPromote}>
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Promote to Basecase
+          </Button>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Applies all What-if changes permanently to the Basecase. This cannot be undone.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
