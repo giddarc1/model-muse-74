@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package } from 'lucide-react';
+import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package, PlusCircle, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
