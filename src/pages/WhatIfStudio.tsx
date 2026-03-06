@@ -268,7 +268,7 @@ function NewWhatIfForm({ newName, newComment, setNewName, setNewComment, onSubmi
         <h3 className="text-base font-semibold">New What-if</h3>
         <div>
           <Label className="text-xs">Name</Label>
-          <Input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onSubmit(); if (e.key === 'Escape') onCancel(); }} placeholder="e.g. Higher demand scenario" className="h-9 mt-1" autoFocus />
+          <Input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && newName.trim()) onSubmit(); if (e.key === 'Escape') onCancel(); }} placeholder="e.g. Reduce Setup Times" className="h-9 mt-1" autoFocus />
         </div>
         <div>
           <Label className="text-xs">Comment (optional)</Label>
