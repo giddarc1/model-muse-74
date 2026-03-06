@@ -31,7 +31,7 @@ export default function IBOMScreen() {
   const [viewAssemblyId, setViewAssemblyId] = useState('');
   const [editParentId, setEditParentId] = useState('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  const [selectedAllowable, setSelectedAllowable] = useState('');
+  const [checkedAllowable, setCheckedAllowable] = useState<Set<string>>(new Set());
   const [selectedComponent, setSelectedComponent] = useState('');
 
   const buildTree = useCallback((parentId: string, depth: number, visited: Set<string>): TreeNode[] => {
@@ -123,16 +123,18 @@ export default function IBOMScreen() {
     });
   };
 
-  const handleAddOne = () => {
-    if (!selectedAllowable || !editParentId) return;
-    addIBOM(model.id, {
-      id: crypto.randomUUID(),
-      parent_product_id: editParentId,
-      component_product_id: selectedAllowable,
-      units_per_assy: 1,
+  const handleAddChecked = () => {
+    if (!editParentId || checkedAllowable.size === 0) return;
+    checkedAllowable.forEach(pId => {
+      addIBOM(model.id, {
+        id: crypto.randomUUID(),
+        parent_product_id: editParentId,
+        component_product_id: pId,
+        units_per_assy: 1,
+      });
     });
-    setSelectedAllowable('');
-    toast.success(`Added ${prodName(selectedAllowable)} as component`);
+    toast.success(`Added ${checkedAllowable.size} component(s)`);
+    setCheckedAllowable(new Set());
   };
 
   const handleRemoveOne = () => {
@@ -338,7 +340,7 @@ export default function IBOMScreen() {
             </div>
 
             {editParentId && (
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start">
+              <div className="space-y-3">
                 <div>
                   <Label className="text-xs mb-1.5 block">Current Components</Label>
                   <div className="border rounded-md min-h-[200px] max-h-[320px] overflow-y-auto">
@@ -350,15 +352,12 @@ export default function IBOMScreen() {
                           <TableRow>
                             <TableHead className="text-xs font-mono h-8">Component</TableHead>
                             <TableHead className="text-xs font-mono h-8 w-20">Units</TableHead>
+                            <TableHead className="text-xs font-mono h-8 w-10"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {currentComponents.map((c) => (
-                            <TableRow
-                              key={c.id}
-                              className={`cursor-pointer ${selectedComponent === c.component_product_id ? 'bg-primary/10' : ''}`}
-                              onClick={() => setSelectedComponent(c.component_product_id)}
-                            >
+                            <TableRow key={c.id}>
                               <TableCell className="font-mono text-xs py-1.5">{prodName(c.component_product_id)}</TableCell>
                               <TableCell className="py-1.5">
                                 <Input
@@ -366,9 +365,13 @@ export default function IBOMScreen() {
                                   className="h-7 w-16 font-mono text-xs"
                                   value={c.units_per_assy}
                                   min={1}
-                                  onClick={(e) => e.stopPropagation()}
                                   onChange={(e) => updateIBOM(model.id, c.id, { units_per_assy: Math.max(1, +e.target.value) })}
                                 />
+                              </TableCell>
+                              <TableCell className="py-1.5">
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => { deleteIBOM(model.id, c.id); toast.success('Component removed'); }}>
+                                  <ChevronRightIcon className="h-3.5 w-3.5" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -376,21 +379,11 @@ export default function IBOMScreen() {
                       </Table>
                     )}
                   </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 pt-8">
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleAddOne} disabled={!selectedAllowable} title="Add one">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRemoveOne} disabled={!selectedComponent} title="Remove one">
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleAddAll} disabled={allowableProducts.length === 0} title="Add all">
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleRemoveAll} disabled={currentComponents.length === 0} title="Remove all">
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1.5 mt-2">
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleRemoveAll} disabled={currentComponents.length === 0}>
+                      <ChevronsRight className="h-3.5 w-3.5" /> Remove All
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
@@ -399,18 +392,37 @@ export default function IBOMScreen() {
                     {allowableProducts.length === 0 ? (
                       <p className="text-xs text-muted-foreground p-3">No available components</p>
                     ) : (
-                      <div className="p-1">
+                      <div className="p-1 space-y-0.5">
                         {allowableProducts.map((p) => (
-                          <div
+                          <label
                             key={p.id}
-                            className={`px-2.5 py-1.5 rounded cursor-pointer text-xs font-mono ${selectedAllowable === p.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50'}`}
-                            onClick={() => setSelectedAllowable(p.id)}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-xs font-mono hover:bg-muted/50"
                           >
+                            <input
+                              type="checkbox"
+                              checked={checkedAllowable.has(p.id)}
+                              onChange={(e) => {
+                                setCheckedAllowable(prev => {
+                                  const next = new Set(prev);
+                                  if (e.target.checked) next.add(p.id); else next.delete(p.id);
+                                  return next;
+                                });
+                              }}
+                              className="rounded border-border"
+                            />
                             {p.name}
-                          </div>
+                          </label>
                         ))}
                       </div>
                     )}
+                  </div>
+                  <div className="flex gap-1.5 mt-2">
+                    <Button size="sm" className="text-xs gap-1" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
+                      <ChevronsLeft className="h-3.5 w-3.5" /> Add Selected as Components
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
+                      Add All
+                    </Button>
                   </div>
                 </div>
               </div>

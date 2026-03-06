@@ -13,6 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink, Info, FlaskConical } from 'lucide-react';
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+  );
+}
+
+const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 
@@ -160,14 +168,32 @@ export default function ProductData() {
                       {p.lot_size < 1 && <span className="text-[10px] text-destructive">≥ 1</span>}
                     </TableCell>
                     {showAdvanced && <>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></TableCell>
+                      <TableCell>
+                        <Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} />
+                        <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
+                      </TableCell>
                       <TableCell><Input className="h-8 w-24" value={p.dept_code} onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
+                          <InfoTip text="Scales the product demand without changing the stored demand value. Set to 0 to effectively exclude this product from calculations while keeping its data." />
+                        </div>
+                      </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></TableCell>
-                      <TableCell><Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} /></TableCell>
-                      <TableCell><Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} /></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
+                          <InfoTip text="When checked, this component is assumed to be held in stock. Its MCT does not add to the parent assembly MCT. Use for Assemble-to-Order scenarios." />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} />
+                          <InfoTip text="When checked, the first transfer batch waits for the full lot before moving to stock. Uncheck if transfer batches are sent forward immediately as completed." />
+                        </div>
+                      </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.prod1} onChange={(e) => handleCellChange(p.id, 'prod1', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.prod2} onChange={(e) => handleCellChange(p.id, 'prod2', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.prod3} onChange={(e) => handleCellChange(p.id, 'prod3', +e.target.value)} /></TableCell>
@@ -238,20 +264,33 @@ export default function ProductData() {
                     <div className="pt-3 border-t border-border space-y-3">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Advanced Parameters</Label>
                       <div className="grid grid-cols-2 gap-3">
-                        <div><Label className="text-xs">Transfer Batch</Label><Input type="number" className="h-8 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} /></div>
-                        <div><Label className="text-xs">Demand Factor</Label><Input type="number" className="h-8 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} /></div>
+                         <div>
+                            <Label className="text-xs">Transfer Batch</Label>
+                            <Input type="number" className="h-8 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} />
+                            <span className="text-[9px] text-muted-foreground">-1 = same as lot size (default)</span>
+                          </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs">Demand Factor</Label>
+                            <InfoTip text="Scales the product demand without changing the stored demand value. Set to 0 to effectively exclude this product from calculations while keeping its data." />
+                          </div>
+                          <Input type="number" className="h-8 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
+                        </div>
                         <div><Label className="text-xs">Lot Factor</Label><Input type="number" className="h-8 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></div>
                         <div><Label className="text-xs">Var Factor</Label><Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></div>
                       </div>
                       <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Make to Stock</Label>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs">Make to Stock</Label>
+                          <InfoTip text="When checked, this component is assumed to be held in stock. Its MCT does not add to the parent assembly MCT. Use for Assemble-to-Order scenarios." />
+                        </div>
                         <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Label className="text-xs">Gather Transfer Batches</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">When checked, the first transfer batch waits for the full lot to complete before moving to STOCK. Affects MCT calculation.</TooltipContent></Tooltip></TooltipProvider>
+                          <InfoTip text="When checked, the first transfer batch waits for the full lot before moving to stock. Uncheck if transfer batches are sent forward immediately as completed." />
                         </div>
                         <Switch checked={p.gather_tbatches} onCheckedChange={(v) => handleCellChange(p.id, 'gather_tbatches', v)} />
                       </div>
@@ -264,15 +303,15 @@ export default function ProductData() {
                       </div>
                       {/* Prod1-4 parameter variables */}
                       <div className="pt-2 border-t border-border">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Specific Product Variables</Label>
-                          <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">User-defined variables for this product. Reference them in operation time formulas using the Formula Builder.</TooltipContent></Tooltip></TooltipProvider>
-                        </div>
+                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
                         <div className="grid grid-cols-4 gap-3 mt-1.5">
-                          <div><Label className="text-xs">{model.param_names.prod1_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod1} onChange={(e) => handleCellChange(p.id, 'prod1', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod2_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod2} onChange={(e) => handleCellChange(p.id, 'prod2', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod3_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod3} onChange={(e) => handleCellChange(p.id, 'prod3', +e.target.value)} /></div>
-                          <div><Label className="text-xs">{model.param_names.prod4_name}</Label><Input type="number" className="h-8 font-mono" value={p.prod4} onChange={(e) => handleCellChange(p.id, 'prod4', +e.target.value)} /></div>
+                          {(['prod1', 'prod2', 'prod3', 'prod4'] as const).map(key => (
+                            <div key={key}>
+                              <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                              <Input type="number" className="h-8 font-mono" value={p[key]} onChange={(e) => handleCellChange(p.id, key, +e.target.value)} />
+                              <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

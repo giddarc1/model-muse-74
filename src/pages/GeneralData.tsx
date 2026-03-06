@@ -180,22 +180,13 @@ export default function GeneralData() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-xs flex items-center">{pn.gen1_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
-                    <Input type="number" className="h-8 font-mono" value={g.gen1} onChange={(e) => update({ gen1: +e.target.value })} />
-                  </div>
-                  <div>
-                    <Label className="text-xs flex items-center">{pn.gen2_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
-                    <Input type="number" className="h-8 font-mono" value={g.gen2} onChange={(e) => update({ gen2: +e.target.value })} />
-                  </div>
-                  <div>
-                    <Label className="text-xs flex items-center">{pn.gen3_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
-                    <Input type="number" className="h-8 font-mono" value={g.gen3} onChange={(e) => update({ gen3: +e.target.value })} />
-                  </div>
-                  <div>
-                    <Label className="text-xs flex items-center">{pn.gen4_name}<InfoTip text="Global variable that can be referenced in operation time formulas. Rename in Parameter Names." /></Label>
-                    <Input type="number" className="h-8 font-mono" value={g.gen4} onChange={(e) => update({ gen4: +e.target.value })} />
-                  </div>
+                  {(['gen1', 'gen2', 'gen3', 'gen4'] as const).map(key => (
+                    <div key={key}>
+                      <Label className="text-xs flex items-center">{pn[`${key}_name` as keyof typeof pn]}<InfoTip text="Global variable for operation time formulas. Rename in Parameter Names." /></Label>
+                      <Input type="number" className="h-8 font-mono" value={g[key]} onChange={(e) => update({ [key]: +e.target.value })} />
+                      <span className="text-[9px] text-muted-foreground">Custom variable. Rename in Parameter Names tab. Use in Formula Builder.</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

@@ -19,9 +19,11 @@ const FIELD_LABELS: Record<string, string> = {
   lab1: 'Lab1', lab2: 'Lab2', lab3: 'Lab3', lab4: 'Lab4', comments: 'Comments',
 };
 
+const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 function InfoTip({ text }: { text: string }) {
   return (
-    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[240px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
+    <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">{text}</TooltipContent></Tooltip></TooltipProvider>
   );
 }
 
@@ -127,7 +129,9 @@ export default function LaborData() {
                     <TableHead className="font-mono text-xs">Setup Fac</TableHead>
                     <TableHead className="font-mono text-xs">Run Fac</TableHead>
                     <TableHead className="font-mono text-xs">Var Fac</TableHead>
-                    <TableHead className="font-mono text-xs">Prioritize</TableHead>
+                    <TableHead className="font-mono text-xs">
+                      <div className="flex items-center gap-1">Prioritize <InfoTip text="When enabled, MPX shifts labor time toward more heavily utilised equipment groups served by this labor group, reducing wait-for-labor time at bottlenecks." /></div>
+                    </TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.lab1_name}</TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.lab2_name}</TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.lab3_name}</TableHead>
@@ -213,7 +217,7 @@ export default function LaborData() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Label className="text-xs">Prioritize Use</Label>
-                        <InfoTip text="When enabled, operators are assumed to prioritise the most heavily loaded machines. This reduces Wait for Labor at high-utilisation equipment and increases it slightly at lower-utilisation equipment." />
+                        <InfoTip text="When enabled, MPX shifts labor time toward more heavily utilised equipment groups served by this labor group, reducing wait-for-labor time at bottlenecks." />
                       </div>
                       <Switch checked={l.prioritize_use} onCheckedChange={(v) => handleCellChange(l.id, 'prioritize_use', v)} />
                     </div>
@@ -221,10 +225,13 @@ export default function LaborData() {
                     <div className="pt-2 border-t border-border">
                       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
                       <div className="grid grid-cols-4 gap-3 mt-1.5">
-                        <div><Label className="text-xs">{model.param_names.lab1_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab1} onChange={(e) => handleCellChange(l.id, 'lab1', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.lab2_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab2} onChange={(e) => handleCellChange(l.id, 'lab2', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.lab3_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab3} onChange={(e) => handleCellChange(l.id, 'lab3', +e.target.value)} /></div>
-                        <div><Label className="text-xs">{model.param_names.lab4_name}</Label><Input type="number" className="h-8 font-mono" value={l.lab4} onChange={(e) => handleCellChange(l.id, 'lab4', +e.target.value)} /></div>
+                        {(['lab1', 'lab2', 'lab3', 'lab4'] as const).map(key => (
+                          <div key={key}>
+                            <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                            <Input type="number" className="h-8 font-mono" value={l[key]} onChange={(e) => handleCellChange(l.id, key, +e.target.value)} />
+                            <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>

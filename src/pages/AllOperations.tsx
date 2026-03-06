@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Grid3X3, ClipboardPaste, ChevronDown, ChevronUp } from 'lucide-react';
+import { Grid3X3, ClipboardPaste, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AllOperations() {
@@ -72,7 +72,7 @@ export default function AllOperations() {
 
   return (
     <div className="p-6 animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Grid3X3 className="h-5 w-5 text-primary" /> All Operations
@@ -96,6 +96,12 @@ export default function AllOperations() {
             <ClipboardPaste className="h-3.5 w-3.5" /> Paste
           </Button>
         </div>
+      </div>
+
+      {/* Info note */}
+      <div className="mb-4 flex items-start gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground bg-muted/50 border border-border">
+        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+        <span>This screen shows all operations across all products. It is best used for bulk data entry or copy-paste from external systems. To manage routing, use the Operations tab.</span>
       </div>
 
       <Card>

@@ -262,14 +262,24 @@ export default function OperationsRouting() {
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
-                  {/* View Actual Times / Edit Times toggle */}
-                  <div className="flex items-center gap-1.5 border border-border rounded-md px-2 py-1">
-                    <Edit className="h-3 w-3 text-muted-foreground" />
-                    <Label className="text-[10px] text-muted-foreground cursor-pointer" htmlFor="actual-toggle">
-                      {viewActualTimes ? 'Actual' : 'Input'}
-                    </Label>
-                    <Switch id="actual-toggle" checked={viewActualTimes} onCheckedChange={setViewActualTimes} className="scale-75" />
-                    <Eye className="h-3 w-3 text-muted-foreground" />
+                  {/* View/Edit toggle — visually distinct */}
+                  <div className="flex border rounded-md overflow-hidden">
+                    <Button
+                      variant={!viewActualTimes ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-8 rounded-none gap-1 text-xs px-3"
+                      onClick={() => setViewActualTimes(false)}
+                    >
+                      <Edit className="h-3 w-3" /> Edit Operation Times
+                    </Button>
+                    <Button
+                      variant={viewActualTimes ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-8 rounded-none gap-1 text-xs px-3"
+                      onClick={() => setViewActualTimes(true)}
+                    >
+                      <Eye className="h-3 w-3" /> View Actual Times
+                    </Button>
                   </div>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
                     {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
@@ -313,6 +323,16 @@ export default function OperationsRouting() {
                         {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
                       </TableHead>
                       {showAdvancedTimes && <>
+                        <TableHead colSpan={8} className="text-center text-[10px] text-amber-700 bg-amber-50 border-b-0 font-normal py-1">
+                          ⚠ These time fields are additive. Only fill in fields that apply. Do not enter the same time in multiple fields — it will be double-counted.
+                        </TableHead>
+                      </>}
+                    </TableRow>
+                    {showAdvancedTimes && (
+                      <TableRow>
+                        <TableHead className="font-mono text-xs" colSpan={4}></TableHead>
+                        {!viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
+                        {viewActualTimes && <TableHead className="font-mono text-xs" colSpan={4}></TableHead>}
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
                         <TableHead className="font-mono text-xs">E.Setup/TB</TableHead>
                         <TableHead className="font-mono text-xs">E.Run/Lot</TableHead>
@@ -325,7 +345,10 @@ export default function OperationsRouting() {
                         <TableHead className="font-mono text-xs">{pn.oper2_name}</TableHead>
                         <TableHead className="font-mono text-xs">{pn.oper3_name}</TableHead>
                         <TableHead className="font-mono text-xs">{pn.oper4_name}</TableHead>
-                      </>}
+                        {showFormulaBuilder && <TableHead className="font-mono text-xs w-10"></TableHead>}
+                        <TableHead className="w-10"></TableHead>
+                      </TableRow>
+                    )}
                       {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
