@@ -467,8 +467,14 @@ export default function WhatIfStudio() {
           onPromote={() => setShowPromoteModal(true)}
           onRunScenario={handleRunScenario}
           onSaveAs={handleSaveAs}
-          onDelete={deleteScenario}
-          onShowNewModal={() => setShowNewModal(true)}
+          onDelete={handleDeleteWithConfirmation}
+          onReturnToBasecase={handleReturnToBasecase}
+          showCreateForm={showNewForm}
+          newName={newName}
+          setNewName={setNewName}
+          onCreateSubmit={handleCreate}
+          onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
+          onShowNewForm={() => setShowNewForm(true)}
           userLevel={userLevel}
         />
 
