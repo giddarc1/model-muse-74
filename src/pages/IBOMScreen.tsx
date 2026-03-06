@@ -376,7 +376,7 @@ export default function IBOMScreen() {
               </div>
             </div>
             {/* Filter input */}
-            {viewAssemblyId && tree.length > 0 && (
+            {viewAssemblyId && (
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -400,10 +400,6 @@ export default function IBOMScreen() {
             {!viewAssemblyId ? (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 Select an assembly above to view its structure.
-              </div>
-            ) : tree.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                No components defined for this product. Select it below to add components.
               </div>
             ) : (
               <div className="text-xs">
@@ -436,15 +432,30 @@ export default function IBOMScreen() {
                   }`}
                   onClick={() => handleSelectRow(viewAssemblyId)}
                 >
+                  {tree.length > 0 ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  ) : (
+                    <span className="w-3.5 shrink-0 text-center text-muted-foreground/30">—</span>
+                  )}
                   <Network className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span className="font-mono text-xs font-semibold">{prodName(viewAssemblyId)}</span>
-                  <Badge variant="outline" className="text-[9px] h-4 px-1">Assembly</Badge>
+                  {tree.length > 0 ? (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1">Assembly</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1 text-muted-foreground">No components yet</Badge>
+                  )}
                   <span className="ml-auto w-16 text-right font-mono text-xs text-muted-foreground">—</span>
                   <span className="w-20 text-right font-mono text-xs text-muted-foreground/60">—</span>
                 </div>
+                {/* Hint when no components */}
+                {tree.length === 0 && (
+                  <div className="pl-10 py-2 text-xs text-muted-foreground">
+                    → Click the row above to add components.
+                  </div>
+                )}
                 {/* Tree nodes */}
                 {filteredTree.map((node, i) => renderTreeNode(node, 'root', i))}
-                {filterText && filteredTree.length === 0 && (
+                {filterText && filteredTree.length === 0 && tree.length > 0 && (
                   <div className="flex items-center justify-center py-6 text-muted-foreground text-xs">
                     No matching products found.
                   </div>
