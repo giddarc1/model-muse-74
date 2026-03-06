@@ -437,38 +437,23 @@ export default function WhatIfStudio() {
         </div>
 
         {/* Centre Panel — Active Scenario (flex fill) */}
-        <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
-          <div className="p-3 border-b border-border">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Active Scenario</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {showFamilyRecords && activeFamilyId ? (
-              <FamilyRecordsView
-                familyMembers={activeFamilyMembers}
-                activeScenarioId={activeScenarioId}
-                model={model}
-                onClose={() => setShowFamilyRecords(false)}
-                userLevel={userLevel}
-              />
-            ) : activeScenarioId === null ? (
-              <BasecaseView />
-            ) : activeScenario ? (
-              <ScenarioEditorPanel
-                scenario={activeScenario}
-                model={model}
-                onUpdateDescription={updateScenarioDescription}
-                onRename={renameScenario}
-                onRemoveChange={removeChange}
-                onPromote={() => setShowPromoteModal(true)}
-                onRunScenario={handleRunScenario}
-                onSaveAs={handleSaveAs}
-                userLevel={userLevel}
-              />
-            ) : (
-              <div className="p-8 text-center text-muted-foreground">Select a scenario</div>
-            )}
-          </div>
-        </div>
+        <CentrePanel
+          model={model}
+          modelId={modelId}
+          scenarios={scenarios}
+          activeScenarioId={activeScenarioId}
+          activeScenario={activeScenario}
+          setActiveScenario={setActiveScenario}
+          onRename={renameScenario}
+          onUpdateDescription={updateScenarioDescription}
+          onRemoveChange={removeChange}
+          onPromote={() => setShowPromoteModal(true)}
+          onRunScenario={handleRunScenario}
+          onSaveAs={handleSaveAs}
+          onDelete={deleteScenario}
+          onShowNewModal={() => setShowNewModal(true)}
+          userLevel={userLevel}
+        />
 
         {/* Right Panel — Families (300px, Advanced only) */}
         {isVisible('whatif_families', userLevel) && (
