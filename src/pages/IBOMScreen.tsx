@@ -213,7 +213,7 @@ export default function IBOMScreen() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Panel: View IBOM Structure */}
-        <Card className="h-fit">
+        <Card className={`h-fit ${activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}`}>
           <CardHeader>
             <CardTitle className="text-base">View Assembly Structure</CardTitle>
             <CardDescription>Select an assembly to view its component hierarchy.</CardDescription>
