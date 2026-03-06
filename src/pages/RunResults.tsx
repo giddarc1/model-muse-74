@@ -707,6 +707,32 @@ export default function RunResults() {
           </DropdownMenu>
         )}
 
+        {/* Scenario context dropdown */}
+        <div className="h-[60%] w-px bg-border self-center" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">Running for:</span>
+          <Select value={selectedRunScenarioId} onValueChange={setSelectedRunScenarioId}>
+            <SelectTrigger className={`h-7 w-auto min-w-[140px] max-w-[220px] text-xs gap-1 ${selectedRunScenarioId !== 'basecase' ? 'text-warning border-warning/40' : ''}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basecase">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Basecase
+                </span>
+              </SelectItem>
+              {modelScenarios.map((sc, idx) => (
+                <SelectItem key={sc.id} value={sc.id}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: getScenarioColor(idx) }} />
+                    {sc.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex-1" />
 
         {/* Far right — status chip + last run */}
