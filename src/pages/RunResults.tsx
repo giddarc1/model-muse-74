@@ -237,6 +237,7 @@ export default function RunResults() {
   // ibomProduct state removed — now managed inside IBOMOutput component
 
   // Advanced mode state — must be before early return
+  const [piModalOpen, setPiModalOpen] = useState(false);
   const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
   const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
   const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
