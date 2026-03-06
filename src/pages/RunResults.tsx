@@ -1023,8 +1023,8 @@ export default function RunResults() {
                       <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
                       <Tooltip contentStyle={tooltipStyle} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Lot Waiting" />
-                      <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Queue" />
+                      <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
+                      <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
                       <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
                       <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
                       <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
