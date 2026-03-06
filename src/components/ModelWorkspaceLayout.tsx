@@ -6,7 +6,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { useUserLevelStore, isVisible, type FeatureKey } from '@/hooks/useUserLevel';
 import { ModelContextBar } from './ModelContextBar';
 import { ModelSidebar } from './ModelSidebar';
-import { WhatIfBanner } from './WhatIfBanner';
+
 import { toast } from 'sonner';
 
 const SCREEN_NAMES: Record<string, string> = {
@@ -71,7 +71,7 @@ export function ModelWorkspaceLayout() {
 
   return (
     <div className="h-screen flex flex-col">
-      <WhatIfBanner />
+      
       <ModelContextBar />
       <div className="flex flex-1 overflow-hidden">
         <ModelSidebar />
