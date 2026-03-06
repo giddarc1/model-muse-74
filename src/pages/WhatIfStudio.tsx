@@ -519,7 +519,7 @@ function ScenarioEditorPanel({
   onPromote: () => void;
   onRunScenario: (scenario: Scenario) => void;
   onSaveAs: (scenario: Scenario) => void;
-  userLevel: string;
+  userLevel: UserLevel;
 }) {
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(scenario.name);
