@@ -162,10 +162,24 @@ export default function WhatIfStudio() {
   };
 
   const handlePromote = () => {
-    if (!activeScenarioId) return;
+    if (!activeScenarioId || !activeScenario) return;
+    const nm = activeScenario.name;
     promoteToBasecase(activeScenarioId);
     setShowPromoteModal(false);
-    toast.success('Scenario promoted to Basecase');
+    toast.success(`Basecase updated from "${nm}". Run Full Calculate to see updated results.`);
+  };
+
+  const handleReturnToBasecase = () => {
+    // Check if active scenario has unsaved changes (changes.length > 0 means edits exist)
+    if (activeScenario && activeScenario.changes.length > 0) {
+      setShowReturnModal(true);
+    } else {
+      setActiveScenario(null);
+    }
+  };
+
+  const handleDeleteWithConfirmation = (scenarioId: string) => {
+    setShowDeleteModal(scenarioId);
   };
 
   const handleSaveAs = async (scenario: Scenario) => {
