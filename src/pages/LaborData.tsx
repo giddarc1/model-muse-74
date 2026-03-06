@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { useModelStore, type LaborGroup } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+
+const FIELD_LABELS: Record<string, string> = {
+  count: 'Count', overtime_pct: 'Overtime %', unavail_pct: 'Unavail %',
+  dept_code: 'Dept/Area', setup_factor: 'Setup Factor', run_factor: 'Run Factor',
+  var_factor: 'Var Factor', prioritize_use: 'Prioritize Use',
+  lab1: 'Lab1', lab2: 'Lab2', lab3: 'Lab3', lab4: 'Lab4', comments: 'Comments',
+};
 
 function InfoTip({ text }: { text: string }) {
   return (
