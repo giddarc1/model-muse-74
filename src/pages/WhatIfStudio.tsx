@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange, type ScenarioFamily } from '@/stores/scenarioStore';
-import FamiliesDrawer from '@/components/FamiliesPanel';
+import FamiliesTabContent from '@/components/FamiliesPanel';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useUserLevelStore, isVisible, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
@@ -17,9 +17,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
-} from '@/components/ui/drawer';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
