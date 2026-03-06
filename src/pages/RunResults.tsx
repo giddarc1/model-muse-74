@@ -229,7 +229,7 @@ export default function RunResults() {
   const [extRunMode, setExtRunMode] = useState<ExtendedRunMode>('full');
   const runMode: RunMode = (extRunMode === 'full' || extRunMode === 'verify' || extRunMode === 'util_only') ? extRunMode : 'full';
   const [transposed, setTransposed] = useState(false);
-  const [ibomProduct, setIbomProduct] = useState('');
+  // ibomProduct state removed — now managed inside IBOMOutput component
 
   // Advanced mode state — must be before early return
   const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
