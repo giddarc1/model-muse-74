@@ -459,29 +459,48 @@ export default function WhatIfStudio() {
         </div>
 
         {/* Centre Panel — Active Scenario (flex fill) */}
-        <CentrePanel
-          model={model}
-          modelId={modelId}
-          scenarios={scenarios}
-          activeScenarioId={activeScenarioId}
-          activeScenario={activeScenario}
-          setActiveScenario={setActiveScenario}
-          onRename={renameScenario}
-          onUpdateDescription={updateScenarioDescription}
-          onRemoveChange={removeChange}
-          onPromote={() => setShowPromoteModal(true)}
-          onRunScenario={handleRunScenario}
-          onSaveAs={handleSaveAs}
-          onDelete={handleDeleteWithConfirmation}
-          onReturnToBasecase={handleReturnToBasecase}
-          showCreateForm={showNewForm}
-          newName={newName}
-          setNewName={setNewName}
-          onCreateSubmit={handleCreate}
-          onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
-          onShowNewForm={() => setShowNewForm(true)}
-          userLevel={userLevel}
-        />
+        {showFamilyRecords && activeScenario?.familyId ? (
+          <div className="flex-1 border-r border-border flex flex-col overflow-y-auto">
+            <div className="p-3 border-b border-border flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowFamilyRecords(false)}>
+                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back to Scenario
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <FamilyRecordsView
+                familyMembers={scenarios.filter(s => s.familyId === activeScenario.familyId)}
+                activeScenarioId={activeScenarioId}
+                model={model}
+                onClose={() => setShowFamilyRecords(false)}
+                userLevel={userLevel}
+              />
+            </div>
+          </div>
+        ) : (
+          <CentrePanel
+            model={model}
+            modelId={modelId}
+            scenarios={scenarios}
+            activeScenarioId={activeScenarioId}
+            activeScenario={activeScenario}
+            setActiveScenario={setActiveScenario}
+            onRename={renameScenario}
+            onUpdateDescription={updateScenarioDescription}
+            onRemoveChange={removeChange}
+            onPromote={() => setShowPromoteModal(true)}
+            onRunScenario={handleRunScenario}
+            onSaveAs={handleSaveAs}
+            onDelete={handleDeleteWithConfirmation}
+            onReturnToBasecase={handleReturnToBasecase}
+            showCreateForm={showNewForm}
+            newName={newName}
+            setNewName={setNewName}
+            onCreateSubmit={handleCreate}
+            onCancelCreate={() => { setShowNewForm(false); setNewName(''); }}
+            onShowNewForm={() => setShowNewForm(true)}
+            userLevel={userLevel}
+          />
+        )}
 
         {/* Right Panel — Families (300px, Advanced only) */}
         {isVisible('whatif_families', userLevel) && (
