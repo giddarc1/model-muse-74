@@ -25,9 +25,10 @@ import {
 } from '@/components/ui/collapsible';
 import {
   Plus, MoreVertical, Play, Save, ArrowUpCircle, RefreshCw,
-  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, ChevronRight, ChevronDown,
-  Users, Wrench, Package, AlertTriangle, Layers,
+  FlaskConical, Shield, Pencil, Trash2, Copy, Eye, EyeOff, Lock, ChevronRight, ChevronDown,
+  Users, Wrench, Package, AlertTriangle, Layers, Circle, CircleAlert, CircleCheck,
 } from 'lucide-react';
+import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
 import { scenarioDb } from '@/lib/scenarioDb';
 
@@ -306,55 +307,132 @@ export default function WhatIfStudio() {
       {/* Three-Panel Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel — Scenario List (260px) */}
-        <div className="w-[260px] shrink-0 border-r border-border flex flex-col overflow-y-auto">
-          <div className="p-3 border-b border-border">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Scenario List</h2>
+        <div className="w-[260px] shrink-0 border-r border-border flex flex-col">
+          {/* Subheader */}
+          <div className="h-9 flex items-center justify-between px-3 border-b border-border bg-muted/30 shrink-0">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Scenarios</span>
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Shown</span>
           </div>
-          <div className="flex-1 overflow-y-auto p-3">
-            {/* Basecase */}
+
+          {/* Scrollable list */}
+          <div className="flex-1 overflow-y-auto">
+            {/* ── Basecase row (pinned first) ── */}
             <button
               onClick={() => { setActiveScenario(null); setShowFamilyRecords(false); }}
-              className={`w-full text-left rounded-md p-2.5 transition-colors ${
-                activeScenarioId === null ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted border border-transparent'
+              className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors border-b border-border/50 ${
+                activeScenarioId === null ? 'bg-primary/5' : 'hover:bg-muted/50'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                <span className="text-sm font-semibold">Basecase</span>
-                <Badge className="ml-auto bg-primary/20 text-primary text-[10px] border-0">BASE</Badge>
-              </div>
+              <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium flex-1 truncate">Basecase</span>
+              {activeScenarioId === null ? (
+                <Badge className="bg-emerald-500/15 text-emerald-600 text-[10px] border-0 shrink-0">Active</Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px] shrink-0">Background</Badge>
+              )}
+              <Eye className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
             </button>
 
-            <div className="mt-2 space-y-1">
-              {familyGroups.ungrouped.map(sc => renderScenarioItem(sc))}
+            {/* ── What-if rows ── */}
+            {scenarios.map((sc, _i) => {
+              // Determine stable colour index: position in the full scenario list for this model
+              const colorIndex = scenarios.indexOf(sc);
+              const dotColor = getScenarioColor(colorIndex);
+              const isActive = activeScenarioId === sc.id;
+              const isDisplayed = displayIds.includes(sc.id);
 
-              {[...familyGroups.groups.entries()].map(([familyId, members]) => {
-                const isCollapsed = collapsedFamilies.has(familyId);
-                const familyName = members[0]?.name || 'Family';
-                return (
-                  <div key={familyId} className="border border-border/50 rounded-md overflow-hidden">
-                    <button
-                      onClick={() => toggleFamilyCollapse(familyId)}
-                      className="w-full text-left p-2 flex items-center gap-2 bg-muted/30 hover:bg-muted/50 transition-colors"
-                    >
-                      {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-                      <Layers className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-semibold truncate flex-1">{familyName}</span>
-                      <Badge variant="secondary" className="text-[10px] shrink-0">{members.length}</Badge>
-                    </button>
-                    {!isCollapsed && (
-                      <div className="border-l-2 border-primary/20 ml-2 space-y-0.5 py-0.5">
-                        {members.map(sc => renderScenarioItem(sc, true))}
-                      </div>
+              // Status logic
+              const hasResults = useResultsStore.getState().getResults(sc.id) != null;
+              let statusBadge: React.ReactNode;
+              if (isActive) {
+                statusBadge = (
+                  <Badge className="bg-amber-500/15 text-amber-600 border-0 text-[10px] shrink-0 gap-0.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" /> Active
+                  </Badge>
+                );
+              } else if (sc.status === 'needs_recalc' && hasResults) {
+                statusBadge = (
+                  <Badge variant="outline" className="border-amber-400 text-amber-600 text-[10px] shrink-0 gap-0.5">
+                    <CircleAlert className="h-2.5 w-2.5" /> Stale
+                  </Badge>
+                );
+              } else if (sc.status === 'calculated') {
+                statusBadge = (
+                  <Badge className="bg-emerald-500/15 text-emerald-600 border-0 text-[10px] shrink-0 gap-0.5">
+                    <CircleCheck className="h-2.5 w-2.5" /> Current
+                  </Badge>
+                );
+              } else {
+                statusBadge = (
+                  <Badge variant="secondary" className="text-[10px] shrink-0 gap-0.5">
+                    <Circle className="h-2.5 w-2.5" /> Not Run
+                  </Badge>
+                );
+              }
+
+              return (
+                <button
+                  key={sc.id}
+                  onClick={() => setActiveScenario(sc.id)}
+                  className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors group border-b border-border/30 ${
+                    isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
+                  }`}
+                >
+                  {/* Colour dot */}
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: dotColor }}
+                  />
+                  {/* Name + optional family pill */}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">{sc.name}</span>
+                    {isVisible('whatif_families', userLevel) && sc.familyId && (
+                      <span className="inline-block mt-0.5 text-[9px] font-medium bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none">
+                        Family
+                      </span>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                  {/* Status badge */}
+                  {statusBadge}
+                  {/* Eye toggle */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleDisplayScenario(sc.id); }}
+                    className="shrink-0 ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {isDisplayed ? (
+                      <Eye className="h-3.5 w-3.5" style={{ color: dotColor }} />
+                    ) : (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </button>
+              );
+            })}
+          </div>
 
-            <Button size="sm" className="w-full mt-3 h-8 text-xs" onClick={() => setShowNewModal(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> New Scenario
-            </Button>
+          {/* Bottom button */}
+          <div className="p-3 border-t border-border shrink-0">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      size="sm"
+                      className="w-full h-8 text-xs"
+                      onClick={() => setShowNewModal(true)}
+                      disabled={activeScenarioId !== null}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> New What-if
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {activeScenarioId !== null && (
+                  <TooltipContent side="top">
+                    <p className="text-xs">Return to Basecase before creating a new What-if</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
