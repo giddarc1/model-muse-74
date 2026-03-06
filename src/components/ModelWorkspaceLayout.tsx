@@ -71,7 +71,7 @@ export function ModelWorkspaceLayout() {
 
   return (
     <div className="h-screen flex flex-col">
-      <WhatIfBanner />
+      
       <ModelContextBar />
       <div className="flex flex-1 overflow-hidden">
         <ModelSidebar />
