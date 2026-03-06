@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package } from 'lucide-react';
+import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package, PlusCircle, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -41,6 +41,7 @@ export default function IBOMScreen() {
   const [showRemoveAllDialog, setShowRemoveAllDialog] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
+  const [showEmptyPicker, setShowEmptyPicker] = useState(false);
 
   // Track previous valid values for revert on blur
   const prevUpaValues = useRef<Map<string, number>>(new Map());
@@ -186,6 +187,7 @@ export default function IBOMScreen() {
     setSelectedProductId(productId);
     setCheckedAllowable(new Set());
     setConfirmingRemoveId(null);
+    setShowEmptyPicker(false);
   };
 
   const handleAddChecked = () => {
@@ -454,11 +456,11 @@ export default function IBOMScreen() {
       </div>
 
       {/* ═══ BOTTOM PANEL — Edit Components ═══ */}
-      <div className="flex-1 min-h-0 px-6 pt-2 pb-4">
-        <Card className="h-full flex flex-col">
-          <CardHeader className="pb-2 shrink-0">
+      <div className="flex-1 min-h-0 px-6 pt-2 pb-4 overflow-y-auto" style={{ maxHeight: '50vh' }}>
+        <Card className="flex flex-col">
+          <CardHeader className="py-2 px-4 shrink-0">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">
+              <CardTitle className="text-[13px] font-medium">
                 {editParentId
                   ? <>Components for: <span className="font-mono text-primary">{prodName(editParentId)}</span></>
                   : 'Edit Components'
@@ -471,151 +473,176 @@ export default function IBOMScreen() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto p-4 pt-0">
+          <CardContent className="p-4 pt-0">
             {!editParentId ? (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                 Click any product in the tree above to edit its components.
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 h-full">
-                {/* Left: Current Components */}
-                <div className="flex flex-col min-h-0">
-                  <Label className="text-xs font-medium mb-1.5 shrink-0">Current Components</Label>
-                  <div className="border rounded-md flex-1 overflow-y-auto">
-                    {currentComponents.length === 0 ? (
-                      <p className="text-xs text-muted-foreground p-3">No components added yet. Add from the list on the right.</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-xs h-7">Component</TableHead>
-                            <TableHead className="text-xs h-7 w-24">Units/Assy</TableHead>
-                            <TableHead className="text-xs h-7 w-20"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentComponents.map((c) => {
-                            const isConfirming = confirmingRemoveId === c.id;
-                            const hasError = upaErrors.has(c.id);
-                            return (
-                              <TableRow key={c.id} className={isConfirming ? 'bg-destructive/10' : ''}>
-                                {isConfirming ? (
-                                  <TableCell colSpan={3} className="py-1.5">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <span className="text-destructive font-medium">
-                                        Remove {prodName(c.component_product_id)}?
-                                      </span>
-                                      <div className="flex gap-1.5">
-                                        <Button
-                                          variant="destructive"
-                                          size="sm"
-                                          className="h-6 text-xs px-2"
-                                          onClick={() => {
-                                            deleteIBOM(model.id, c.id);
-                                            setConfirmingRemoveId(null);
-                                            toast.success('Component removed');
-                                          }}
-                                        >
-                                          Confirm
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 text-xs px-2"
-                                          onClick={() => setConfirmingRemoveId(null)}
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                ) : (
-                                  <>
-                                    <TableCell className="font-mono text-xs py-1">{prodName(c.component_product_id)}</TableCell>
-                                    <TableCell className="py-1">
-                                      <div>
-                                        <Input
-                                          type="number"
-                                          className={`h-6 w-16 font-mono text-xs ${hasError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                                          defaultValue={c.units_per_assy}
-                                          min={1}
-                                          onChange={(e) => handleUpaChange(c.id, e.target.value, c.units_per_assy)}
-                                          onBlur={() => handleUpaBlur(c.id)}
-                                        />
-                                        {hasError && (
-                                          <p className="text-[10px] text-destructive mt-0.5">Must be greater than 0</p>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="py-1 text-right">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-xs text-destructive hover:text-destructive px-2"
-                                        onClick={() => setConfirmingRemoveId(c.id)}
-                                      >
-                                        Remove
-                                      </Button>
-                                    </TableCell>
-                                  </>
-                                )}
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </div>
-                  {currentComponents.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs mt-1.5 self-start text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setShowRemoveAllDialog(true)}
-                    >
-                      Remove All Components
-                    </Button>
+            ) : currentComponents.length === 0 && !showEmptyPicker ? (
+              /* ── Empty state: no components ── */
+              <div className="flex flex-col items-center justify-center py-8 gap-3">
+                <div className="rounded-full bg-muted p-3">
+                  <GitBranch className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-medium">{prodName(editParentId)} has no components yet</p>
+                  <p className="text-xs text-muted-foreground">Add components below to define the bill of materials for this product.</p>
+                </div>
+                <Button size="sm" className="text-xs gap-1" onClick={() => setShowEmptyPicker(true)}>
+                  <PlusCircle className="h-3.5 w-3.5" /> Add Components
+                </Button>
+              </div>
+            ) : currentComponents.length === 0 && showEmptyPicker ? (
+              /* ── Empty state with inline picker ── */
+              <div className="space-y-3">
+                <div className="flex flex-col items-center gap-2 pt-4 pb-2">
+                  <p className="text-sm font-medium">{prodName(editParentId)} has no components yet</p>
+                  <p className="text-xs text-muted-foreground">Select components to add:</p>
+                </div>
+                <div className="max-w-md mx-auto">
+                  {allProducts.length <= 1 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">No other products exist. Add products in the Products tab first.</p>
+                  ) : allowableProducts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">All valid components have already been added.</p>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      <div className="max-h-48 overflow-y-auto">
+                        {allowableProducts.map((p, i) => (
+                          <label
+                            key={p.id}
+                            className={`flex items-center gap-2 px-2 cursor-pointer text-[13px] ${i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
+                            style={{ height: 32 }}
+                          >
+                            <Checkbox
+                              className="h-4 w-4"
+                              checked={checkedAllowable.has(p.id)}
+                              onCheckedChange={(checked) => {
+                                setCheckedAllowable(prev => { const n = new Set(prev); if (checked) n.add(p.id); else n.delete(p.id); return n; });
+                              }}
+                            />
+                            <span className="flex-1 truncate">{p.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5 p-2 border-t border-border bg-muted/30">
+                        <Button size="sm" className="h-7 text-xs" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
+                          {checkedAllowable.size > 0 ? `Add ${checkedAllowable.size} Selected` : 'Add Selected'}
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
+                          Add All ({allowableProducts.length})
+                        </Button>
+                      </div>
+                    </div>
                   )}
+                </div>
+              </div>
+            ) : (
+              /* ── Two-column editing layout ── */
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left: Current Components */}
+                <div>
+                  <p className="text-[13px] font-medium py-2">Current Components</p>
+                  <div className="border rounded-md overflow-hidden">
+                    {currentComponents.map((c) => {
+                      const isConfirming = confirmingRemoveId === c.id;
+                      const hasError = upaErrors.has(c.id);
+                      return (
+                        <div key={c.id} className={`flex items-center px-2 border-b border-border/50 last:border-0 ${isConfirming ? 'bg-destructive/10' : ''}`} style={{ height: 36 }}>
+                          {isConfirming ? (
+                            <div className="flex items-center justify-between w-full text-xs">
+                              <span className="text-destructive font-medium">Remove {prodName(c.component_product_id)}?</span>
+                              <div className="flex gap-1">
+                                <Button variant="destructive" size="sm" className="h-6 text-[11px] px-2"
+                                  onClick={() => { deleteIBOM(model.id, c.id); setConfirmingRemoveId(null); toast.success('Component removed'); }}>
+                                  Confirm
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 text-[11px] px-2" onClick={() => setConfirmingRemoveId(null)}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="flex-1 text-[13px] truncate">{prodName(c.component_product_id)}</span>
+                              <div className="shrink-0 ml-2">
+                                <Input
+                                  type="number"
+                                  className={`h-7 w-14 text-[13px] font-mono text-center ${hasError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                  defaultValue={c.units_per_assy}
+                                  min={1}
+                                  onChange={(e) => handleUpaChange(c.id, e.target.value, c.units_per_assy)}
+                                  onBlur={() => handleUpaBlur(c.id)}
+                                />
+                                {hasError && <p className="text-[9px] text-destructive">{'> 0'}</p>}
+                              </div>
+                              <button
+                                className="shrink-0 ml-2 text-destructive hover:text-destructive/80 transition-colors"
+                                style={{ width: 24, height: 24 }}
+                                onClick={() => setConfirmingRemoveId(c.id)}
+                                title="Remove"
+                              >
+                                <X className="h-3.5 w-3.5 mx-auto" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setShowEmptyPicker(true)}>
+                      <PlusCircle className="h-3 w-3 mr-1" /> Add More
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-destructive hover:text-destructive"
+                      onClick={() => setShowRemoveAllDialog(true)}
+                      disabled={currentComponents.length === 0}
+                    >
+                      Remove All
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Right: Add Components */}
-                <div className="flex flex-col min-h-0">
-                  <Label className="text-xs font-medium mb-1.5 shrink-0">Available to add:</Label>
-                  <div className="border rounded-md flex-1 overflow-y-auto p-1">
+                <div className="flex flex-col">
+                  <p className="text-[13px] font-medium py-2">Available to add:</p>
+                  <div className="border rounded-md overflow-hidden flex flex-col">
                     {allProducts.length <= 1 ? (
                       <p className="text-xs text-muted-foreground p-2">No other products exist. Add products in the Products tab first.</p>
                     ) : allowableProducts.length === 0 ? (
                       <p className="text-xs text-muted-foreground p-2">All valid components have already been added.</p>
                     ) : (
-                      <div className="space-y-0.5">
-                        {allowableProducts.map((p) => (
-                          <label
-                            key={p.id}
-                            className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-xs font-mono hover:bg-muted/50"
-                          >
-                            <Checkbox
-                              checked={checkedAllowable.has(p.id)}
-                              onCheckedChange={(checked) => {
-                                setCheckedAllowable(prev => {
-                                  const next = new Set(prev);
-                                  if (checked) next.add(p.id); else next.delete(p.id);
-                                  return next;
-                                });
-                              }}
-                            />
-                            {p.name}
-                          </label>
-                        ))}
-                      </div>
+                      <>
+                        <div className="max-h-48 overflow-y-auto">
+                          {allowableProducts.map((p, i) => (
+                            <label
+                              key={p.id}
+                              className={`flex items-center gap-2 px-2 cursor-pointer text-[13px] ${i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}
+                              style={{ height: 32 }}
+                            >
+                              <Checkbox
+                                className="h-4 w-4"
+                                checked={checkedAllowable.has(p.id)}
+                                onCheckedChange={(checked) => {
+                                  setCheckedAllowable(prev => { const n = new Set(prev); if (checked) n.add(p.id); else n.delete(p.id); return n; });
+                                }}
+                              />
+                              <span className="flex-1 truncate">{p.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex gap-1.5 p-2 border-t border-border bg-muted/30 sticky bottom-0">
+                          <Button size="sm" className="h-7 text-xs" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
+                            {checkedAllowable.size > 0 ? `Add ${checkedAllowable.size} Selected` : 'Add Selected'}
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
+                            Add All ({allowableProducts.length})
+                          </Button>
+                        </div>
+                      </>
                     )}
-                  </div>
-                  <div className="flex gap-1.5 mt-1.5 shrink-0">
-                    <Button size="sm" className="text-xs" onClick={handleAddChecked} disabled={checkedAllowable.size === 0}>
-                      {checkedAllowable.size > 0 ? `Add ${checkedAllowable.size} Selected` : 'Add Selected'}
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs" onClick={handleAddAll} disabled={allowableProducts.length === 0}>
-                      Add All ({allowableProducts.length})
-                    </Button>
                   </div>
                 </div>
               </div>
