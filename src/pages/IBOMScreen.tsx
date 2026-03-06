@@ -376,7 +376,7 @@ export default function IBOMScreen() {
               </div>
             </div>
             {/* Filter input */}
-            {viewAssemblyId && tree.length > 0 && (
+            {viewAssemblyId && (
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -400,10 +400,6 @@ export default function IBOMScreen() {
             {!viewAssemblyId ? (
               <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                 Select an assembly above to view its structure.
-              </div>
-            ) : tree.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                No components defined for this product. Select it below to add components.
               </div>
             ) : (
               <div className="text-xs">
