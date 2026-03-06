@@ -537,6 +537,8 @@ export default function RunResults() {
   const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   const [activeTab, setActiveTab] = useState('summary');
+  const [equipSubTab, setEquipSubTab] = useState('util-chart');
+  const [laborSubTab, setLaborSubTab] = useState('util-chart');
 
   if (!model) return (
     <div className="p-6 space-y-4">
