@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
+import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRightIcon, Network, Info, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
