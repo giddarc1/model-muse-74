@@ -548,7 +548,7 @@ function ScenarioView({
             {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
             {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
             {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
-            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} />}
+            {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
         )}
       </div>
