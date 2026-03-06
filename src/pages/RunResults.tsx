@@ -634,263 +634,97 @@ export default function RunResults() {
       </div>
 
       {/* ── Primary Tab Bar ── */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden">
-        <div className="shrink-0 px-6 pt-2 border-b border-border">
-          <TabsList>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-            <TabsTrigger value="equipment">Equipment</TabsTrigger>
-            <TabsTrigger value="labor">Labor</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="ibom">IBOM</TabsTrigger>
-          </TabsList>
-        </div>
-
-        {/* ── Content Panel — scrolls internally ── */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {/* Validation / Error banners */}
-          {results && results.overLimitResources.length > 0 && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-sm text-destructive font-semibold">Resources exceed utilization limit ({model.general.util_limit}%)</span>
-              </div>
-              <ul className="text-xs text-destructive/80 space-y-0.5 ml-6 list-disc">
-                {results.overLimitResources.map((r, i) => <li key={i}>{r}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {results && results.errors.length > 0 && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
-              <div className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /><span className="text-sm text-destructive font-semibold">Errors</span></div>
-              <ul className="text-xs text-destructive/80 space-y-0.5 ml-6 list-disc mt-1">
-                {results.errors.map((e, i) => <li key={i}>{e}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {verifyMessages && (
-            <div className="mb-4 space-y-2">
-              {verifyMessages.errors.map((e, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-destructive"><XCircle className="h-3.5 w-3.5" /> {e}</div>
-              ))}
-              {verifyMessages.warnings.map((w, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-warning"><AlertTriangle className="h-3.5 w-3.5" /> {w}</div>
-              ))}
-              {verifyMessages.errors.length === 0 && verifyMessages.warnings.length === 0 && (
-                <div className="flex items-center gap-2 text-xs text-success"><CheckCircle className="h-3.5 w-3.5" /> No issues found.</div>
+      <div className="shrink-0 px-6 border-b border-border">
+        <div className="flex h-10 items-center gap-0">
+          {(['summary', 'equipment', 'labor', 'products', 'ibom'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`h-10 px-4 text-sm font-medium capitalize relative transition-colors ${
+                activeTab === tab
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab === 'ibom' ? 'IBOM' : tab}
+              {activeTab === tab && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Content Panel — scrolls internally ── */}
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        {/* Validation / Error banners (only when results exist) */}
+        {results && results.overLimitResources.length > 0 && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <span className="text-sm text-destructive font-semibold">Resources exceed utilization limit ({model.general.util_limit}%)</span>
             </div>
-          )}
+            <ul className="text-xs text-destructive/80 space-y-0.5 ml-6 list-disc">
+              {results.overLimitResources.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          </div>
+        )}
 
-          {!hasRun ? (
-            <Card>
-              <CardContent className="py-16 text-center">
-                <Play className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground font-medium mb-1">No results yet</p>
-                <p className="text-sm text-muted-foreground/70 mb-4">Click ▶ Full Calculate above to compute MCT, WIP, and utilization metrics.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Equipment Tab */}
-              <TabsContent value="equipment" className="mt-0 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Equipment Utilization</CardTitle>
-                    <CardDescription>
-                      {isMultiScenario
-                        ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
-                        : 'Stacked utilization breakdown by equipment group'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={350}>
-                      {isMultiScenario && groupedEquip ? (
-                        <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                          {groupedEquip.bars.map(b => (
-                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                          ))}
-                          {groupedEquip.bars.map(b => (
-                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                          ))}
-                          {groupedEquip.bars.map(b => (
-                            <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
-                          ))}
-                          {groupedEquip.bars.map((b, i) => (
-                            <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
-                          ))}
-                        </BarChart>
-                      ) : (
-                        <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
-                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                          <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
-                          <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      )}
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+        {results && results.errors.length > 0 && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+            <div className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /><span className="text-sm text-destructive font-semibold">Errors</span></div>
+            <ul className="text-xs text-destructive/80 space-y-0.5 ml-6 list-disc mt-1">
+              {results.errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </div>
+        )}
 
-                <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
-                <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
-              </TabsContent>
+        {verifyMessages && (
+          <div className="mb-4 space-y-2">
+            {verifyMessages.errors.map((e, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs text-destructive"><XCircle className="h-3.5 w-3.5" /> {e}</div>
+            ))}
+            {verifyMessages.warnings.map((w, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs text-warning"><AlertTriangle className="h-3.5 w-3.5" /> {w}</div>
+            ))}
+            {verifyMessages.errors.length === 0 && verifyMessages.warnings.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-success"><CheckCircle className="h-3.5 w-3.5" /> No issues found.</div>
+            )}
+          </div>
+        )}
 
-              {/* Labor Tab */}
-              <TabsContent value="labor" className="mt-0 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Labor Utilization</CardTitle>
-                    <CardDescription>
-                      {isMultiScenario
-                        ? `Comparing ${chartScenarios.length} scenarios`
-                        : 'Utilization breakdown by labor group'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      {isMultiScenario && groupedLabor ? (
-                        <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                          {groupedLabor.bars.map(b => (
-                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                          ))}
-                          {groupedLabor.bars.map(b => (
-                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
-                          ))}
-                          {groupedLabor.bars.map(b => (
-                            <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
-                          ))}
-                        </BarChart>
-                      ) : (
-                        <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
-                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
-                          <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      )}
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+        {/* ── Summary Tab ── */}
+        {activeTab === 'summary' && (
+          <>
+            {/* Quick Stats Row */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <QuickStatCard
+                label="Most loaded equipment"
+                value={results ? (() => { const top = [...results.equipment].sort((a, b) => b.totalUtil - a.totalUtil)[0]; return top ? top.name : '—'; })() : '—'}
+                metric={results ? (() => { const top = [...results.equipment].sort((a, b) => b.totalUtil - a.totalUtil)[0]; return top ? `${top.totalUtil.toFixed(1)}%` : ''; })() : ''}
+              />
+              <QuickStatCard
+                label="Most loaded labor"
+                value={results ? (() => { const top = [...results.labor].sort((a, b) => b.totalUtil - a.totalUtil)[0]; return top ? top.name : '—'; })() : '—'}
+                metric={results ? (() => { const top = [...results.labor].sort((a, b) => b.totalUtil - a.totalUtil)[0]; return top ? `${top.totalUtil.toFixed(1)}%` : ''; })() : ''}
+              />
+              <QuickStatCard
+                label="Highest MCT product"
+                value={results ? (() => { const top = [...results.products].sort((a, b) => b.mct - a.mct)[0]; return top ? top.name : '—'; })() : '—'}
+                metric={results ? (() => { const top = [...results.products].sort((a, b) => b.mct - a.mct)[0]; return top ? top.mct.toFixed(4) : ''; })() : ''}
+              />
+              <QuickStatCard
+                label="Total system WIP"
+                value={results ? `${Math.round(results.products.reduce((s, p) => s + p.wip, 0)).toLocaleString()}` : '—'}
+                metric={results ? 'pieces' : ''}
+              />
+            </div>
 
-                <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
-                <LaborWaitChart results={results!} model={model} />
-              </TabsContent>
-
-              {/* Products Tab */}
-              <TabsContent value="products" className="mt-0 space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Product MCT (Manufacturing Cycle Time)</CardTitle>
-                    <CardDescription>
-                      {isMultiScenario
-                        ? `Comparing ${chartScenarios.length} scenarios — MCT in ${model.general.mct_time_unit}s`
-                        : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={350}>
-                      {isMultiScenario && groupedMCT ? (
-                        <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          {groupedMCT.bars.map(b => (
-                            <Bar key={b.prefix + 'lotWait'} dataKey={b.prefix + 'lotWait'} stackId={b.stackId} fill={b.palette.lotWait} name={`${b.name} Lot Wait`} />
-                          ))}
-                          {groupedMCT.bars.map(b => (
-                            <Bar key={b.prefix + 'queue'} dataKey={b.prefix + 'queue'} stackId={b.stackId} fill={b.palette.queue} name={`${b.name} Queue`} />
-                          ))}
-                          {groupedMCT.bars.map(b => (
-                            <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} />
-                          ))}
-                          {groupedMCT.bars.map(b => (
-                            <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
-                          ))}
-                          {groupedMCT.bars.map(b => (
-                            <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} radius={[2, 2, 0, 0]} />
-                          ))}
-                        </BarChart>
-                      ) : (
-                        <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
-                          <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
-                          <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
-                          <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
-                          <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      )}
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* WIP Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      {isMultiScenario && groupedWIP ? (
-                        <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          {groupedWIP.bars.map((b, i) => (
-                            <Bar key={b.prefix + 'wip'} dataKey={b.prefix + 'wip'} fill={b.palette.single} name={`${b.name} WIP`} radius={[2, 2, 0, 0]} />
-                          ))}
-                        </BarChart>
-                      ) : (
-                        <BarChart data={results?.products.map(p => ({ name: p.name, wip: p.wip })) || []} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
-                          <Tooltip contentStyle={tooltipStyle} />
-                          <Bar dataKey="wip" fill={chartColors.setup} name="WIP" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      )}
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
-              </TabsContent>
-
-              {/* Summary Tab */}
-              <TabsContent value="summary" className="mt-0">
+            {/* Pre-run empty state or Output Summary table */}
+            {!hasRun ? (
+              <NoResultsPlaceholder />
+            ) : (
+              <>
                 {results && results.overLimitResources.length === 0 && results.errors.length === 0 && (
                   <div className="flex items-center gap-2 p-3 mb-4 bg-success/10 border border-success/30 rounded-md">
                     <CheckCircle className="h-4 w-4 text-success" />
@@ -920,67 +754,292 @@ export default function RunResults() {
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </>
+            )}
+          </>
+        )}
 
-              {/* IBOM Tab */}
-              <TabsContent value="ibom" className="mt-0 space-y-4">
-                <IBOMOutput model={model} isRunning={isRunning} />
-              </TabsContent>
+        {/* ── Equipment Tab ── */}
+        {activeTab === 'equipment' && (
+          !hasRun ? <NoResultsPlaceholder /> : (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Equipment Utilization</CardTitle>
+                  <CardDescription>
+                    {isMultiScenario
+                      ? `Comparing ${chartScenarios.length} scenarios — grouped stacked bars`
+                      : 'Stacked utilization breakdown by equipment group'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    {isMultiScenario && groupedEquip ? (
+                      <BarChart data={groupedEquip.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                        {groupedEquip.bars.map(b => (
+                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                        ))}
+                        {groupedEquip.bars.map(b => (
+                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                        ))}
+                        {groupedEquip.bars.map(b => (
+                          <Bar key={b.prefix + 'repair'} dataKey={b.prefix + 'repair'} stackId={b.stackId} fill={b.palette.repair} name={`${b.name} Repair`} />
+                        ))}
+                        {groupedEquip.bars.map((b, i) => (
+                          <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} radius={[2, 2, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    ) : (
+                      <BarChart data={equipChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: '% Utilization', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" label={{ value: `Limit ${model.general.util_limit}%`, position: 'right', style: { fontSize: 10, fill: 'hsl(0, 72%, 51%)' } }} />
+                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                        <Bar dataKey="repair" stackId="a" fill={chartColors.repair} name="Repair" />
+                        <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-              {/* Oper Details Tab */}
-              {isVisible('oper_details', userLevel) && (
-                <TabsContent value="operdetails" className="mt-0">
-                  <OperDetailsTab model={model} results={results!} />
-                </TabsContent>
-              )}
-            </>
-          )}
+              <EquipmentResultsTable equipment={results!.equipment} utilLimit={model.general.util_limit} />
+              <EquipmentWIPChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+            </div>
+          )
+        )}
 
-          {/* Run Log */}
-          {runLog.length > 0 && (
-            <Card className="mt-4">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Recent Runs</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Time</TableHead>
-                      <TableHead className="text-xs">Mode</TableHead>
-                      <TableHead className="text-xs">Scenario</TableHead>
-                      <TableHead className="text-xs text-right">Duration</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
+        {/* ── Labor Tab ── */}
+        {activeTab === 'labor' && (
+          !hasRun ? <NoResultsPlaceholder /> : (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Labor Utilization</CardTitle>
+                  <CardDescription>
+                    {isMultiScenario
+                      ? `Comparing ${chartScenarios.length} scenarios`
+                      : 'Utilization breakdown by labor group'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    {isMultiScenario && groupedLabor ? (
+                      <BarChart data={groupedLabor.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                        {groupedLabor.bars.map(b => (
+                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                        ))}
+                        {groupedLabor.bars.map(b => (
+                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} />
+                        ))}
+                        {groupedLabor.bars.map(b => (
+                          <Bar key={b.prefix + 'unavail'} dataKey={b.prefix + 'unavail'} stackId={b.stackId} fill={b.palette.unavail} name={`${b.name} Unavail`} radius={[2, 2, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    ) : (
+                      <BarChart data={laborChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <ReferenceLine y={model.general.util_limit} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" />
+                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" />
+                        <Bar dataKey="unavail" stackId="a" fill={chartColors.unavail} name="Unavailable" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
+              <LaborWaitChart results={results!} model={model} />
+            </div>
+          )
+        )}
+
+        {/* ── Products Tab ── */}
+        {activeTab === 'products' && (
+          !hasRun ? <NoResultsPlaceholder /> : (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Product MCT (Manufacturing Cycle Time)</CardTitle>
+                  <CardDescription>
+                    {isMultiScenario
+                      ? `Comparing ${chartScenarios.length} scenarios — MCT in ${model.general.mct_time_unit}s`
+                      : `MCT breakdown by product in ${model.general.mct_time_unit}s`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    {isMultiScenario && groupedMCT ? (
+                      <BarChart data={groupedMCT.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        {groupedMCT.bars.map(b => (
+                          <Bar key={b.prefix + 'lotWait'} dataKey={b.prefix + 'lotWait'} stackId={b.stackId} fill={b.palette.lotWait} name={`${b.name} Lot Wait`} />
+                        ))}
+                        {groupedMCT.bars.map(b => (
+                          <Bar key={b.prefix + 'queue'} dataKey={b.prefix + 'queue'} stackId={b.stackId} fill={b.palette.queue} name={`${b.name} Queue`} />
+                        ))}
+                        {groupedMCT.bars.map(b => (
+                          <Bar key={b.prefix + 'waitLabor'} dataKey={b.prefix + 'waitLabor'} stackId={b.stackId} fill={b.palette.waitLabor} name={`${b.name} Wait Labor`} />
+                        ))}
+                        {groupedMCT.bars.map(b => (
+                          <Bar key={b.prefix + 'setup'} dataKey={b.prefix + 'setup'} stackId={b.stackId} fill={b.palette.setup} name={`${b.name} Setup`} />
+                        ))}
+                        {groupedMCT.bars.map(b => (
+                          <Bar key={b.prefix + 'run'} dataKey={b.prefix + 'run'} stackId={b.stackId} fill={b.palette.run} name={`${b.name} Run`} radius={[2, 2, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    ) : (
+                      <BarChart data={productChartData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: `MCT (${model.general.mct_time_unit})`, angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Bar dataKey="lotWait" stackId="a" fill={chartColors.lotWait} name="Wait for Lot" />
+                        <Bar dataKey="queue" stackId="a" fill={chartColors.queue} name="Wait for Equipment" />
+                        <Bar dataKey="waitLabor" stackId="a" fill={chartColors.waitLabor} name="Wait for Labor" />
+                        <Bar dataKey="setup" stackId="a" fill={chartColors.setup} name="Setup" />
+                        <Bar dataKey="run" stackId="a" fill={chartColors.run} name="Run" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* WIP Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Product WIP (Work In Progress)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    {isMultiScenario && groupedWIP ? (
+                      <BarChart data={groupedWIP.data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        {groupedWIP.bars.map((b, i) => (
+                          <Bar key={b.prefix + 'wip'} dataKey={b.prefix + 'wip'} fill={b.palette.single} name={`${b.name} WIP`} radius={[2, 2, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    ) : (
+                      <BarChart data={results?.products.map(p => ({ name: p.name, wip: p.wip })) || []} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" tick={axisStyle} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" label={{ value: 'WIP Units', angle: -90, position: 'insideLeft', style: { fontSize: 11 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Bar dataKey="wip" fill={chartColors.setup} name="WIP" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <ProductionChart results={results!} model={model} isMultiScenario={isMultiScenario} chartScenarios={chartScenarios} />
+            </div>
+          )
+        )}
+
+        {/* ── IBOM Tab ── */}
+        {activeTab === 'ibom' && (
+          !hasRun ? <NoResultsPlaceholder /> : (
+            <IBOMOutput model={model} isRunning={isRunning} />
+          )
+        )}
+
+        {/* Run Log */}
+        {runLog.length > 0 && (
+          <Card className="mt-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Recent Runs</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Time</TableHead>
+                    <TableHead className="text-xs">Mode</TableHead>
+                    <TableHead className="text-xs">Scenario</TableHead>
+                    <TableHead className="text-xs text-right">Duration</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {runLog.map(entry => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="text-xs font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</TableCell>
+                      <TableCell className="text-xs capitalize">{entry.mode === 'full' ? 'Full Calculate' : entry.mode === 'verify' ? 'Verify Data' : 'Util Only'}</TableCell>
+                      <TableCell className="text-xs">{entry.scenarioName}</TableCell>
+                      <TableCell className="text-xs text-right font-mono">{entry.durationMs < 1000 ? `${entry.durationMs}ms` : `${(entry.durationMs / 1000).toFixed(1)}s`}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[10px] ${
+                          entry.status === 'success' ? 'border-success/40 text-success' :
+                          entry.status === 'warning' ? 'border-warning/40 text-warning' :
+                          'border-destructive/40 text-destructive'
+                        }`}>
+                          {entry.status === 'success' ? <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> :
+                           entry.status === 'warning' ? <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> :
+                           <XCircle className="h-2.5 w-2.5 mr-0.5" />}
+                          {entry.status}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {runLog.map(entry => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="text-xs font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</TableCell>
-                        <TableCell className="text-xs capitalize">{entry.mode === 'full' ? 'Full Calculate' : entry.mode === 'verify' ? 'Verify Data' : 'Util Only'}</TableCell>
-                        <TableCell className="text-xs">{entry.scenarioName}</TableCell>
-                        <TableCell className="text-xs text-right font-mono">{entry.durationMs < 1000 ? `${entry.durationMs}ms` : `${(entry.durationMs / 1000).toFixed(1)}s`}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-[10px] ${
-                            entry.status === 'success' ? 'border-success/40 text-success' :
-                            entry.status === 'warning' ? 'border-warning/40 text-warning' :
-                            'border-destructive/40 text-destructive'
-                          }`}>
-                            {entry.status === 'success' ? <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> :
-                             entry.status === 'warning' ? <AlertTriangle className="h-2.5 w-2.5 mr-0.5" /> :
-                             <XCircle className="h-2.5 w-2.5 mr-0.5" />}
-                            {entry.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </Tabs>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Shared sub-components ─── */
+
+function NoResultsPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <BarChart3 className="h-10 w-10 text-muted-foreground/30 mb-3" />
+      <p className="text-base font-medium text-muted-foreground mb-1">No results yet</p>
+      <p className="text-sm text-muted-foreground/70">Run Full Calculate to see results.</p>
+    </div>
+  );
+}
+
+function QuickStatCard({ label, value, metric }: { label: string; value: string; metric: string }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-4">
+      <p className="text-2xl font-bold text-foreground leading-tight">{value}</p>
+      {metric && <p className="text-sm font-mono text-muted-foreground mt-0.5">{metric}</p>}
+      <p className="text-xs text-muted-foreground mt-1.5">{label}</p>
     </div>
   );
 }
