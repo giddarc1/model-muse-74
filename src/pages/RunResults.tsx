@@ -1301,15 +1301,8 @@ function EquipmentWIPChart({ results, model, isMultiScenario, chartScenarios }: 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Equipment WIP</CardTitle>
-            <CardDescription>Work-in-progress at each equipment group</CardDescription>
-          </div>
-          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => setShowTable(!showTable)}>
-            {showTable ? 'Show Chart' : 'Show as Table'}
-          </Button>
-        </div>
+        <CardTitle className="text-base">Equipment WIP</CardTitle>
+        <CardDescription>Work-in-progress at each equipment group</CardDescription>
       </CardHeader>
       <CardContent>
         {showTable ? (
