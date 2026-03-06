@@ -976,9 +976,7 @@ export default function RunResults() {
             <LaborResultsTable labor={results!.labor} utilLimit={model.general.util_limit} />
 
             {/* Labor Equipment Wait Chart */}
-            {canAccess(userLevel, 'labor-wait-chart') && (
-              <LaborWaitChart results={results!} model={model} />
-            )}
+            <LaborWaitChart results={results!} model={model} />
           </TabsContent>
 
           {/* Products Tab */}
