@@ -138,7 +138,7 @@ export default function GeneralData() {
         </TabsContent>
 
         <TabsContent value="advanced" className="mt-4 space-y-4">
-          <Card>
+          <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader>
               <CardTitle className="text-base">Variability & Limits</CardTitle>
               <CardDescription>Default coefficients of variation for queuing calculations.</CardDescription>
