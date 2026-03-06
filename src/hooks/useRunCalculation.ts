@@ -109,14 +109,14 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
     setGlobalIsRunning(true);
     const startTime = Date.now();
-    const resultKey = activeScenario ? activeScenario.id : 'basecase';
+    const resultKey = runScenario ? runScenario.id : 'basecase';
 
     return new Promise<void>(resolve => {
       setTimeout(async () => {
-        const calcResults = calculate(model, activeScenario || undefined);
+        const calcResults = calculate(model, runScenario || undefined);
         setResults(resultKey, calcResults);
         setRunStatus(model.id, 'current');
-        if (activeScenario) markCalculated(activeScenario.id);
+        if (runScenario) markCalculated(runScenario.id);
         setGlobalIsRunning(false);
         setVerifyMessages(null);
 
@@ -128,7 +128,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
           id: crypto.randomUUID(),
           timestamp: new Date().toISOString(),
           mode,
-          scenarioName: activeScenario?.name || 'Basecase',
+          scenarioName: runScenario?.name || 'Basecase',
           durationMs,
           status: hasErrors ? 'error' : hasWarnings ? 'warning' : 'success',
         };
@@ -137,8 +137,8 @@ export function useRunCalculation(): UseRunCalculationReturn {
 
         // Persist to Supabase
         const { scenarioDb } = await import('@/lib/scenarioDb');
-        if (activeScenario) {
-          scenarioDb.saveResults(activeScenario.id, calcResults);
+        if (runScenario) {
+          scenarioDb.saveResults(runScenario.id, calcResults);
         } else {
           scenarioDb.saveBasecaseResults(model.id, calcResults);
         }
@@ -155,7 +155,7 @@ export function useRunCalculation(): UseRunCalculationReturn {
         resolve();
       }, 100);
     });
-  }, [model, activeScenario, setResults, setRunStatus, markCalculated]);
+  }, [model, runScenario, setResults, setRunStatus, markCalculated]);
 
   return {
     isRunning,
