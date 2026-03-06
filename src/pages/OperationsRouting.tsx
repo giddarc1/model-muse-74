@@ -193,7 +193,7 @@ export default function OperationsRouting() {
 
   const handleFormulaApply = (value: number, _formula: string) => {
     if (!formulaTarget) return;
-    updateOperation(model.id, formulaTarget.op.id, { [formulaTarget.field]: value });
+    handleOpFieldChange(formulaTarget.op, formulaTarget.field, value);
     toast.success(`Formula applied: ${formulaTarget.label} = ${value}`);
   };
 
