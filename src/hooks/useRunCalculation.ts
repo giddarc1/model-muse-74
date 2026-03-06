@@ -42,9 +42,16 @@ function setGlobalIsRunning(v: boolean) { _isRunning = v; notifyIsRunning(); }
 export function useRunCalculation(): UseRunCalculationReturn {
   const model = useModelStore(s => s.getActiveModel());
   const setRunStatus = useModelStore(s => s.setRunStatus);
+  const allScenarios = useScenarioStore(s => s.scenarios);
   const activeScenario = useScenarioStore(s => s.getActiveScenario());
   const markCalculated = useScenarioStore(s => s.markCalculated);
   const { setResults } = useResultsStore();
+  const selectedRunScenarioId = useResultsStore(s => s.selectedRunScenarioId);
+
+  // Determine which scenario to run for — dropdown selection overrides activeScenario
+  const runScenario = selectedRunScenarioId && selectedRunScenarioId !== 'basecase'
+    ? allScenarios.find(s => s.id === selectedRunScenarioId) || activeScenario
+    : activeScenario;
 
   const [verifyMessages, setVerifyMessages] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
