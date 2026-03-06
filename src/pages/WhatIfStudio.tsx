@@ -224,7 +224,7 @@ export default function WhatIfStudio() {
       </div>
 
       {/* ═══ CENTRE PANEL ═══ */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {familyRecordsId ? (
           <FamilyRecordsView
             family={families.find(f => f.id === familyRecordsId)!}
