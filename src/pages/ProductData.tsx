@@ -71,6 +71,12 @@ export default function ProductData() {
   };
 
   const handleCellChange = (id: string, field: keyof Product, value: any) => {
+    if (activeScenarioId && activeScenario) {
+      const prod = model.products.find(p => p.id === id);
+      const entityName = prod?.name || id;
+      const fieldLabel = FIELD_LABELS[field] || field;
+      applyScenarioChange(activeScenarioId, 'Product', id, entityName, field, fieldLabel, value as string | number);
+    }
     updateProduct(model.id, id, { [field]: value });
   };
 
