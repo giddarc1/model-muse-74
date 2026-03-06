@@ -231,6 +231,8 @@ export default function RunResults() {
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const displayIds = useScenarioStore(s => s.displayScenarioIds);
   const { getResults } = useResultsStore();
+  const selectedRunScenarioId = useResultsStore(s => s.selectedRunScenarioId);
+  const setSelectedRunScenarioId = useResultsStore(s => s.setSelectedRunScenarioId);
   const { userLevel } = useUserLevelStore();
 
   const { isRunning, runLog, verifyMessages, handleRun } = useRunCalculation();
