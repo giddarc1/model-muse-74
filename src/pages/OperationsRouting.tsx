@@ -115,7 +115,7 @@ export default function OperationsRouting() {
   }, [productOps, productRouting]);
 
   const hasAnyRouting = productRouting.length > 0;
-  const showDefaultRoutingBanner = productOps.filter(o => o.op_name !== 'DOCK').length > 0 && !hasAnyRouting;
+  const showDefaultRoutingBanner = productOps.length > 0 && !hasAnyRouting;
 
   // Compute actual times
   const getActualTimes = (op: Operation) => {
@@ -181,14 +181,18 @@ export default function OperationsRouting() {
 
   const handleAutoRoute = () => {
     const sorted = productOps.filter(o => o.op_name !== 'DOCK').sort((a, b) => a.op_number - b.op_number);
-    if (sorted.length === 0) { toast.error('Add operations first'); return; }
     const entries: RoutingEntry[] = [];
-    // DOCK → first op
-    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
+    if (sorted.length === 0) {
+      // Only DOCK exists → route DOCK → STOCK
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: 'STOCK', pct_routed: 100 });
+    } else {
+      // DOCK → first op
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
     for (let i = 0; i < sorted.length - 1; i++) {
       entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
     }
-    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
+    }
     setRouting(model.id, effectiveProductId, entries);
     toast.success('Default routing generated. Review and edit branches as needed.');
   };
@@ -434,17 +438,14 @@ export default function OperationsRouting() {
                           {/* Op # */}
                           <TableCell>
                             {isDock ? (
-                              <span className="font-mono text-xs text-muted-foreground">—</span>
+                              <span className="font-mono text-xs text-muted-foreground">0</span>
                             ) : (
                               <Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} />
                             )}
                           </TableCell>
                           {/* Op Name */}
-                          <TableCell className="font-mono font-medium">
+                          <TableCell className={`font-mono font-medium ${isDock ? 'text-muted-foreground' : ''}`}>
                             {op.op_name}
-                            {isDock && (
-                              <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">Entry point — no equipment or labor</span>
-                            )}
                           </TableCell>
                           {/* Equipment */}
                           <TableCell>
