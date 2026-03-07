@@ -697,14 +697,37 @@ export default function OperationsRouting() {
                             )
                           )}
 
-                          {/* Routing column */}
                           <TableCell className="py-0">
                             {(() => {
                               // Determine routing text and color
                               if (!isDock && op.pct_assigned > 100) {
                                 return (
-                                  <span className="text-sm text-red-600 whitespace-nowrap block truncate">
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
                                     ⚠ % Assign &gt; 100
+                                  </span>
+                                );
+                              }
+                              // Dead-end / unreachable checks
+                              if (!isDock && deadEndOps.has(op.op_name)) {
+                                return (
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
+                                    ⚠ Dead end
+                                  </span>
+                                );
+                              }
+                              if (!isDock && unreachableOps.has(op.op_name)) {
+                                return (
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
+                                    ⚠ Unreachable
                                   </span>
                                 );
                               }
@@ -727,8 +750,8 @@ export default function OperationsRouting() {
                               }
                               return (
                                 <span
-                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} ${isDock ? '' : 'cursor-pointer'}`}
-                                  onClick={isDock ? undefined : () => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} cursor-pointer`}
+                                  onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
                                 >
                                   {text}
                                 </span>
