@@ -61,6 +61,9 @@ export default function GeneralData() {
         applyScenarioChange(activeScenarioId, 'General', model.id, 'General', field, fieldLabel, value as string | number);
       });
     }
+    updateGeneral(model.id, data);
+  };
+
   const UNIT_LABELS: Record<string, string> = {
     SEC: 'seconds', MIN: 'minutes', HR: 'hours', DAY: 'days', WEEK: 'weeks', MONTH: 'months', YEAR: 'year',
   };
