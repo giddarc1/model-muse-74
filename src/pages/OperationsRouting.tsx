@@ -181,10 +181,13 @@ export default function OperationsRouting() {
 
   const handleAutoRoute = () => {
     const sorted = productOps.filter(o => o.op_name !== 'DOCK').sort((a, b) => a.op_number - b.op_number);
-    if (sorted.length === 0) { toast.error('Add operations first'); return; }
     const entries: RoutingEntry[] = [];
-    // DOCK → first op
-    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
+    if (sorted.length === 0) {
+      // Only DOCK exists → route DOCK → STOCK
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: 'STOCK', pct_routed: 100 });
+    } else {
+      // DOCK → first op
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
     for (let i = 0; i < sorted.length - 1; i++) {
       entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
     }
