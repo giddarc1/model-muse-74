@@ -576,11 +576,12 @@ export default function OperationsRouting() {
                           {/* Delete */}
                           <TableCell>
                             {!isDock && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => requestDelete(op.id)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </TableCell>
+                          </>)}
                         </TableRow>
 
                         {/* Inline routing editor */}

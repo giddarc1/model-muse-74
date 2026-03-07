@@ -198,7 +198,7 @@ export default function LaborData() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{l.name}</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLabor(model.id, l.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(`Delete ${l.name}? This will remove it from any equipment assignments.`)) deleteLabor(model.id, l.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

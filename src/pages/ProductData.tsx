@@ -248,7 +248,7 @@ export default function ProductData() {
                   <CardTitle className="text-base font-mono">{p.name}</CardTitle>
                   <div className="flex gap-0.5">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(p)}><Copy className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct(model.id, p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Delete ${p.name}? This will remove its operations and IBOM data.`)) deleteProduct(model.id, p.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
               </CardHeader>
