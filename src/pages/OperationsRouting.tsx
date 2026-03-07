@@ -491,6 +491,22 @@ export default function OperationsRouting() {
         </Card>
       ) : (
         <div className="space-y-4 mt-4">
+          {/* Clear routing confirmation */}
+          {showClearRoutingConfirm && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/30">
+              <span className="text-sm text-red-700">Clear all routing for <strong>{effectiveProduct?.name}</strong>? This cannot be undone.</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowClearRoutingConfirm(false)}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={() => {
+                  setRouting(model.id, effectiveProductId, []);
+                  setExpandedRoutingOp(null);
+                  setShowClearRoutingConfirm(false);
+                  toast.success('All routing cleared');
+                }}>Clear All</Button>
+              </div>
+            </div>
+          )}
+
           {/* Auto-generate confirmation */}
           {showAutoRouteConfirm && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-amber-500/10 border border-amber-500/30">
