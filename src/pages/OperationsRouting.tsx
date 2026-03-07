@@ -585,6 +585,11 @@ export default function OperationsRouting() {
 
                           {/* Routing column */}
                           <TableCell className="py-0">
+                            {!isDock && op.pct_assigned > 100 ? (
+                              <span className="text-sm text-red-600 whitespace-nowrap block">
+                                ⚠ % Assign &gt; 100
+                              </span>
+                            ) : (
                             <span
                               className={`text-sm truncate cursor-pointer whitespace-nowrap block ${
                                 opRoutes.length === 0
@@ -602,6 +607,7 @@ export default function OperationsRouting() {
                                   ? `→ ${opRoutes[0].to_op_name}`
                                   : `→ ${opRoutes.length} paths`}
                             </span>
+                            )}
                           </TableCell>
 
                           {/* Formula Builder trigger */}
