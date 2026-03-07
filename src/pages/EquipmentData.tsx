@@ -127,7 +127,8 @@ export default function EquipmentData() {
                   <TableHead className="font-mono text-xs">MTTF ({opsTimeUnit})</TableHead>
                   <TableHead className="font-mono text-xs">MTTR ({opsTimeUnit})</TableHead>
                   <TableHead className="font-mono text-xs">OT %</TableHead>
-                  <TableHead className="font-mono text-xs">Labor</TableHead>
+                   <TableHead className="font-mono text-xs">Labor</TableHead>
+                   <TableHead className="font-mono text-xs">Comments</TableHead>
                   {showAdvanced && <>
                     <TableHead className="font-mono text-xs">Dept/Area</TableHead>
                     <TableHead className="font-mono text-xs">Out of Area</TableHead>
