@@ -11,6 +11,7 @@ interface ProductSelectorBarProps {
   operations: Operation[];
   selectedProductId: string;
   onSelect: (id: string) => void;
+  statusPill?: React.ReactNode;
 }
 
 export function ProductSelectorBar({ products, operations, selectedProductId, onSelect }: ProductSelectorBarProps) {
