@@ -861,28 +861,6 @@ export default function IBOMScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ ROUTE-LEVEL NAVIGATION GUARD ═══ */}
-      <Dialog open={blocker.state === 'blocked'} onOpenChange={(open) => { if (!open) blocker.reset?.(); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Unsaved IBOM Changes</DialogTitle>
-            <DialogDescription>
-              You have unsaved changes for {editParentId ? prodName(editParentId) : 'this product'}. Save before leaving?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => blocker.reset?.()}>
-              Stay
-            </Button>
-            <Button variant="outline" onClick={() => { handleDiscard(); blocker.proceed?.(); }}>
-              Discard & Leave
-            </Button>
-            <Button onClick={async () => { await handleSave(); blocker.proceed?.(); }}>
-              Save & Leave
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
