@@ -338,7 +338,7 @@ export default function OperationsRouting() {
             <p className="text-sm mt-1">Add products in the Products tab first.</p>
           </CardContent>
         </Card>
-      ) : productOps.length === 0 ? (
+      ) : !hasUserOps ? (
         <Card className="mt-6">
           <CardContent className="p-0">
             <OperationsEmptyState
