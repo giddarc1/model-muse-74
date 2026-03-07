@@ -183,7 +183,7 @@ export default function ProductData() {
                       </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></TableCell>
+                      
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
