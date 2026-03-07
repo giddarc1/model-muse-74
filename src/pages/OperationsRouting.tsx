@@ -434,7 +434,7 @@ export default function OperationsRouting() {
                           {/* Op # */}
                           <TableCell>
                             {isDock ? (
-                              <span className="font-mono text-xs text-muted-foreground">—</span>
+                              <span className="font-mono text-xs text-muted-foreground">0</span>
                             ) : (
                               <Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} />
                             )}
