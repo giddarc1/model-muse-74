@@ -13,10 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical, Calculator, FunctionSquare, Eye, Edit } from 'lucide-react';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical, Calculator, FunctionSquare, Eye, Edit, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
+import { ProductSelectorBar } from '@/components/ProductSelectorBar';
+import { OperationsEmptyState } from '@/components/OperationsEmptyState';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
 
@@ -56,17 +58,49 @@ export default function OperationsRouting() {
   const [showInterpolator, setShowInterpolator] = useState(false);
 
   const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
+
+  // Auto-select first product if none selected
+  const effectiveProductId = selectedProductId && model?.products.find(p => p.id === selectedProductId)
+    ? selectedProductId
+    : model?.products[0]?.id || '';
+
+  const effectiveProduct = model?.products.find(p => p.id === effectiveProductId);
+
   const productOps = useMemo(
-    () => (model?.operations ?? []).filter((o) => o.product_id === selectedProductId).sort((a, b) => a.op_number - b.op_number),
-    [model?.operations, selectedProductId]
+    () => (model?.operations ?? []).filter((o) => o.product_id === effectiveProductId).sort((a, b) => a.op_number - b.op_number),
+    [model?.operations, effectiveProductId]
   );
   const productRouting = useMemo(
-    () => (model?.routing ?? []).filter((r) => r.product_id === selectedProductId),
-    [model?.routing, selectedProductId]
+    () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
+    [model?.routing, effectiveProductId]
   );
 
+  // ── Routing validation ──────────────────────────────────────
+  const dockWarning = useMemo(() => {
+    if (productOps.length === 0) return false;
+    const firstOp = productOps[0];
+    return firstOp.op_name !== 'DOCK';
+  }, [productOps]);
+
+  const deadEndWarning = useMemo(() => {
+    if (productRouting.length === 0) return false;
+    // Collect all op names that have outgoing routing
+    const opsWithOutgoing = new Set(productRouting.map(r => r.from_op_name));
+    // Collect all "to" targets
+    const allTargets = new Set(productRouting.map(r => r.to_op_name));
+    // Find ops that are targeted but have no outgoing routing and are not STOCK/SCRAP
+    const deadEnds: string[] = [];
+    allTargets.forEach(name => {
+      if (name === 'STOCK' || name === 'SCRAP') return;
+      if (!opsWithOutgoing.has(name)) {
+        deadEnds.push(name);
+      }
+    });
+    return deadEnds.length > 0;
+  }, [productRouting]);
+
   const allOpNames = useMemo(() => {
-    const userOps = productOps.map((o) => o.op_name);
+    const userOps = productOps.map((o) => o.op_name).filter(n => n !== 'DOCK');
     return ['DOCK', ...userOps, 'STOCK', 'SCRAP'];
   }, [productOps]);
 
@@ -109,6 +143,25 @@ export default function OperationsRouting() {
 
   if (!model) return null;
 
+  // Rule C: auto-populate DOCK when adding operations to an empty product
+  const handleAddFirstOps = () => {
+    if (productOps.length === 0) {
+      // Auto-add DOCK
+      addOperation(model.id, {
+        id: crypto.randomUUID(), product_id: effectiveProductId,
+        op_name: 'DOCK', op_number: 1,
+        equip_id: '', pct_assigned: 100,
+        equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+        equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+        labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+        labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
+        oper1: 0, oper2: 0, oper3: 0, oper4: 0,
+      });
+      setNewOpNumber(10);
+    }
+    setShowAddOp(true);
+  };
+
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
     if (SYSTEM_OPS.includes(newOpName.trim().toUpperCase())) {
@@ -116,7 +169,7 @@ export default function OperationsRouting() {
       return;
     }
     addOperation(model.id, {
-      id: crypto.randomUUID(), product_id: selectedProductId,
+      id: crypto.randomUUID(), product_id: effectiveProductId,
       op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
       equip_id: newOpEquip, pct_assigned: 100,
       equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
@@ -133,7 +186,7 @@ export default function OperationsRouting() {
   const handleAddRoute = () => {
     if (!routeFromOp || !routeToOp) return;
     addRouting(model.id, {
-      id: crypto.randomUUID(), product_id: selectedProductId,
+      id: crypto.randomUUID(), product_id: effectiveProductId,
       from_op_name: routeFromOp, to_op_name: routeToOp, pct_routed: routePct,
     });
     setShowAddRoute(false); setRouteFromOp(''); setRouteToOp(''); setRoutePct(100);
@@ -143,12 +196,12 @@ export default function OperationsRouting() {
     if (productOps.length === 0) { toast.error('Add operations first'); return; }
     const sorted = [...productOps].sort((a, b) => a.op_number - b.op_number);
     const entries: RoutingEntry[] = [];
-    entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
+    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: sorted[0].op_name, pct_routed: 100 });
     for (let i = 0; i < sorted.length - 1; i++) {
-      entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
     }
-    entries.push({ id: crypto.randomUUID(), product_id: selectedProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
-    setRouting(model.id, selectedProductId, entries);
+    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
+    setRouting(model.id, effectiveProductId, entries);
     toast.success(`Default routing generated: DOCK → ${sorted.map(o => o.op_name).join(' → ')} → STOCK`);
   };
 
@@ -180,7 +233,7 @@ export default function OperationsRouting() {
 
   const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
     if (activeScenarioId && activeScenario) {
-      const productName = selectedProduct?.name || '';
+      const productName = effectiveProduct?.name || '';
       const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
       applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
     }
@@ -231,38 +284,49 @@ export default function OperationsRouting() {
         </div>
       </div>
 
-      {/* Product Selector */}
-      <div className="mb-6">
-        <Label className="text-xs text-muted-foreground mb-1.5 block">Select Product</Label>
-        <div className="flex gap-2 flex-wrap">
-          {model.products.map((p) => (
-            <Button key={p.id} variant={p.id === selectedProductId ? 'default' : 'outline'} size="sm" className="font-mono text-xs" onClick={() => setSearchParams({ product: p.id })}>
-              {p.name}
-              <Badge variant="secondary" className="ml-1.5 text-xs h-4 px-1">{model.operations.filter(o => o.product_id === p.id).length}</Badge>
-            </Button>
-          ))}
-        </div>
-      </div>
+      {/* Product Selector Bar */}
+      <ProductSelectorBar
+        products={model.products}
+        operations={model.operations}
+        selectedProductId={effectiveProductId}
+        onSelect={(id) => setSearchParams({ product: id })}
+      />
 
-      {!selectedProduct ? (
-        <Card>
+      {!effectiveProduct ? (
+        <Card className="mt-6">
           <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-lg font-medium">Select a product above</p>
-            <p className="text-sm mt-1">Choose a product to view and edit its operations and routing.</p>
+            <p className="text-lg font-medium">No products defined</p>
+            <p className="text-sm mt-1">Add products in the Products tab first.</p>
+          </CardContent>
+        </Card>
+      ) : productOps.length === 0 ? (
+        <Card className="mt-6">
+          <CardContent className="p-0">
+            <OperationsEmptyState
+              productName={effectiveProduct.name}
+              onAddOperations={handleAddFirstOps}
+            />
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-6">
+          {/* Rule A warning: first op must be DOCK */}
+          {dockWarning && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-[13px] text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              This routing should start with DOCK (the cell entry point). DOCK requires no equipment or labor times.
+            </div>
+          )}
+
           {/* Operations Table */}
           <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{selectedProduct.name}</span></CardTitle>
+                  <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{effectiveProduct.name}</span></CardTitle>
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
-                  {/* View/Edit toggle — visually distinct */}
                   <div className="flex border rounded-md overflow-hidden">
                     <Button
                       variant={!viewActualTimes ? 'secondary' : 'ghost'}
@@ -294,12 +358,7 @@ export default function OperationsRouting() {
               </div>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
-              {productOps.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground text-sm">
-                  No operations yet. Click "Add Operation" to define the first step.
-                </div>
-              ) : (
-                <Table>
+              <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="font-mono text-xs w-16">Op #</TableHead>
@@ -353,9 +412,15 @@ export default function OperationsRouting() {
                   <TableBody>
                     {productOps.map((op) => {
                       const actual = viewActualTimes ? getActualTimes(op) : null;
+                      const isDock = op.op_name === 'DOCK';
                       return (
                         <TableRow key={op.id}>
-                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} /></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {isDock && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
+                              <Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} />
+                            </div>
+                          </TableCell>
                           <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
                           <TableCell>
                             <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
@@ -419,13 +484,12 @@ export default function OperationsRouting() {
                             </TableCell>
                           )}
 
-                          <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
+                          <TableCell><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" disabled={isDock} onClick={() => deleteOperation(model.id, op.id)}><Trash2 className="h-3.5 w-3.5" /></Button></TableCell>
                         </TableRow>
                       );
                     })}
                   </TableBody>
                 </Table>
-              )}
             </CardContent>
           </Card>
 
@@ -511,6 +575,14 @@ export default function OperationsRouting() {
               )}
             </CardContent>
           </Card>
+
+          {/* Rule B warning: dead-end routing paths */}
+          {deadEndWarning && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-[13px] text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              One or more routing paths do not reach STOCK or SCRAP. All paths must have a valid terminal operation.
+            </div>
+          )}
         </div>
       )}
 
