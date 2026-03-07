@@ -191,7 +191,8 @@ export default function OperationsRouting() {
     for (let i = 0; i < sorted.length - 1; i++) {
       entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[i].op_name, to_op_name: sorted[i + 1].op_name, pct_routed: 100 });
     }
-    entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
+      entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
+    }
     setRouting(model.id, effectiveProductId, entries);
     toast.success('Default routing generated. Review and edit branches as needed.');
   };
