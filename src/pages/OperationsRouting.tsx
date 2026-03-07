@@ -58,14 +58,46 @@ export default function OperationsRouting() {
   const [showInterpolator, setShowInterpolator] = useState(false);
 
   const selectedProduct = model?.products.find((p) => p.id === selectedProductId);
+
+  // Auto-select first product if none selected
+  const effectiveProductId = selectedProductId && model?.products.find(p => p.id === selectedProductId)
+    ? selectedProductId
+    : model?.products[0]?.id || '';
+
+  const effectiveProduct = model?.products.find(p => p.id === effectiveProductId);
+
   const productOps = useMemo(
-    () => (model?.operations ?? []).filter((o) => o.product_id === selectedProductId).sort((a, b) => a.op_number - b.op_number),
-    [model?.operations, selectedProductId]
+    () => (model?.operations ?? []).filter((o) => o.product_id === effectiveProductId).sort((a, b) => a.op_number - b.op_number),
+    [model?.operations, effectiveProductId]
   );
   const productRouting = useMemo(
-    () => (model?.routing ?? []).filter((r) => r.product_id === selectedProductId),
-    [model?.routing, selectedProductId]
+    () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
+    [model?.routing, effectiveProductId]
   );
+
+  // ── Routing validation ──────────────────────────────────────
+  const dockWarning = useMemo(() => {
+    if (productOps.length === 0) return false;
+    const firstOp = productOps[0];
+    return firstOp.op_name !== 'DOCK';
+  }, [productOps]);
+
+  const deadEndWarning = useMemo(() => {
+    if (productRouting.length === 0) return false;
+    // Collect all op names that have outgoing routing
+    const opsWithOutgoing = new Set(productRouting.map(r => r.from_op_name));
+    // Collect all "to" targets
+    const allTargets = new Set(productRouting.map(r => r.to_op_name));
+    // Find ops that are targeted but have no outgoing routing and are not STOCK/SCRAP
+    const deadEnds: string[] = [];
+    allTargets.forEach(name => {
+      if (name === 'STOCK' || name === 'SCRAP') return;
+      if (!opsWithOutgoing.has(name)) {
+        deadEnds.push(name);
+      }
+    });
+    return deadEnds.length > 0;
+  }, [productRouting]);
 
   const allOpNames = useMemo(() => {
     const userOps = productOps.map((o) => o.op_name);
