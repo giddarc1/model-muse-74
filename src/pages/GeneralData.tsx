@@ -61,8 +61,16 @@ export default function GeneralData() {
         applyScenarioChange(activeScenarioId, 'General', model.id, 'General', field, fieldLabel, value as string | number);
       });
     }
-    updateGeneral(model.id, data);
+  const UNIT_LABELS: Record<string, string> = {
+    SEC: 'seconds', MIN: 'minutes', HR: 'hours', DAY: 'days', WEEK: 'weeks', MONTH: 'months', YEAR: 'year',
   };
+  const UNIT_SINGULAR: Record<string, string> = {
+    SEC: 'second', MIN: 'minute', HR: 'hour', DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year',
+  };
+
+  const savedOps = savedUnitsRef.current?.ops ?? g.ops_time_unit;
+  const savedMct = savedUnitsRef.current?.mct ?? g.mct_time_unit;
+  const savedProd = savedUnitsRef.current?.prod ?? g.prod_period_unit;
 
   return (
     <div className="p-6 max-w-3xl animate-fade-in">
