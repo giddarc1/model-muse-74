@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical, Calculator, FunctionSquare, Eye, Edit } from 'lucide-react';
+import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XCircle, FlaskConical, Calculator, FunctionSquare, Eye, Edit, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
