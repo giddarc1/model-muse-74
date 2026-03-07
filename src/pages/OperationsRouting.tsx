@@ -440,11 +440,8 @@ export default function OperationsRouting() {
                             )}
                           </TableCell>
                           {/* Op Name */}
-                          <TableCell className="font-mono font-medium">
+                          <TableCell className={`font-mono font-medium ${isDock ? 'text-muted-foreground' : ''}`}>
                             {op.op_name}
-                            {isDock && (
-                              <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">Entry point — no equipment or labor</span>
-                            )}
                           </TableCell>
                           {/* Equipment */}
                           <TableCell>
