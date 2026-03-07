@@ -101,58 +101,99 @@ export default function GeneralData() {
               <CardTitle className="text-base">Time Settings</CardTitle>
               <CardDescription>Define time units and conversion factors for this model.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
                 <Label>Model Title</Label>
                 <Input value={g.model_title} onChange={(e) => update({ model_title: e.target.value })} placeholder="Report display name" />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Operations Time Unit</Label>
-                  <Select value={g.ops_time_unit} onValueChange={(v) => update({ ops_time_unit: v as any })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SEC">Seconds</SelectItem>
-                      <SelectItem value="MIN">Minutes</SelectItem>
-                      <SelectItem value="HR">Hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>MCT Time Unit</Label>
-                  <Select value={g.mct_time_unit} onValueChange={(v) => update({ mct_time_unit: v as any })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MIN">Minutes</SelectItem>
-                      <SelectItem value="HR">Hours</SelectItem>
-                      <SelectItem value="DAY">Days</SelectItem>
-                      <SelectItem value="WEEK">Weeks</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Production Period</Label>
-                  <Select value={g.prod_period_unit} onValueChange={(v) => update({ prod_period_unit: v as any })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DAY">Day</SelectItem>
-                      <SelectItem value="WEEK">Week</SelectItem>
-                      <SelectItem value="MONTH">Month</SelectItem>
-                      <SelectItem value="YEAR">Year</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+              {/* Group 1 — Time Units */}
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Time Units</p>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Operations Time Unit</Label>
+                    <Select value={g.ops_time_unit} onValueChange={(v) => update({ ops_time_unit: v as any })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SEC">Seconds</SelectItem>
+                        <SelectItem value="MIN">Minutes</SelectItem>
+                        <SelectItem value="HR">Hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center h-10">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">MCT Time Unit</Label>
+                    <Select value={g.mct_time_unit} onValueChange={(v) => update({ mct_time_unit: v as any })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MIN">Minutes</SelectItem>
+                        <SelectItem value="HR">Hours</SelectItem>
+                        <SelectItem value="DAY">Days</SelectItem>
+                        <SelectItem value="WEEK">Weeks</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center h-10">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Production Period</Label>
+                    <Select value={g.prod_period_unit} onValueChange={(v) => update({ prod_period_unit: v as any })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DAY">Day</SelectItem>
+                        <SelectItem value="WEEK">Week</SelectItem>
+                        <SelectItem value="MONTH">Month</SelectItem>
+                        <SelectItem value="YEAR">Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>MCT Conversion ({g.ops_time_unit} per {g.mct_time_unit})</Label>
-                  <Input type="number" value={g.conv1} onChange={(e) => update({ conv1: +e.target.value })} className={g.conv1 <= 0 ? 'border-destructive' : ''} />
-                  {g.conv1 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
-                </div>
-                <div>
-                  <Label>Prod. Period Conversion ({g.mct_time_unit} per {g.prod_period_unit})</Label>
-                  <Input type="number" value={g.conv2} onChange={(e) => update({ conv2: +e.target.value })} className={g.conv2 <= 0 ? 'border-destructive' : ''} />
-                  {g.conv2 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
+
+              {/* Divider */}
+              <div className="border-t border-border" />
+
+              {/* Group 2 — Factory Calendar */}
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Factory Calendar</p>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[13px] font-medium">
+                      MCT Conversion{' '}
+                      <span className="text-muted-foreground font-normal">({savedOps} per {savedMct})</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={g.conv1}
+                      onChange={(e) => update({ conv1: +e.target.value })}
+                      className={`w-[100px] text-right ${g.conv1 <= 0 ? 'border-destructive' : ''}`}
+                    />
+                    {g.conv1 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Working {UNIT_LABELS[savedOps] ?? savedOps} per {UNIT_SINGULAR[savedMct] ?? savedMct}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-[13px] font-medium">
+                      Prod. Period Conversion{' '}
+                      <span className="text-muted-foreground font-normal">({savedMct} per {savedProd})</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={g.conv2}
+                      onChange={(e) => update({ conv2: +e.target.value })}
+                      className={`w-[100px] text-right ${g.conv2 <= 0 ? 'border-destructive' : ''}`}
+                    />
+                    {g.conv2 <= 0 && <p className="text-xs text-destructive mt-1">Must be greater than 0</p>}
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Working {UNIT_LABELS[savedMct] ?? savedMct} per {UNIT_SINGULAR[savedProd] ?? savedProd}
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
