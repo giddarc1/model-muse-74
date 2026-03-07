@@ -27,6 +27,17 @@ export function InlineRoutingEditor({
 }: InlineRoutingEditorProps) {
   const [newTo, setNewTo] = useState('');
   const [newPct, setNewPct] = useState(100);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  // Escape key to cancel routing delete confirmation
+  useEffect(() => {
+    if (!confirmingDeleteId) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirmingDeleteId(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [confirmingDeleteId]);
 
   const total = routes.reduce((s, r) => s + r.pct_routed, 0);
   const totalOk = Math.abs(total - 100) < 0.01;
