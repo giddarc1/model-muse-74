@@ -569,6 +569,14 @@ export default function OperationsRouting() {
               )}
             </CardContent>
           </Card>
+
+          {/* Rule B warning: dead-end routing paths */}
+          {deadEndWarning && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-[13px] text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              One or more routing paths do not reach STOCK or SCRAP. All paths must have a valid terminal operation.
+            </div>
+          )}
         </div>
       )}
 
