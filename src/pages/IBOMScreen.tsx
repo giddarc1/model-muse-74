@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +42,22 @@ export default function IBOMScreen() {
   const [filterText, setFilterText] = useState('');
   const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
   const [showEmptyPicker, setShowEmptyPicker] = useState(false);
+
+  // Read product param from URL and pre-select on mount
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (initializedRef.current || !model) return;
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get('product');
+    if (productParam) {
+      const match = model.products.find(p => p.id === productParam || p.name === productParam);
+      if (match) {
+        setViewAssemblyId(match.id);
+        setSelectedProductId(match.id);
+        initializedRef.current = true;
+      }
+    }
+  }, [model]);
 
   // Track previous valid values for revert on blur
   const prevUpaValues = useRef<Map<string, number>>(new Map());
@@ -601,9 +617,6 @@ export default function IBOMScreen() {
                     })}
                   </div>
                   <div className="flex gap-2 mt-2">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setShowEmptyPicker(true)}>
-                      <PlusCircle className="h-3 w-3 mr-1" /> Add More
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

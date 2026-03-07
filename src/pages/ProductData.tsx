@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, ExternalLink, Info, FlaskConical } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, Info, FlaskConical } from 'lucide-react';
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -94,10 +94,7 @@ export default function ProductData() {
 
   const opsCount = (productId: string) => model.operations.filter((o) => o.product_id === productId).length;
 
-  const getScrapRate = (productId: string) => {
-    const routes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
-    return routes.reduce((sum, r) => sum + r.pct_routed, 0);
-  };
+  const ibomCount = (productId: string) => model.ibom.filter(e => e.parent_product_id === productId).length;
 
   return (
     <div className="p-6 animate-fade-in">
@@ -207,9 +204,11 @@ export default function ProductData() {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                        <ExternalLink className="h-3 w-3" /> View
-                      </Button>
+                      <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs font-mono ${ibomCount(p.id) === 0 ? 'text-muted-foreground' : ''}`} onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
+                          <GitBranch className="h-3 w-3" />{ibomCount(p.id)}
+                        </Button>
+                      </TooltipTrigger><TooltipContent className="text-xs">View IBOM for {p.name}</TooltipContent></Tooltip></TooltipProvider>
                     </TableCell>
                     <TableCell><Input className="h-8 w-32" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></TableCell>
                     <TableCell>
@@ -251,7 +250,7 @@ export default function ProductData() {
                     <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
                   </Button>
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                    <ExternalLink className="h-3.5 w-3.5" /> IBOM
+                    <GitBranch className="h-3.5 w-3.5" /> IBOM ({ibomCount(p.id)})
                   </Button>
 
                   {showAdvanced && (
