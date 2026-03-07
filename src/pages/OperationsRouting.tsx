@@ -20,7 +20,7 @@ import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
 import { ProductSelectorBar } from '@/components/ProductSelectorBar';
 import { OperationsEmptyState } from '@/components/OperationsEmptyState';
-import { RoutingBadge } from '@/components/RoutingBadge';
+
 import { InlineRoutingEditor } from '@/components/InlineRoutingEditor';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
@@ -573,22 +573,24 @@ export default function OperationsRouting() {
                           )}
 
                           {/* Routing column */}
-                          <TableCell>
-                            {isDock ? (
-                              <RoutingBadge
-                                opName="DOCK"
-                                routes={opRoutes}
-                                isExpanded={isExpanded}
-                                onClick={() => setExpandedRoutingOp(isExpanded ? null : 'DOCK')}
-                              />
-                            ) : (
-                              <RoutingBadge
-                                opName={op.op_name}
-                                routes={opRoutes}
-                                isExpanded={isExpanded}
-                                onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
-                              />
-                            )}
+                          <TableCell className="py-0">
+                            <span
+                              className={`text-sm truncate cursor-pointer whitespace-nowrap block ${
+                                opRoutes.length === 0
+                                  ? 'text-amber-600'
+                                  : 'text-muted-foreground'
+                              } ${isExpanded ? 'font-medium' : ''}`}
+                              onClick={() => {
+                                const name = isDock ? 'DOCK' : op.op_name;
+                                setExpandedRoutingOp(isExpanded ? null : name);
+                              }}
+                            >
+                              {opRoutes.length === 0
+                                ? '⚠ No routing'
+                                : opRoutes.length === 1
+                                  ? `→ ${opRoutes[0].to_op_name}`
+                                  : `→ ${opRoutes.length} paths`}
+                            </span>
                           </TableCell>
 
                           {/* Formula Builder trigger */}
