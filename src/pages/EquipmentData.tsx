@@ -171,6 +171,7 @@ export default function EquipmentData() {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell><Input className="h-8 w-32" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Notes…" /></TableCell>
                     {showAdvanced && <>
                       <TableCell><Input className="h-8 w-24" value={eq.dept_code} onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} /></TableCell>
                       <TableCell>
