@@ -435,6 +435,15 @@ export default function OperationsRouting() {
                     return (
                       <>
                         <TableRow key={op.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                          {isConfirming ? (
+                            <TableCell colSpan={totalCols}>
+                              <DeleteConfirmInline
+                                message={`Delete operation ${op.op_name}?`}
+                                onConfirm={() => confirmDelete(op.id, () => deleteOperation(model.id, op.id))}
+                                onCancel={cancelDelete}
+                              />
+                            </TableCell>
+                          ) : (<>
                           {/* Lock / row indicator */}
                           <TableCell className="w-10 text-center">
                             {isDock && <Lock className="h-3 w-3 text-muted-foreground inline-block" />}
