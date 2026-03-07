@@ -464,7 +464,7 @@ export default function OperationsRouting() {
                             <TableCell colSpan={totalCols}>
                               <DeleteConfirmInline
                                 message={`Delete operation ${op.op_name}?`}
-                                onConfirm={() => confirmDelete(op.id, () => deleteOperation(model.id, op.id))}
+                                onConfirm={() => confirmDelete(op.id, () => handleDeleteOperation(op.id))}
                                 onCancel={cancelDelete}
                               />
                             </TableCell>
