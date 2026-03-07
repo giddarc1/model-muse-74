@@ -14,6 +14,7 @@ interface InlineRoutingEditorProps {
   onUpdateRoute: (routeId: string, data: Partial<RoutingEntry>) => void;
   onDeleteRoute: (routeId: string) => void;
   colSpan: number;
+  hideDelete?: boolean; // true for DOCK routes — no individual delete allowed
 }
 
 export function InlineRoutingEditor({
