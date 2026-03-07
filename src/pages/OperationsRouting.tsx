@@ -232,6 +232,7 @@ export default function OperationsRouting() {
     }
   };
 
+  const handleOpFieldChange = (op: Operation, field: string, value: number) => {
     if (activeScenarioId && activeScenario) {
       const productName = model.products.find(p => p.id === op.product_id)?.name || '';
       const entityName = `${productName}: ${op.op_name}`;
