@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useModelStore, type LaborGroup } from '@/stores/modelStore';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +38,7 @@ export default function LaborData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
@@ -141,8 +144,19 @@ export default function LaborData() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {model.labor.map((l) => (
-                  <TableRow key={l.id}>
+                {model.labor.map((l) => {
+                  const isConfirming = pendingDeleteId === l.id;
+                  return (
+                  <TableRow key={l.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                    {isConfirming ? (
+                      <TableCell colSpan={showAdvanced ? 14 : 5}>
+                        <DeleteConfirmInline
+                          message={`Delete ${l.name}? This will remove it from any equipment assignments.`}
+                          onConfirm={() => confirmDelete(l.id, () => deleteLabor(model.id, l.id))}
+                          onCancel={cancelDelete}
+                        />
+                      </TableCell>
+                    ) : (<>
                     <TableCell className="font-mono font-medium">{l.name}</TableCell>
                     <TableCell>
                       <Input type="number" className="h-8 w-20 font-mono" value={l.count} onChange={(e) => handleCellChange(l.id, 'count', +e.target.value)} />
@@ -165,12 +179,14 @@ export default function LaborData() {
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab4} onChange={(e) => handleCellChange(l.id, 'lab4', +e.target.value)} /></TableCell>
                     </>}
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLabor(model.id, l.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => requestDelete(l.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
+                    </>)}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -182,7 +198,7 @@ export default function LaborData() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{l.name}</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLabor(model.id, l.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(`Delete ${l.name}? This will remove it from any equipment assignments.`)) deleteLabor(model.id, l.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

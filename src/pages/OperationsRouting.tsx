@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
@@ -50,6 +52,7 @@ export default function OperationsRouting() {
   const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
   const [viewActualTimes, setViewActualTimes] = useState(false);
   const [expandedRoutingOp, setExpandedRoutingOp] = useState<string | null>(null);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
 
   const newOpNameRef = useRef<HTMLInputElement>(null);
 
@@ -427,10 +430,20 @@ export default function OperationsRouting() {
                     const isDock = op.op_name === 'DOCK';
                     const opRoutes = getRoutesForOp(op.op_name);
                     const isExpanded = expandedRoutingOp === op.op_name;
+                    const isConfirming = !isDock && pendingDeleteId === op.id;
 
                     return (
                       <>
-                        <TableRow key={op.id}>
+                        <TableRow key={op.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                          {isConfirming ? (
+                            <TableCell colSpan={totalCols}>
+                              <DeleteConfirmInline
+                                message={`Delete operation ${op.op_name}?`}
+                                onConfirm={() => confirmDelete(op.id, () => deleteOperation(model.id, op.id))}
+                                onCancel={cancelDelete}
+                              />
+                            </TableCell>
+                          ) : (<>
                           {/* Lock / row indicator */}
                           <TableCell className="w-10 text-center">
                             {isDock && <Lock className="h-3 w-3 text-muted-foreground inline-block" />}
@@ -563,11 +576,12 @@ export default function OperationsRouting() {
                           {/* Delete */}
                           <TableCell>
                             {!isDock && (
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteOperation(model.id, op.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => requestDelete(op.id)}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </TableCell>
+                          </>)}
                         </TableRow>
 
                         {/* Inline routing editor */}

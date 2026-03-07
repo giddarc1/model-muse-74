@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useModelStore, type EquipmentGroup } from '@/stores/modelStore';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +42,7 @@ export default function EquipmentData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
@@ -146,8 +149,19 @@ export default function EquipmentData() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {model.equipment.map((eq) => (
-                  <TableRow key={eq.id}>
+                {model.equipment.map((eq) => {
+                  const isConfirming = pendingDeleteId === eq.id;
+                  return (
+                  <TableRow key={eq.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                    {isConfirming ? (
+                      <TableCell colSpan={showAdvanced ? 19 : 9}>
+                        <DeleteConfirmInline
+                          message={`Delete ${eq.name}? This will remove its operations and labor assignments.`}
+                          onConfirm={() => confirmDelete(eq.id, () => deleteEquipment(model.id, eq.id))}
+                          onCancel={cancelDelete}
+                        />
+                      </TableCell>
+                    ) : (<>
                     <TableCell className="font-mono font-medium">{eq.name}</TableCell>
                     <TableCell>
                       <Select value={eq.equip_type} onValueChange={(v) => handleCellChange(eq.id, 'equip_type', v)}>
@@ -186,9 +200,11 @@ export default function EquipmentData() {
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq3} onChange={(e) => handleCellChange(eq.id, 'eq3', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.eq4} onChange={(e) => handleCellChange(eq.id, 'eq4', +e.target.value)} /></TableCell>
                     </>}
-                    <TableCell><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteEquipment(model.id, eq.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    <TableCell><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => requestDelete(eq.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                    </>)}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -200,7 +216,7 @@ export default function EquipmentData() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-mono">{eq.name}</CardTitle>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteEquipment(model.id, eq.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(`Delete ${eq.name}? This will remove its operations and labor assignments.`)) deleteEquipment(model.id, eq.id); }}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">

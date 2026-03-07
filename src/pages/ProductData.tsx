@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Product } from '@/stores/modelStore';
+import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
+import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +43,7 @@ export default function ProductData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const showAdvancedParams = isVisible('advanced_parameters', userLevel);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
@@ -158,8 +161,19 @@ export default function ProductData() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {model.products.map((p) => (
-                  <TableRow key={p.id}>
+                {model.products.map((p) => {
+                  const isConfirming = pendingDeleteId === p.id;
+                  return (
+                  <TableRow key={p.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                    {isConfirming ? (
+                      <TableCell colSpan={showAdvanced ? 18 : 8}>
+                        <DeleteConfirmInline
+                          message={`Delete ${p.name}? This will remove its operations and IBOM data.`}
+                          onConfirm={() => confirmDelete(p.id, () => deleteProduct(model.id, p.id))}
+                          onCancel={cancelDelete}
+                        />
+                      </TableCell>
+                    ) : (<>
                     <TableCell className="font-mono font-medium">{p.name}</TableCell>
                     <TableCell><Input type="number" className={`h-8 w-20 font-mono ${p.demand < 0 ? 'border-destructive' : ''}`} value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></TableCell>
                     <TableCell>
@@ -214,11 +228,13 @@ export default function ProductData() {
                     <TableCell>
                       <div className="flex gap-0.5">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(p)} title="Duplicate"><Copy className="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct(model.id, p.id)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => requestDelete(p.id)} title="Delete"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </TableCell>
+                    </>)}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -232,7 +248,7 @@ export default function ProductData() {
                   <CardTitle className="text-base font-mono">{p.name}</CardTitle>
                   <div className="flex gap-0.5">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(p)}><Copy className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct(model.id, p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm(`Delete ${p.name}? This will remove its operations and IBOM data.`)) deleteProduct(model.id, p.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
               </CardHeader>

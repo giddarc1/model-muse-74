@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Plus, X, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, X, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { RoutingEntry } from '@/stores/modelStore';
 
 interface InlineRoutingEditorProps {
@@ -27,6 +27,17 @@ export function InlineRoutingEditor({
 }: InlineRoutingEditorProps) {
   const [newTo, setNewTo] = useState('');
   const [newPct, setNewPct] = useState(100);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  // Escape key to cancel routing delete confirmation
+  useEffect(() => {
+    if (!confirmingDeleteId) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirmingDeleteId(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [confirmingDeleteId]);
 
   const total = routes.reduce((s, r) => s + r.pct_routed, 0);
   const totalOk = Math.abs(total - 100) < 0.01;
@@ -54,7 +65,22 @@ export function InlineRoutingEditor({
           )}
 
           <div className="space-y-1.5">
-            {routes.map(r => (
+            {routes.map(r => {
+              const isConfirmingThis = confirmingDeleteId === r.id;
+              return isConfirmingThis ? (
+                <div key={r.id} className="flex items-center gap-2 rounded px-2 py-1 bg-destructive/10">
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                  <span className="text-xs text-destructive font-medium flex-1">
+                    Delete this route from {opName} to {r.to_op_name}?
+                  </span>
+                  <Button variant="ghost" size="sm" className="h-6 text-[11px] px-2" onClick={() => setConfirmingDeleteId(null)}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" size="sm" className="h-6 text-[11px] px-2" onClick={() => { onDeleteRoute(r.id); setConfirmingDeleteId(null); }}>
+                    Delete
+                  </Button>
+                </div>
+              ) : (
               <div key={r.id} className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground w-6 shrink-0">To:</span>
                 <Select value={r.to_op_name} onValueChange={v => onUpdateRoute(r.id, { to_op_name: v })}>
@@ -81,11 +107,14 @@ export function InlineRoutingEditor({
                   value={r.pct_routed}
                   onChange={e => onUpdateRoute(r.id, { pct_routed: +e.target.value })}
                 />
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => onDeleteRoute(r.id)}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => {
+                  setConfirmingDeleteId(r.id);
+                }}>
                   <X className="h-3 w-3" />
                 </Button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Total line */}
