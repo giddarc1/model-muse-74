@@ -213,7 +213,25 @@ export default function OperationsRouting() {
     toast.success('Operations re-sorted');
   };
 
-  const handleOpFieldChange = (op: Operation, field: string, value: number) => {
+  // Handle deleting an operation — if it's the last user op, also remove DOCK and all routing
+  const handleDeleteOperation = (opId: string) => {
+    const op = productOps.find(o => o.id === opId);
+    if (!op || op.op_name === 'DOCK') return;
+
+    const remainingUserOps = userOps.filter(o => o.id !== opId);
+    if (remainingUserOps.length === 0) {
+      // Last user op — remove DOCK too and clear routing
+      const dockOp = productOps.find(o => o.op_name === 'DOCK');
+      deleteOperation(model.id, opId);
+      if (dockOp) deleteOperation(model.id, dockOp.id);
+      setRouting(model.id, effectiveProductId, []);
+      setExpandedRoutingOp(null);
+      toast.success(`All operations cleared. ${effectiveProduct?.name} has no operations defined.`);
+    } else {
+      deleteOperation(model.id, opId);
+    }
+  };
+
     if (activeScenarioId && activeScenario) {
       const productName = model.products.find(p => p.id === op.product_id)?.name || '';
       const entityName = `${productName}: ${op.op_name}`;
