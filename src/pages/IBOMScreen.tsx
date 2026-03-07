@@ -335,8 +335,14 @@ export default function IBOMScreen() {
     if (pendingSwitchId) doSwitch(pendingSwitchId);
   };
 
-  // ═══ NAVIGATION GUARD: route-level (leaving IBOM screen) ═══
-  const blocker = useBlocker(isDirty);
+  // ═══ NAVIGATION GUARD: route-level (beforeunload) ═══
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   // No products empty state
   if (!model) return null;
