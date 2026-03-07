@@ -25,7 +25,7 @@ import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 
 const FIELD_LABELS: Record<string, string> = {
-  demand: 'Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
+  demand: 'End Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
   demand_factor: 'Demand Factor', lot_factor: 'Lot Factor', var_factor: 'Var Factor',
   setup_factor: 'Setup Factor', make_to_stock: 'Make to Stock', gather_tbatches: 'Gather TBatches',
   dept_code: 'Dept/Area', prod1: 'Prod1', prod2: 'Prod2', prod3: 'Prod3', prod4: 'Prod4', comments: 'Comments',
