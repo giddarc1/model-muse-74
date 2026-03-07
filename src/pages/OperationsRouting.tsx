@@ -147,19 +147,8 @@ export default function OperationsRouting() {
 
   // ── Handlers ────────────────────────────────────────────────
   const handleAddFirstOps = () => {
-    if (productOps.length === 0) {
-      addOperation(model.id, {
-        id: crypto.randomUUID(), product_id: effectiveProductId,
-        op_name: 'DOCK', op_number: 0,
-        equip_id: '', pct_assigned: 100,
-        equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
-        equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
-        labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
-        labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
-        oper1: 0, oper2: 0, oper3: 0, oper4: 0,
-      });
-      setNewOpNumber(10);
-    }
+    // DOCK will be auto-created when the first user op is added (see handleAddOp)
+    setNewOpNumber(10);
     setShowAddOp(true);
   };
 
