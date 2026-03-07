@@ -206,7 +206,7 @@ export default function ProductData() {
                     <TableCell>
                       <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs font-mono ${ibomCount(p.id) === 0 ? 'text-muted-foreground' : ''}`} onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                          <GitBranch className="h-3 w-3" />{ibomCount(p.id)}
+                          <Network className="h-3 w-3" />{ibomCount(p.id)}
                         </Button>
                       </TooltipTrigger><TooltipContent className="text-xs">View IBOM for {p.name}</TooltipContent></Tooltip></TooltipProvider>
                     </TableCell>
