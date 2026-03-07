@@ -153,24 +153,6 @@ export default function OperationsRouting() {
     setShowAddOp(true);
   };
 
-  const handleDirectToStock = () => {
-    // Create DOCK row
-    addOperation(model.id, {
-      id: crypto.randomUUID(), product_id: effectiveProductId,
-      op_name: 'DOCK', op_number: 0,
-      equip_id: '', pct_assigned: 100,
-      equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
-      equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
-      labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
-      labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
-      oper1: 0, oper2: 0, oper3: 0, oper4: 0,
-    });
-    // Create DOCK → STOCK routing
-    setRouting(model.id, effectiveProductId, [
-      { id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: 'STOCK', pct_routed: 100 },
-    ]);
-    toast.success('Simple routing created: DOCK → STOCK. Add operations any time to expand this routing.');
-  };
 
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
