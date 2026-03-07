@@ -143,6 +143,25 @@ export default function OperationsRouting() {
 
   if (!model) return null;
 
+  // Rule C: auto-populate DOCK when adding operations to an empty product
+  const handleAddFirstOps = () => {
+    if (productOps.length === 0) {
+      // Auto-add DOCK
+      addOperation(model.id, {
+        id: crypto.randomUUID(), product_id: effectiveProductId,
+        op_name: 'DOCK', op_number: 1,
+        equip_id: '', pct_assigned: 100,
+        equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+        equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+        labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+        labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
+        oper1: 0, oper2: 0, oper3: 0, oper4: 0,
+      });
+      setNewOpNumber(10);
+    }
+    setShowAddOp(true);
+  };
+
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
     if (SYSTEM_OPS.includes(newOpName.trim().toUpperCase())) {
@@ -150,7 +169,7 @@ export default function OperationsRouting() {
       return;
     }
     addOperation(model.id, {
-      id: crypto.randomUUID(), product_id: selectedProductId,
+      id: crypto.randomUUID(), product_id: effectiveProductId,
       op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
       equip_id: newOpEquip, pct_assigned: 100,
       equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
