@@ -45,12 +45,11 @@ export default function IBOMScreen() {
 
   // Read product param from URL and pre-select on mount
   const initializedRef = useRef(false);
-  useMemo(() => {
+  useEffect(() => {
     if (initializedRef.current || !model) return;
     const params = new URLSearchParams(window.location.search);
     const productParam = params.get('product');
     if (productParam) {
-      // Try matching by ID first, then by name
       const match = model.products.find(p => p.id === productParam || p.name === productParam);
       if (match) {
         setViewAssemblyId(match.id);
