@@ -284,8 +284,8 @@ export default function OperationsRouting() {
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
-  // Routing completeness pill
-  const routingPill = productOps.length > 1 ? (
+  // Routing completeness pill — only show when user ops exist
+  const routingPill = hasUserOps ? (
     routingStatus === 'complete' ? (
       <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-300 font-mono text-[11px] gap-1">
         <CheckCircle className="h-3 w-3" /> Routing complete
