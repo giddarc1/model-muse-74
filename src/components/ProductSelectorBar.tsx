@@ -89,6 +89,8 @@ export function ProductSelectorBar({ products, operations, selectedProductId, on
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </div>
+
+      {statusPill && <div className="ml-auto">{statusPill}</div>}
     </div>
   );
 }
