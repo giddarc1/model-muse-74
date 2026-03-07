@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, FlaskConical, ArrowRight } from 'lucide-react';
+import { Info, FlaskConical } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 const FIELD_LABELS: Record<string, string> = {

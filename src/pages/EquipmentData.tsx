@@ -221,6 +221,10 @@ export default function EquipmentData() {
                     </Select>
                   </div>
                 </div>
+                <div>
+                  <Label className="text-xs">Comments</Label>
+                  <Textarea rows={3} className="text-sm" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Add notes about this equipment group…" />
+                </div>
                 {showAdvanced && (
                   <>
                     <div className="pt-2 border-t border-border space-y-3">
