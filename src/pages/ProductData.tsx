@@ -152,8 +152,8 @@ export default function ProductData() {
                     <TableHead className="font-mono text-xs">{model.param_names.prod3_name}</TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.prod4_name}</TableHead>
                   </>}
-                  <TableHead className="font-mono text-xs">Scrap %</TableHead>
                   <TableHead className="font-mono text-xs">Ops</TableHead>
+                  <TableHead className="font-mono text-xs">IBOM</TableHead>
                   <TableHead className="font-mono text-xs">Comments</TableHead>
                   <TableHead className="w-24"></TableHead>
                 </TableRow>
