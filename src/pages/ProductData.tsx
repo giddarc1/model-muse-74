@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, ChevronDown, ChevronUp, Info, FlaskConical } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, Network, ChevronDown, ChevronUp, Info, FlaskConical } from 'lucide-react';
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -206,7 +206,7 @@ export default function ProductData() {
                     <TableCell>
                       <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs font-mono ${ibomCount(p.id) === 0 ? 'text-muted-foreground' : ''}`} onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                          <GitBranch className="h-3 w-3" />{ibomCount(p.id)}
+                          <Network className="h-3 w-3" />{ibomCount(p.id)}
                         </Button>
                       </TooltipTrigger><TooltipContent className="text-xs">View IBOM for {p.name}</TooltipContent></Tooltip></TooltipProvider>
                     </TableCell>
@@ -250,7 +250,7 @@ export default function ProductData() {
                     <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
                   </Button>
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                    <GitBranch className="h-3.5 w-3.5" /> IBOM ({ibomCount(p.id)})
+                    <Network className="h-3.5 w-3.5" /> IBOM ({ibomCount(p.id)})
                   </Button>
 
                   {showAdvanced && (
