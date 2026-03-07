@@ -25,7 +25,7 @@ import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 
 const FIELD_LABELS: Record<string, string> = {
-  demand: 'Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
+  demand: 'End Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
   demand_factor: 'Demand Factor', lot_factor: 'Lot Factor', var_factor: 'Var Factor',
   setup_factor: 'Setup Factor', make_to_stock: 'Make to Stock', gather_tbatches: 'Gather TBatches',
   dept_code: 'Dept/Area', prod1: 'Prod1', prod2: 'Prod2', prod3: 'Prod3', prod4: 'Prod4', comments: 'Comments',
@@ -136,7 +136,9 @@ export default function ProductData() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="font-mono text-xs">Name</TableHead>
-                  <TableHead className="font-mono text-xs">Demand</TableHead>
+                  <TableHead className="font-mono text-xs">
+                    <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="cursor-help">End Demand</span></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs">Quantity shipped directly to customers. Set to 0 for components used only within assemblies; their production quantity will be calculated automatically from the IBOM.</TooltipContent></Tooltip></TooltipProvider>
+                  </TableHead>
                   <TableHead className="font-mono text-xs">Lot Size</TableHead>
                   {showAdvanced && <>
                     <TableHead className="font-mono text-xs">TBatch</TableHead>
@@ -144,7 +146,7 @@ export default function ProductData() {
                     <TableHead className="font-mono text-xs">Demand Fac</TableHead>
                     <TableHead className="font-mono text-xs">Lot Fac</TableHead>
                     <TableHead className="font-mono text-xs">Var Fac</TableHead>
-                    <TableHead className="font-mono text-xs">Setup Fac</TableHead>
+                    
                     <TableHead className="font-mono text-xs">MTS</TableHead>
                     <TableHead className="font-mono text-xs">Gather</TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.prod1_name}</TableHead>
@@ -181,7 +183,7 @@ export default function ProductData() {
                       </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></TableCell>
+                      
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Switch checked={p.make_to_stock} onCheckedChange={(v) => handleCellChange(p.id, 'make_to_stock', v)} />
@@ -238,7 +240,10 @@ export default function ProductData() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs">Demand</Label><Input type="number" className="h-8 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} /></div>
+                    <div>
+                      <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><Label className="text-xs cursor-help">End Demand</Label></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs">Quantity shipped directly to customers. Set to 0 for components used only within assemblies; their production quantity will be calculated automatically from the IBOM.</TooltipContent></Tooltip></TooltipProvider>
+                      <Input type="number" className="h-8 font-mono" value={p.demand} onChange={(e) => handleCellChange(p.id, 'demand', +e.target.value)} />
+                    </div>
                     <div><Label className="text-xs">Lot Size</Label><Input type="number" className="h-8 font-mono" value={p.lot_size} onChange={(e) => handleCellChange(p.id, 'lot_size', +e.target.value)} /></div>
                   </div>
                   <div><Label className="text-xs">Comments</Label><Input className="h-8" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></div>
@@ -268,7 +273,7 @@ export default function ProductData() {
                         <div><Label className="text-xs">Lot Factor</Label><Input type="number" className="h-8 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></div>
                         <div><Label className="text-xs">Var Factor</Label><Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></div>
                       </div>
-                      <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
+                      
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Label className="text-xs">Make to Stock</Label>
