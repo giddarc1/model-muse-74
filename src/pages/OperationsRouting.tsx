@@ -228,7 +228,20 @@ export default function OperationsRouting() {
       entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
     }
     setRouting(model.id, effectiveProductId, entries);
-    toast.success('Default routing generated. Review and edit branches as needed.');
+    setShowAutoRouteConfirm(false);
+    toast.success('Routing generated');
+  };
+
+  const handleAutoGenerateClick = () => {
+    if (!hasUserOps) {
+      toast.error('Add at least one operation before generating routing.');
+      return;
+    }
+    if (hasAnyRouting) {
+      setShowAutoRouteConfirm(true);
+    } else {
+      handleAutoRoute();
+    }
   };
 
   const handleResort = () => {
