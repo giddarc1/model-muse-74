@@ -19,7 +19,7 @@ export function ProductSelectorBar({ products, operations, selectedProductId, on
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const selectedIdx = products.findIndex(p => p.id === selectedProductId);
 
-  const opCount = (pid: string) => operations.filter(o => o.product_id === pid).length;
+  const opCount = (pid: string) => operations.filter(o => o.product_id === pid && o.op_name !== 'DOCK' && o.op_name !== 'STOCK' && o.op_name !== 'SCRAP').length;
 
   const goPrev = () => {
     if (products.length === 0) return;

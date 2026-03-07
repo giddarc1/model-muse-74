@@ -373,7 +373,7 @@ export default function OperationsRouting() {
                   <CardTitle className="text-base">
                     Operations for <span className="font-mono text-primary">{effectiveProduct.name}</span>
                   </CardTitle>
-                  <CardDescription>{productOps.length} operations defined</CardDescription>
+                  <CardDescription>{userOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
                   <div className="flex border rounded-md overflow-hidden">

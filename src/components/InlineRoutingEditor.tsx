@@ -109,11 +109,13 @@ export function InlineRoutingEditor({
                   value={r.pct_routed}
                   onChange={e => onUpdateRoute(r.id, { pct_routed: +e.target.value })}
                 />
+                {!hideDelete && (
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => {
                   setConfirmingDeleteId(r.id);
                 }}>
                   <X className="h-3 w-3" />
                 </Button>
+                )}
               </div>
               );
             })}
