@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GitMerge, ArrowRight, ArrowDown, Plus } from 'lucide-react';
+import { GitMerge, ArrowRight, ArrowDown, Plus, MoveRight } from 'lucide-react';
 
 interface OperationsEmptyStateProps {
   productName: string;
   onAddOperations: () => void;
+  onDirectToStock: () => void;
 }
 
-export function OperationsEmptyState({ productName, onAddOperations }: OperationsEmptyStateProps) {
+export function OperationsEmptyState({ productName, onAddOperations, onDirectToStock }: OperationsEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
       <div className="rounded-full bg-muted p-4 mb-4">
@@ -40,9 +41,18 @@ export function OperationsEmptyState({ productName, onAddOperations }: Operation
         </div>
       </div>
 
-      <Button className="gap-1.5" onClick={onAddOperations}>
-        <Plus className="h-4 w-4" /> Add Operations
-      </Button>
+      {/* Two side-by-side options */}
+      <div className="flex items-start gap-3">
+        <Button className="gap-1.5" onClick={onAddOperations}>
+          <Plus className="h-4 w-4" /> Add Operations
+        </Button>
+        <div className="flex flex-col items-center">
+          <Button variant="outline" className="gap-1.5" onClick={onDirectToStock}>
+            <MoveRight className="h-4 w-4" /> Direct to Stock
+          </Button>
+          <span className="text-xs text-muted-foreground mt-1.5">For products with no manufacturing steps</span>
+        </div>
+      </div>
     </div>
   );
 }
