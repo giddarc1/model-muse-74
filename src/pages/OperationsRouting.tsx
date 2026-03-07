@@ -200,6 +200,7 @@ export default function OperationsRouting() {
 
   const hasAnyRouting = productRouting.length > 0;
   const [showAutoRouteConfirm, setShowAutoRouteConfirm] = useState(false);
+  const [showClearRoutingConfirm, setShowClearRoutingConfirm] = useState(false);
 
   // Compute actual times
   const getActualTimes = (op: Operation) => {
