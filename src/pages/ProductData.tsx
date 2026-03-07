@@ -136,7 +136,9 @@ export default function ProductData() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="font-mono text-xs">Name</TableHead>
-                  <TableHead className="font-mono text-xs">Demand</TableHead>
+                  <TableHead className="font-mono text-xs">
+                    <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="cursor-help">End Demand</span></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs">Quantity shipped directly to customers. Set to 0 for components used only within assemblies; their production quantity will be calculated automatically from the IBOM.</TooltipContent></Tooltip></TooltipProvider>
+                  </TableHead>
                   <TableHead className="font-mono text-xs">Lot Size</TableHead>
                   {showAdvanced && <>
                     <TableHead className="font-mono text-xs">TBatch</TableHead>
