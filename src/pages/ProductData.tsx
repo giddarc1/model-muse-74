@@ -146,7 +146,7 @@ export default function ProductData() {
                     <TableHead className="font-mono text-xs">Demand Fac</TableHead>
                     <TableHead className="font-mono text-xs">Lot Fac</TableHead>
                     <TableHead className="font-mono text-xs">Var Fac</TableHead>
-                    <TableHead className="font-mono text-xs">Setup Fac</TableHead>
+                    
                     <TableHead className="font-mono text-xs">MTS</TableHead>
                     <TableHead className="font-mono text-xs">Gather</TableHead>
                     <TableHead className="font-mono text-xs">{model.param_names.prod1_name}</TableHead>
