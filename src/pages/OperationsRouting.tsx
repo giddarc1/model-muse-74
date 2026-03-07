@@ -17,6 +17,8 @@ import { Plus, Trash2, Wand2, ArrowDown, AlertTriangle, SortAsc, CheckCircle, XC
 import { toast } from 'sonner';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
+import { ProductSelectorBar } from '@/components/ProductSelectorBar';
+import { OperationsEmptyState } from '@/components/OperationsEmptyState';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
 
