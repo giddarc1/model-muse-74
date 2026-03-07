@@ -43,6 +43,7 @@ export function InlineRoutingEditor({
 
   const total = routes.reduce((s, r) => s + r.pct_routed, 0);
   const totalOk = Math.abs(total - 100) < 0.01;
+  const addDisabled = total >= 100;
 
   // Build destination options: user ops (excluding self and DOCK) + STOCK/SCRAP
   const destOptions = allOpNames.filter(n => n !== opName && n !== 'DOCK');
@@ -136,8 +137,8 @@ export function InlineRoutingEditor({
           )}
 
           {/* Add path row */}
-          <div className="flex items-center gap-2 mt-2">
-            <Select value={newTo} onValueChange={setNewTo}>
+          <div className={`flex items-center gap-2 mt-2 ${addDisabled ? 'opacity-50' : ''}`}>
+            <Select value={newTo} onValueChange={setNewTo} disabled={addDisabled}>
               <SelectTrigger className="h-7 w-36 font-mono text-xs">
                 <SelectValue placeholder="Add path to…" />
               </SelectTrigger>
@@ -160,8 +161,9 @@ export function InlineRoutingEditor({
               value={newPct}
               onChange={e => setNewPct(+e.target.value)}
               placeholder="%"
+              disabled={addDisabled}
             />
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAdd} disabled={!newTo}>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleAdd} disabled={!newTo || addDisabled}>
               <Plus className="h-3 w-3" /> Add path
             </Button>
           </div>

@@ -178,8 +178,9 @@ export default function OperationsRouting() {
 
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
-    if (SYSTEM_OPS.includes(newOpName.trim().toUpperCase())) {
-      toast.error(`"${newOpName.trim().toUpperCase()}" is a reserved system operation`);
+    const newName = newOpName.trim().toUpperCase();
+    if (SYSTEM_OPS.includes(newName)) {
+      toast.error(`"${newName}" is a reserved system operation`);
       return;
     }
     // Auto-create DOCK if no operations exist yet
@@ -196,9 +197,10 @@ export default function OperationsRouting() {
         oper1: 0, oper2: 0, oper3: 0, oper4: 0,
       });
     }
+    const newOpId = crypto.randomUUID();
     addOperation(model.id, {
-      id: crypto.randomUUID(), product_id: effectiveProductId,
-      op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
+      id: newOpId, product_id: effectiveProductId,
+      op_name: newName, op_number: newOpNumber,
       equip_id: newOpEquip, pct_assigned: 100,
       equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
       equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
@@ -206,6 +208,53 @@ export default function OperationsRouting() {
       labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
       oper1: 0, oper2: 0, oper3: 0, oper4: 0,
     });
+
+    // Auto-insert into existing routing chain if routing exists
+    const currentRouting = (model?.routing ?? []).filter(r => r.product_id === effectiveProductId);
+    if (currentRouting.length > 0) {
+      // Build sorted list of all user ops INCLUDING the new one
+      const allUserOpsWithNew = [
+        ...userOps,
+        { op_name: newName, op_number: newOpNumber } as Operation,
+      ].sort((a, b) => a.op_number - b.op_number);
+
+      // Also include DOCK at position -Infinity for predecessor search
+      const allOpsChain = [
+        { op_name: 'DOCK', op_number: -Infinity } as any,
+        ...allUserOpsWithNew,
+      ];
+
+      const newIdx = allOpsChain.findIndex(o => o.op_name === newName);
+      const predecessor = allOpsChain[newIdx - 1]; // always exists (at least DOCK)
+
+      // Successor: next user op, or null (meaning route to STOCK)
+      const successor = newIdx < allOpsChain.length - 1 ? allOpsChain[newIdx + 1] : null;
+      const successorName = successor ? successor.op_name : 'STOCK';
+
+      // Delete predecessor's existing path to successor (if any)
+      const predRouteToSuccessor = currentRouting.find(
+        r => r.from_op_name === predecessor.op_name && r.to_op_name === successorName
+      );
+      if (predRouteToSuccessor) {
+        deleteRouting(model.id, predRouteToSuccessor.id);
+      }
+
+      // Create: predecessor → new op at 100%
+      addRouting(model.id, {
+        id: crypto.randomUUID(), product_id: effectiveProductId,
+        from_op_name: predecessor.op_name, to_op_name: newName, pct_routed: 100,
+      });
+
+      // Create: new op → successor at 100%
+      addRouting(model.id, {
+        id: crypto.randomUUID(), product_id: effectiveProductId,
+        from_op_name: newName, to_op_name: successorName, pct_routed: 100,
+      });
+
+      // Auto-expand the new op's routing editor
+      setExpandedRoutingOp(newName);
+    }
+
     setNewOpNumber(newOpNumber + 10);
     setNewOpName('');
     setNewOpEquip('');
