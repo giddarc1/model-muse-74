@@ -80,6 +80,17 @@ export default function OperationsRouting() {
   const hasUserOps = userOps.length > 0;
   const showEmptyState = !hasUserOps;
 
+  // Clean up orphaned DOCK-only state (e.g. from removed "Direct to Stock" feature)
+  useEffect(() => {
+    if (!model || !effectiveProductId || hasUserOps) return;
+    const dockOp = productOps.find(o => o.op_name === 'DOCK');
+    if (dockOp) {
+      deleteOperation(model.id, dockOp.id);
+      const orphanedRouting = (model.routing ?? []).filter(r => r.product_id === effectiveProductId);
+      orphanedRouting.forEach(r => deleteRouting(model.id, r.id));
+    }
+  }, [model?.id, effectiveProductId, hasUserOps, productOps]);
+
   const productRouting = useMemo(
     () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
     [model?.routing, effectiveProductId]
