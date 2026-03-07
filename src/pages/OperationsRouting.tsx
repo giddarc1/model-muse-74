@@ -75,6 +75,10 @@ export default function OperationsRouting() {
     [model?.operations, effectiveProductId]
   );
 
+  // User-added operations = everything except DOCK
+  const userOps = useMemo(() => productOps.filter(o => o.op_name !== 'DOCK'), [productOps]);
+  const hasUserOps = userOps.length > 0;
+
   const productRouting = useMemo(
     () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
     [model?.routing, effectiveProductId]
