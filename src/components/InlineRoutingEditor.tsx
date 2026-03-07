@@ -25,6 +25,7 @@ export function InlineRoutingEditor({
   onUpdateRoute,
   onDeleteRoute,
   colSpan,
+  hideDelete = false,
 }: InlineRoutingEditorProps) {
   const [newTo, setNewTo] = useState('');
   const [newPct, setNewPct] = useState(100);
