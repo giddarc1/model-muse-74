@@ -186,7 +186,7 @@ export default function OperationsRouting() {
   const handleAddRoute = () => {
     if (!routeFromOp || !routeToOp) return;
     addRouting(model.id, {
-      id: crypto.randomUUID(), product_id: selectedProductId,
+      id: crypto.randomUUID(), product_id: effectiveProductId,
       from_op_name: routeFromOp, to_op_name: routeToOp, pct_routed: routePct,
     });
     setShowAddRoute(false); setRouteFromOp(''); setRouteToOp(''); setRoutePct(100);
