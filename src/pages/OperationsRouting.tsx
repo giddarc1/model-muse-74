@@ -78,8 +78,18 @@ export default function OperationsRouting() {
   // User-added operations = everything except DOCK
   const userOps = useMemo(() => productOps.filter(o => o.op_name !== 'DOCK'), [productOps]);
   const hasUserOps = userOps.length > 0;
-  const hasDock = productOps.some(o => o.op_name === 'DOCK');
-  const showEmptyState = !hasUserOps && !hasDock;
+  const showEmptyState = !hasUserOps;
+
+  // Clean up orphaned DOCK-only state (e.g. from removed "Direct to Stock" feature)
+  useEffect(() => {
+    if (!model || !effectiveProductId || hasUserOps) return;
+    const dockOp = productOps.find(o => o.op_name === 'DOCK');
+    if (dockOp) {
+      deleteOperation(model.id, dockOp.id);
+      const orphanedRouting = (model.routing ?? []).filter(r => r.product_id === effectiveProductId);
+      orphanedRouting.forEach(r => deleteRouting(model.id, r.id));
+    }
+  }, [model?.id, effectiveProductId, hasUserOps, productOps]);
 
   const productRouting = useMemo(
     () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
@@ -154,24 +164,6 @@ export default function OperationsRouting() {
     setShowAddOp(true);
   };
 
-  const handleDirectToStock = () => {
-    // Create DOCK row
-    addOperation(model.id, {
-      id: crypto.randomUUID(), product_id: effectiveProductId,
-      op_name: 'DOCK', op_number: 0,
-      equip_id: '', pct_assigned: 100,
-      equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
-      equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
-      labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
-      labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
-      oper1: 0, oper2: 0, oper3: 0, oper4: 0,
-    });
-    // Create DOCK → STOCK routing
-    setRouting(model.id, effectiveProductId, [
-      { id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: 'STOCK', pct_routed: 100 },
-    ]);
-    toast.success('Simple routing created: DOCK → STOCK. Add operations any time to expand this routing.');
-  };
 
   const handleAddOp = () => {
     if (!newOpName.trim()) return;
@@ -306,8 +298,8 @@ export default function OperationsRouting() {
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
-  // Routing completeness pill — show when user ops exist or DOCK-only with routing
-  const routingPill = (hasUserOps || (hasDock && hasAnyRouting)) ? (
+  // Routing completeness pill — only show when user ops exist
+  const routingPill = hasUserOps ? (
     routingStatus === 'complete' ? (
       <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-300 font-mono text-[11px] gap-1">
         <CheckCircle className="h-3 w-3" /> Routing complete
@@ -366,7 +358,6 @@ export default function OperationsRouting() {
             <OperationsEmptyState
               productName={effectiveProduct.name}
               onAddOperations={handleAddFirstOps}
-              onDirectToStock={handleDirectToStock}
             />
           </CardContent>
         </Card>
