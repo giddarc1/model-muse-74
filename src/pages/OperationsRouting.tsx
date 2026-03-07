@@ -284,24 +284,28 @@ export default function OperationsRouting() {
         </div>
       </div>
 
-      {/* Product Selector */}
-      <div className="mb-6">
-        <Label className="text-xs text-muted-foreground mb-1.5 block">Select Product</Label>
-        <div className="flex gap-2 flex-wrap">
-          {model.products.map((p) => (
-            <Button key={p.id} variant={p.id === selectedProductId ? 'default' : 'outline'} size="sm" className="font-mono text-xs" onClick={() => setSearchParams({ product: p.id })}>
-              {p.name}
-              <Badge variant="secondary" className="ml-1.5 text-xs h-4 px-1">{model.operations.filter(o => o.product_id === p.id).length}</Badge>
-            </Button>
-          ))}
-        </div>
-      </div>
+      {/* Product Selector Bar */}
+      <ProductSelectorBar
+        products={model.products}
+        operations={model.operations}
+        selectedProductId={effectiveProductId}
+        onSelect={(id) => setSearchParams({ product: id })}
+      />
 
-      {!selectedProduct ? (
-        <Card>
+      {!effectiveProduct ? (
+        <Card className="mt-6">
           <CardContent className="py-16 text-center text-muted-foreground">
-            <p className="text-lg font-medium">Select a product above</p>
-            <p className="text-sm mt-1">Choose a product to view and edit its operations and routing.</p>
+            <p className="text-lg font-medium">No products defined</p>
+            <p className="text-sm mt-1">Add products in the Products tab first.</p>
+          </CardContent>
+        </Card>
+      ) : productOps.length === 0 ? (
+        <Card className="mt-6">
+          <CardContent className="p-0">
+            <OperationsEmptyState
+              productName={effectiveProduct.name}
+              onAddOperations={handleAddFirstOps}
+            />
           </CardContent>
         </Card>
       ) : (
