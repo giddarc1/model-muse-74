@@ -43,6 +43,7 @@ export function InlineRoutingEditor({
 
   const total = routes.reduce((s, r) => s + r.pct_routed, 0);
   const totalOk = Math.abs(total - 100) < 0.01;
+  const addDisabled = total >= 100;
 
   // Build destination options: user ops (excluding self and DOCK) + STOCK/SCRAP
   const destOptions = allOpNames.filter(n => n !== opName && n !== 'DOCK');
