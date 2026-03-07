@@ -75,6 +75,10 @@ export default function OperationsRouting() {
     [model?.operations, effectiveProductId]
   );
 
+  // User-added operations = everything except DOCK
+  const userOps = useMemo(() => productOps.filter(o => o.op_name !== 'DOCK'), [productOps]);
+  const hasUserOps = userOps.length > 0;
+
   const productRouting = useMemo(
     () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
     [model?.routing, effectiveProductId]
@@ -118,7 +122,7 @@ export default function OperationsRouting() {
   }, [productOps, productRouting]);
 
   const hasAnyRouting = productRouting.length > 0;
-  const showDefaultRoutingBanner = productOps.length > 0 && !hasAnyRouting;
+  const showDefaultRoutingBanner = hasUserOps && !hasAnyRouting;
 
   // Compute actual times
   const getActualTimes = (op: Operation) => {
@@ -143,7 +147,20 @@ export default function OperationsRouting() {
 
   // ── Handlers ────────────────────────────────────────────────
   const handleAddFirstOps = () => {
-    if (productOps.length === 0) {
+    // DOCK will be auto-created when the first user op is added (see handleAddOp)
+    setNewOpNumber(10);
+    setShowAddOp(true);
+  };
+
+  const handleAddOp = () => {
+    if (!newOpName.trim()) return;
+    if (SYSTEM_OPS.includes(newOpName.trim().toUpperCase())) {
+      toast.error(`"${newOpName.trim().toUpperCase()}" is a reserved system operation`);
+      return;
+    }
+    // Auto-create DOCK if no operations exist yet
+    const hasDock = productOps.some(o => o.op_name === 'DOCK');
+    if (!hasDock) {
       addOperation(model.id, {
         id: crypto.randomUUID(), product_id: effectiveProductId,
         op_name: 'DOCK', op_number: 0,
@@ -154,16 +171,6 @@ export default function OperationsRouting() {
         labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
         oper1: 0, oper2: 0, oper3: 0, oper4: 0,
       });
-      setNewOpNumber(10);
-    }
-    setShowAddOp(true);
-  };
-
-  const handleAddOp = () => {
-    if (!newOpName.trim()) return;
-    if (SYSTEM_OPS.includes(newOpName.trim().toUpperCase())) {
-      toast.error(`"${newOpName.trim().toUpperCase()}" is a reserved system operation`);
-      return;
     }
     addOperation(model.id, {
       id: crypto.randomUUID(), product_id: effectiveProductId,
@@ -206,7 +213,25 @@ export default function OperationsRouting() {
     toast.success('Operations re-sorted');
   };
 
-  const handleOpFieldChange = (op: Operation, field: string, value: number) => {
+  // Handle deleting an operation — if it's the last user op, also remove DOCK and all routing
+  const handleDeleteOperation = (opId: string) => {
+    const op = productOps.find(o => o.id === opId);
+    if (!op || op.op_name === 'DOCK') return;
+
+    const remainingUserOps = userOps.filter(o => o.id !== opId);
+    if (remainingUserOps.length === 0) {
+      // Last user op — remove DOCK too and clear routing
+      const dockOp = productOps.find(o => o.op_name === 'DOCK');
+      deleteOperation(model.id, opId);
+      if (dockOp) deleteOperation(model.id, dockOp.id);
+      setRouting(model.id, effectiveProductId, []);
+      setExpandedRoutingOp(null);
+      toast.success(`All operations cleared. ${effectiveProduct?.name} has no operations defined.`);
+    } else {
+      deleteOperation(model.id, opId);
+    }
+  };
+
     if (activeScenarioId && activeScenario) {
       const productName = model.products.find(p => p.id === op.product_id)?.name || '';
       const entityName = `${productName}: ${op.op_name}`;
@@ -259,8 +284,8 @@ export default function OperationsRouting() {
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
-  // Routing completeness pill
-  const routingPill = productOps.length > 1 ? (
+  // Routing completeness pill — only show when user ops exist
+  const routingPill = hasUserOps ? (
     routingStatus === 'complete' ? (
       <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-300 font-mono text-[11px] gap-1">
         <CheckCircle className="h-3 w-3" /> Routing complete
@@ -313,7 +338,7 @@ export default function OperationsRouting() {
             <p className="text-sm mt-1">Add products in the Products tab first.</p>
           </CardContent>
         </Card>
-      ) : productOps.length === 0 ? (
+      ) : !hasUserOps ? (
         <Card className="mt-6">
           <CardContent className="p-0">
             <OperationsEmptyState
@@ -348,7 +373,7 @@ export default function OperationsRouting() {
                   <CardTitle className="text-base">
                     Operations for <span className="font-mono text-primary">{effectiveProduct.name}</span>
                   </CardTitle>
-                  <CardDescription>{productOps.length} operations defined</CardDescription>
+                  <CardDescription>{userOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
                   <div className="flex border rounded-md overflow-hidden">
@@ -439,7 +464,7 @@ export default function OperationsRouting() {
                             <TableCell colSpan={totalCols}>
                               <DeleteConfirmInline
                                 message={`Delete operation ${op.op_name}?`}
-                                onConfirm={() => confirmDelete(op.id, () => deleteOperation(model.id, op.id))}
+                                onConfirm={() => confirmDelete(op.id, () => handleDeleteOperation(op.id))}
                                 onCancel={cancelDelete}
                               />
                             </TableCell>
@@ -595,6 +620,7 @@ export default function OperationsRouting() {
                             onUpdateRoute={handleUpdateInlineRoute}
                             onDeleteRoute={(id) => deleteRouting(model.id, id)}
                             colSpan={totalCols}
+                            hideDelete={isDock}
                           />
                         )}
                       </>

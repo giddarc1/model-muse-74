@@ -14,6 +14,7 @@ interface InlineRoutingEditorProps {
   onUpdateRoute: (routeId: string, data: Partial<RoutingEntry>) => void;
   onDeleteRoute: (routeId: string) => void;
   colSpan: number;
+  hideDelete?: boolean; // true for DOCK routes — no individual delete allowed
 }
 
 export function InlineRoutingEditor({
@@ -24,6 +25,7 @@ export function InlineRoutingEditor({
   onUpdateRoute,
   onDeleteRoute,
   colSpan,
+  hideDelete = false,
 }: InlineRoutingEditorProps) {
   const [newTo, setNewTo] = useState('');
   const [newPct, setNewPct] = useState(100);
@@ -107,11 +109,13 @@ export function InlineRoutingEditor({
                   value={r.pct_routed}
                   onChange={e => onUpdateRoute(r.id, { pct_routed: +e.target.value })}
                 />
+                {!hideDelete && (
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => {
                   setConfirmingDeleteId(r.id);
                 }}>
                   <X className="h-3 w-3" />
                 </Button>
+                )}
               </div>
               );
             })}
