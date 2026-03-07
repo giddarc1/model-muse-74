@@ -158,6 +158,20 @@ export default function OperationsRouting() {
       toast.error(`"${newOpName.trim().toUpperCase()}" is a reserved system operation`);
       return;
     }
+    // Auto-create DOCK if no operations exist yet
+    const hasDock = productOps.some(o => o.op_name === 'DOCK');
+    if (!hasDock) {
+      addOperation(model.id, {
+        id: crypto.randomUUID(), product_id: effectiveProductId,
+        op_name: 'DOCK', op_number: 0,
+        equip_id: '', pct_assigned: 100,
+        equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+        equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+        labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+        labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
+        oper1: 0, oper2: 0, oper3: 0, oper4: 0,
+      });
+    }
     addOperation(model.id, {
       id: crypto.randomUUID(), product_id: effectiveProductId,
       op_name: newOpName.trim().toUpperCase(), op_number: newOpNumber,
