@@ -618,9 +618,6 @@ export default function IBOMScreen() {
                     })}
                   </div>
                   <div className="flex gap-2 mt-2">
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setShowEmptyPicker(true)}>
-                      <PlusCircle className="h-3 w-3 mr-1" /> Add More
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
