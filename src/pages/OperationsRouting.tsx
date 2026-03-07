@@ -360,7 +360,7 @@ export default function OperationsRouting() {
             <p className="text-sm mt-1">Add products in the Products tab first.</p>
           </CardContent>
         </Card>
-      ) : !hasUserOps ? (
+      ) : showEmptyState ? (
         <Card className="mt-6">
           <CardContent className="p-0">
             <OperationsEmptyState
