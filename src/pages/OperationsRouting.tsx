@@ -20,7 +20,7 @@ import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
 import { ProductSelectorBar } from '@/components/ProductSelectorBar';
 import { OperationsEmptyState } from '@/components/OperationsEmptyState';
-import { RoutingBadge } from '@/components/RoutingBadge';
+
 import { InlineRoutingEditor } from '@/components/InlineRoutingEditor';
 
 const SYSTEM_OPS = ['DOCK', 'STOCK', 'SCRAP'];
