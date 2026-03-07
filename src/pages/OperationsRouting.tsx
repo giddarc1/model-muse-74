@@ -430,10 +430,11 @@ export default function OperationsRouting() {
                     const isDock = op.op_name === 'DOCK';
                     const opRoutes = getRoutesForOp(op.op_name);
                     const isExpanded = expandedRoutingOp === op.op_name;
+                    const isConfirming = !isDock && pendingDeleteId === op.id;
 
                     return (
                       <>
-                        <TableRow key={op.id}>
+                        <TableRow key={op.id} className={isConfirming ? 'bg-destructive/10' : ''}>
                           {/* Lock / row indicator */}
                           <TableCell className="w-10 text-center">
                             {isDock && <Lock className="h-3 w-3 text-muted-foreground inline-block" />}
