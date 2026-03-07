@@ -78,6 +78,8 @@ export default function OperationsRouting() {
   // User-added operations = everything except DOCK
   const userOps = useMemo(() => productOps.filter(o => o.op_name !== 'DOCK'), [productOps]);
   const hasUserOps = userOps.length > 0;
+  const hasDock = productOps.some(o => o.op_name === 'DOCK');
+  const showEmptyState = !hasUserOps && !hasDock;
 
   const productRouting = useMemo(
     () => (model?.routing ?? []).filter((r) => r.product_id === effectiveProductId),
@@ -150,6 +152,25 @@ export default function OperationsRouting() {
     // DOCK will be auto-created when the first user op is added (see handleAddOp)
     setNewOpNumber(10);
     setShowAddOp(true);
+  };
+
+  const handleDirectToStock = () => {
+    // Create DOCK row
+    addOperation(model.id, {
+      id: crypto.randomUUID(), product_id: effectiveProductId,
+      op_name: 'DOCK', op_number: 0,
+      equip_id: '', pct_assigned: 100,
+      equip_setup_lot: 0, equip_setup_piece: 0, equip_setup_tbatch: 0,
+      equip_run_piece: 0, equip_run_lot: 0, equip_run_tbatch: 0,
+      labor_setup_lot: 0, labor_setup_piece: 0, labor_setup_tbatch: 0,
+      labor_run_piece: 0, labor_run_lot: 0, labor_run_tbatch: 0,
+      oper1: 0, oper2: 0, oper3: 0, oper4: 0,
+    });
+    // Create DOCK → STOCK routing
+    setRouting(model.id, effectiveProductId, [
+      { id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: 'DOCK', to_op_name: 'STOCK', pct_routed: 100 },
+    ]);
+    toast.success('Simple routing created: DOCK → STOCK. Add operations any time to expand this routing.');
   };
 
   const handleAddOp = () => {
@@ -285,8 +306,8 @@ export default function OperationsRouting() {
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
-  // Routing completeness pill — only show when user ops exist
-  const routingPill = hasUserOps ? (
+  // Routing completeness pill — show when user ops exist or DOCK-only with routing
+  const routingPill = (hasUserOps || (hasDock && hasAnyRouting)) ? (
     routingStatus === 'complete' ? (
       <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-300 font-mono text-[11px] gap-1">
         <CheckCircle className="h-3 w-3" /> Routing complete
@@ -339,12 +360,13 @@ export default function OperationsRouting() {
             <p className="text-sm mt-1">Add products in the Products tab first.</p>
           </CardContent>
         </Card>
-      ) : !hasUserOps ? (
+      ) : showEmptyState ? (
         <Card className="mt-6">
           <CardContent className="p-0">
             <OperationsEmptyState
               productName={effectiveProduct.name}
               onAddOperations={handleAddFirstOps}
+              onDirectToStock={handleDirectToStock}
             />
           </CardContent>
         </Card>
