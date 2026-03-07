@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, FlaskConical, ArrowRight } from 'lucide-react';
+import { Info, FlaskConical } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 
 const FIELD_LABELS: Record<string, string> = {
@@ -110,8 +110,8 @@ export default function GeneralData() {
               {/* Group 1 — Time Units */}
               <div>
                 <p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Time Units</p>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
                     <Label className="text-xs text-muted-foreground">Operations Time Unit</Label>
                     <Select value={g.ops_time_unit} onValueChange={(v) => update({ ops_time_unit: v as any })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -122,10 +122,7 @@ export default function GeneralData() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center h-10">
-                    <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
-                  </div>
-                  <div className="flex-1">
+                  <div>
                     <Label className="text-xs text-muted-foreground">MCT Time Unit</Label>
                     <Select value={g.mct_time_unit} onValueChange={(v) => update({ mct_time_unit: v as any })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -137,10 +134,7 @@ export default function GeneralData() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center h-10">
-                    <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
-                  </div>
-                  <div className="flex-1">
+                  <div>
                     <Label className="text-xs text-muted-foreground">Production Period</Label>
                     <Select value={g.prod_period_unit} onValueChange={(v) => update({ prod_period_unit: v as any })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>

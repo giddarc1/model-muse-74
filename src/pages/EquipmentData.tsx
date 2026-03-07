@@ -3,6 +3,7 @@ import { useModelStore, type EquipmentGroup } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -127,7 +128,8 @@ export default function EquipmentData() {
                   <TableHead className="font-mono text-xs">MTTF ({opsTimeUnit})</TableHead>
                   <TableHead className="font-mono text-xs">MTTR ({opsTimeUnit})</TableHead>
                   <TableHead className="font-mono text-xs">OT %</TableHead>
-                  <TableHead className="font-mono text-xs">Labor</TableHead>
+                   <TableHead className="font-mono text-xs">Labor</TableHead>
+                   <TableHead className="font-mono text-xs">Comments</TableHead>
                   {showAdvanced && <>
                     <TableHead className="font-mono text-xs">Dept/Area</TableHead>
                     <TableHead className="font-mono text-xs">Out of Area</TableHead>
@@ -169,6 +171,7 @@ export default function EquipmentData() {
                         </SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell><Input className="h-8 w-32" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Notes…" /></TableCell>
                     {showAdvanced && <>
                       <TableCell><Input className="h-8 w-24" value={eq.dept_code} onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} /></TableCell>
                       <TableCell>
@@ -218,6 +221,10 @@ export default function EquipmentData() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Comments</Label>
+                  <Textarea rows={3} className="text-sm" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Add notes about this equipment group…" />
                 </div>
                 {showAdvanced && (
                   <>
