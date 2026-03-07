@@ -273,7 +273,7 @@ export default function ProductData() {
                         <div><Label className="text-xs">Lot Factor</Label><Input type="number" className="h-8 font-mono" value={p.lot_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'lot_factor', +e.target.value)} /></div>
                         <div><Label className="text-xs">Var Factor</Label><Input type="number" className="h-8 font-mono" value={p.var_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'var_factor', +e.target.value)} /></div>
                       </div>
-                      <div><Label className="text-xs">Setup Time Factor</Label><Input type="number" className="h-8 font-mono" value={p.setup_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'setup_factor', +e.target.value)} /></div>
+                      
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Label className="text-xs">Make to Stock</Label>
