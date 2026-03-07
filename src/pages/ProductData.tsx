@@ -200,21 +200,13 @@ export default function ProductData() {
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={p.prod4} onChange={(e) => handleCellChange(p.id, 'prod4', +e.target.value)} /></TableCell>
                     </>}
                     <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
-                              {getScrapRate(p.id) > 0 ? `${getScrapRate(p.id)}%` : '—'}
-                              <ExternalLink className="h-3 w-3 ml-0.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit routing to change scrap rate</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell>
                       <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => goToOps(p.id)}>
                         <GitBranch className="h-3 w-3" />{opsCount(p.id)}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
+                        <ExternalLink className="h-3 w-3" /> View
                       </Button>
                     </TableCell>
                     <TableCell><Input className="h-8 w-32" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></TableCell>
