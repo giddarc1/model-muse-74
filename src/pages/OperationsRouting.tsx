@@ -103,6 +103,55 @@ export default function OperationsRouting() {
   const getRoutesForOp = (opName: string) => productRouting.filter(r => r.from_op_name === opName);
 
   // ── Routing completeness ────────────────────────────────────
+  // ── Dead-end / unreachable detection ─────────────────────────
+  const { deadEndOps, unreachableOps } = useMemo(() => {
+    const deadEnds = new Set<string>();
+    const unreachable = new Set<string>();
+    const allUserOpNames = userOps.map(o => o.op_name);
+    if (allUserOpNames.length === 0) return { deadEndOps: deadEnds, unreachableOps: unreachable };
+
+    // Build set of ops that receive incoming routes from other ops
+    const opsWithIncoming = new Set<string>();
+    for (const r of productRouting) {
+      if (r.to_op_name !== 'STOCK' && r.to_op_name !== 'SCRAP') {
+        opsWithIncoming.add(r.to_op_name);
+      }
+    }
+
+    // Find ops whose outgoing routes ALL go to STOCK/SCRAP (fully terminal)
+    for (const opName of allUserOpNames) {
+      const routes = productRouting.filter(r => r.from_op_name === opName);
+      if (routes.length === 0) continue;
+      const allTerminal = routes.every(r => r.to_op_name === 'STOCK' || r.to_op_name === 'SCRAP');
+      if (allTerminal) {
+        // Check if there are user ops that become unreachable because of this termination
+        // An op is unreachable if nothing routes to it (except DOCK which gets incoming from outside)
+        // Only flag as dead-end if there are unreachable ops that exist
+        deadEnds.add(opName);
+      }
+    }
+
+    // Find unreachable user ops: no incoming route from any other op, and not DOCK
+    for (const opName of allUserOpNames) {
+      if (!opsWithIncoming.has(opName)) {
+        unreachable.add(opName);
+      }
+    }
+
+    // Only flag dead-ends if there are actually unreachable ops
+    // And only flag if dead-end + unreachable coexist
+    if (unreachable.size === 0) {
+      deadEnds.clear();
+    }
+    // If all user ops are unreachable (e.g. DOCK routes to STOCK), keep dead-end flags
+    // But if no dead-ends exist, don't flag unreachable (they may just have no routing yet)
+    if (deadEnds.size === 0) {
+      unreachable.clear();
+    }
+
+    return { deadEndOps: deadEnds, unreachableOps: unreachable };
+  }, [userOps, productRouting]);
+
   const routingStatus = useMemo(() => {
     // Only user ops (not DOCK) need routing
     const opsNeedingRouting = productOps.filter(o => o.op_name !== 'DOCK');
@@ -141,8 +190,13 @@ export default function OperationsRouting() {
       });
     }
 
+    // Condition E: no dead-ends or unreachable ops
+    if (complete && (deadEndOps.size > 0 || unreachableOps.size > 0)) {
+      complete = false;
+    }
+
     return complete ? 'complete' : 'incomplete';
-  }, [productOps, productRouting]);
+  }, [productOps, productRouting, deadEndOps, unreachableOps]);
 
   const hasAnyRouting = productRouting.length > 0;
   const [showAutoRouteConfirm, setShowAutoRouteConfirm] = useState(false);
@@ -643,14 +697,37 @@ export default function OperationsRouting() {
                             )
                           )}
 
-                          {/* Routing column */}
                           <TableCell className="py-0">
                             {(() => {
                               // Determine routing text and color
                               if (!isDock && op.pct_assigned > 100) {
                                 return (
-                                  <span className="text-sm text-red-600 whitespace-nowrap block truncate">
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
                                     ⚠ % Assign &gt; 100
+                                  </span>
+                                );
+                              }
+                              // Dead-end / unreachable checks
+                              if (!isDock && deadEndOps.has(op.op_name)) {
+                                return (
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
+                                    ⚠ Dead end
+                                  </span>
+                                );
+                              }
+                              if (!isDock && unreachableOps.has(op.op_name)) {
+                                return (
+                                  <span
+                                    className="text-sm text-red-600 whitespace-nowrap block truncate cursor-pointer"
+                                    onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  >
+                                    ⚠ Unreachable
                                   </span>
                                 );
                               }
@@ -673,8 +750,8 @@ export default function OperationsRouting() {
                               }
                               return (
                                 <span
-                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} ${isDock ? '' : 'cursor-pointer'}`}
-                                  onClick={isDock ? undefined : () => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} cursor-pointer`}
+                                  onClick={() => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
                                 >
                                   {text}
                                 </span>
