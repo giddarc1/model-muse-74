@@ -112,12 +112,23 @@ export default function OperationsRouting() {
     if (allFromOps.length <= 1 && productOps.length <= 1) return 'empty';
 
     let complete = true;
+
+    // Condition D: No operation has % Assign > 100
+    for (const op of opsNeedingRouting) {
+      if (op.pct_assigned > 100) { complete = false; break; }
+    }
+
     for (const opName of allFromOps) {
-      if (opName === 'DOCK' && productOps.length <= 1) continue; // just DOCK, no other ops
+      if (opName === 'DOCK' && productOps.length <= 1) continue;
       const routes = productRouting.filter(r => r.from_op_name === opName);
+      // Condition A: every op has at least one outgoing path
       if (routes.length === 0) { complete = false; break; }
+      // Condition B: sum of % Routed must be exactly 100 (integer check)
       const total = routes.reduce((s, r) => s + r.pct_routed, 0);
-      if (Math.abs(total - 100) > 0.01) { complete = false; break; }
+      if (total !== 100) { complete = false; break; }
+      // Condition C: no duplicate destinations
+      const destSet = new Set(routes.map(r => r.to_op_name));
+      if (destSet.size !== routes.length) { complete = false; break; }
     }
 
     // Check all paths reach STOCK or SCRAP (dead-end check)
@@ -518,7 +529,7 @@ export default function OperationsRouting() {
                             {isDock ? (
                               <span className="font-mono text-xs text-muted-foreground">—</span>
                             ) : (
-                              <Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => handleOpFieldChange(op, 'pct_assigned', +e.target.value)} />
+                              <Input type="number" className={`h-8 w-16 font-mono ${op.pct_assigned > 100 ? 'border-red-500 focus-visible:ring-red-500' : ''}`} value={op.pct_assigned} onChange={(e) => handleOpFieldChange(op, 'pct_assigned', +e.target.value)} />
                             )}
                           </TableCell>
 
@@ -574,6 +585,11 @@ export default function OperationsRouting() {
 
                           {/* Routing column */}
                           <TableCell className="py-0">
+                            {!isDock && op.pct_assigned > 100 ? (
+                              <span className="text-sm text-red-600 whitespace-nowrap block">
+                                ⚠ % Assign &gt; 100
+                              </span>
+                            ) : (
                             <span
                               className={`text-sm truncate cursor-pointer whitespace-nowrap block ${
                                 opRoutes.length === 0
@@ -591,6 +607,7 @@ export default function OperationsRouting() {
                                   ? `→ ${opRoutes[0].to_op_name}`
                                   : `→ ${opRoutes.length} paths`}
                             </span>
+                            )}
                           </TableCell>
 
                           {/* Formula Builder trigger */}
