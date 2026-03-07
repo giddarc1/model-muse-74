@@ -94,10 +94,7 @@ export default function ProductData() {
 
   const opsCount = (productId: string) => model.operations.filter((o) => o.product_id === productId).length;
 
-  const getScrapRate = (productId: string) => {
-    const routes = model.routing.filter(r => r.product_id === productId && r.to_op_name === 'SCRAP');
-    return routes.reduce((sum, r) => sum + r.pct_routed, 0);
-  };
+  const ibomCount = (productId: string) => model.ibom.filter(e => e.parent_product_id === productId).length;
 
   return (
     <div className="p-6 animate-fade-in">
