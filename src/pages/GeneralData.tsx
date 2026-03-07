@@ -34,6 +34,16 @@ export default function GeneralData() {
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
 
+  // Capture saved unit values on mount — labels only update on remount, not live
+  const savedUnitsRef = useRef<{ ops: string; mct: string; prod: string } | null>(null);
+  if (model && !savedUnitsRef.current) {
+    savedUnitsRef.current = {
+      ops: model.general.ops_time_unit,
+      mct: model.general.mct_time_unit,
+      prod: model.general.prod_period_unit,
+    };
+  }
+
   if (!model) return (
     <div className="p-6 max-w-3xl space-y-4">
       <div className="h-7 w-48 bg-muted animate-pulse rounded" />
