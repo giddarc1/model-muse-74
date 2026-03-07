@@ -484,7 +484,6 @@ export default function OperationsRouting() {
                     })}
                   </TableBody>
                 </Table>
-              )}
             </CardContent>
           </Card>
 
