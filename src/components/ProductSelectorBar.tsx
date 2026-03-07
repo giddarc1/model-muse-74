@@ -11,9 +11,10 @@ interface ProductSelectorBarProps {
   operations: Operation[];
   selectedProductId: string;
   onSelect: (id: string) => void;
+  statusPill?: React.ReactNode;
 }
 
-export function ProductSelectorBar({ products, operations, selectedProductId, onSelect }: ProductSelectorBarProps) {
+export function ProductSelectorBar({ products, operations, selectedProductId, onSelect, statusPill }: ProductSelectorBarProps) {
   const [open, setOpen] = useState(false);
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const selectedIdx = products.findIndex(p => p.id === selectedProductId);
@@ -88,6 +89,8 @@ export function ProductSelectorBar({ products, operations, selectedProductId, on
           <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </div>
+
+      {statusPill && <div className="ml-auto">{statusPill}</div>}
     </div>
   );
 }
