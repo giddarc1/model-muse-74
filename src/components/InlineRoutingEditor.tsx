@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Plus, X, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, X, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { RoutingEntry } from '@/stores/modelStore';
 
 interface InlineRoutingEditorProps {
