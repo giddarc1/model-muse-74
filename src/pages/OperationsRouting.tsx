@@ -412,9 +412,15 @@ export default function OperationsRouting() {
                   <TableBody>
                     {productOps.map((op) => {
                       const actual = viewActualTimes ? getActualTimes(op) : null;
+                      const isDock = op.op_name === 'DOCK';
                       return (
                         <TableRow key={op.id}>
-                          <TableCell><Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} /></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {isDock && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
+                              <Input type="number" className="h-8 w-16 font-mono" value={op.op_number} onChange={(e) => handleOpFieldChange(op, 'op_number', +e.target.value)} />
+                            </div>
+                          </TableCell>
                           <TableCell className="font-mono font-medium">{op.op_name}</TableCell>
                           <TableCell>
                             <Select value={op.equip_id || 'none'} onValueChange={(v) => updateOperation(model.id, op.id, { equip_id: v === 'none' ? '' : v })}>
