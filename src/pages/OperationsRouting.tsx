@@ -364,6 +364,7 @@ export default function OperationsRouting() {
             <OperationsEmptyState
               productName={effectiveProduct.name}
               onAddOperations={handleAddFirstOps}
+              onDirectToStock={handleDirectToStock}
             />
           </CardContent>
         </Card>
