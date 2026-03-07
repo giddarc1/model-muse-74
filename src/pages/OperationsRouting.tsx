@@ -100,7 +100,7 @@ export default function OperationsRouting() {
   }, [productRouting]);
 
   const allOpNames = useMemo(() => {
-    const userOps = productOps.map((o) => o.op_name);
+    const userOps = productOps.map((o) => o.op_name).filter(n => n !== 'DOCK');
     return ['DOCK', ...userOps, 'STOCK', 'SCRAP'];
   }, [productOps]);
 
