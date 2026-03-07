@@ -529,7 +529,7 @@ export default function OperationsRouting() {
                             {isDock ? (
                               <span className="font-mono text-xs text-muted-foreground">—</span>
                             ) : (
-                              <Input type="number" className="h-8 w-16 font-mono" value={op.pct_assigned} onChange={(e) => handleOpFieldChange(op, 'pct_assigned', +e.target.value)} />
+                              <Input type="number" className={`h-8 w-16 font-mono ${op.pct_assigned > 100 ? 'border-red-500 focus-visible:ring-red-500' : ''}`} value={op.pct_assigned} onChange={(e) => handleOpFieldChange(op, 'pct_assigned', +e.target.value)} />
                             )}
                           </TableCell>
 
