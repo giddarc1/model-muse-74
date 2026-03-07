@@ -145,7 +145,7 @@ export default function OperationsRouting() {
   }, [productOps, productRouting]);
 
   const hasAnyRouting = productRouting.length > 0;
-  const showDefaultRoutingBanner = hasUserOps && !hasAnyRouting;
+  const [showAutoRouteConfirm, setShowAutoRouteConfirm] = useState(false);
 
   // Compute actual times
   const getActualTimes = (op: Operation) => {
@@ -228,7 +228,20 @@ export default function OperationsRouting() {
       entries.push({ id: crypto.randomUUID(), product_id: effectiveProductId, from_op_name: sorted[sorted.length - 1].op_name, to_op_name: 'STOCK', pct_routed: 100 });
     }
     setRouting(model.id, effectiveProductId, entries);
-    toast.success('Default routing generated. Review and edit branches as needed.');
+    setShowAutoRouteConfirm(false);
+    toast.success('Routing generated');
+  };
+
+  const handleAutoGenerateClick = () => {
+    if (!hasUserOps) {
+      toast.error('Add at least one operation before generating routing.');
+      return;
+    }
+    if (hasAnyRouting) {
+      setShowAutoRouteConfirm(true);
+    } else {
+      handleAutoRoute();
+    }
   };
 
   const handleResort = () => {
@@ -374,19 +387,14 @@ export default function OperationsRouting() {
         </Card>
       ) : (
         <div className="space-y-4 mt-4">
-          {/* Default routing banner */}
-          {showDefaultRoutingBanner && (
+          {/* Auto-generate confirmation */}
+          {showAutoRouteConfirm && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-amber-500/10 border border-amber-500/30">
-              <div className="flex items-center gap-2 text-[13px] text-amber-700">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  No routing defined. Generate a linear route: DOCK →{' '}
-                  {productOps.filter(o => o.op_name !== 'DOCK').map(o => o.op_name).join(' → ')} → STOCK
-                </span>
+              <span className="text-sm text-amber-700">This will replace all existing routing. Continue?</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowAutoRouteConfirm(false)}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={handleAutoRoute}>Replace</Button>
               </div>
-              <Button size="sm" className="gap-1.5 shrink-0" onClick={handleAutoRoute}>
-                <Zap className="h-3.5 w-3.5" /> Generate Default Routing
-              </Button>
             </div>
           )}
 
@@ -424,6 +432,9 @@ export default function OperationsRouting() {
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleResort} disabled={productOps.length <= 1}>
                     <SortAsc className="h-3.5 w-3.5" /> Re-sort
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleAutoGenerateClick}>
+                    <Zap className="h-3.5 w-3.5" /> Auto-Generate
                   </Button>
                 </div>
               </div>
@@ -585,29 +596,41 @@ export default function OperationsRouting() {
 
                           {/* Routing column */}
                           <TableCell className="py-0">
-                            {!isDock && op.pct_assigned > 100 ? (
-                              <span className="text-sm text-red-600 whitespace-nowrap block">
-                                ⚠ % Assign &gt; 100
-                              </span>
-                            ) : (
-                            <span
-                              className={`text-sm truncate cursor-pointer whitespace-nowrap block ${
-                                opRoutes.length === 0
-                                  ? 'text-amber-600'
-                                  : 'text-muted-foreground'
-                              } ${isExpanded ? 'font-medium' : ''}`}
-                              onClick={() => {
-                                const name = isDock ? 'DOCK' : op.op_name;
-                                setExpandedRoutingOp(isExpanded ? null : name);
-                              }}
-                            >
-                              {opRoutes.length === 0
-                                ? '⚠ No routing'
-                                : opRoutes.length === 1
-                                  ? `→ ${opRoutes[0].to_op_name}`
-                                  : `→ ${opRoutes.length} paths`}
-                            </span>
-                            )}
+                            {(() => {
+                              // Determine routing text and color
+                              if (!isDock && op.pct_assigned > 100) {
+                                return (
+                                  <span className="text-sm text-red-600 whitespace-nowrap block truncate">
+                                    ⚠ % Assign &gt; 100
+                                  </span>
+                                );
+                              }
+                              const total = opRoutes.reduce((s, r) => s + r.pct_routed, 0);
+                              const hasSumError = opRoutes.length > 0 && total !== 100;
+                              let text: string;
+                              let colorClass: string;
+                              if (opRoutes.length === 0) {
+                                text = '⚠ No routing';
+                                colorClass = 'text-amber-600';
+                              } else if (hasSumError) {
+                                text = `⚠ ${total}% — must be 100%`;
+                                colorClass = 'text-red-600';
+                              } else if (opRoutes.length === 1) {
+                                text = `→ ${opRoutes[0].to_op_name}`;
+                                colorClass = 'text-gray-500';
+                              } else {
+                                text = `→ ${opRoutes.length} paths`;
+                                colorClass = 'text-gray-500';
+                              }
+                              return (
+                                <span
+                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} ${isDock ? '' : 'cursor-pointer'}`}
+                                  onClick={isDock ? undefined : () => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                >
+                                  {text}
+                                </span>
+                              );
+                            })()}
                           </TableCell>
 
                           {/* Formula Builder trigger */}
