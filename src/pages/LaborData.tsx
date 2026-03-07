@@ -144,8 +144,19 @@ export default function LaborData() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {model.labor.map((l) => (
-                  <TableRow key={l.id}>
+                {model.labor.map((l) => {
+                  const isConfirming = pendingDeleteId === l.id;
+                  return (
+                  <TableRow key={l.id} className={isConfirming ? 'bg-destructive/10' : ''}>
+                    {isConfirming ? (
+                      <TableCell colSpan={showAdvanced ? 14 : 5}>
+                        <DeleteConfirmInline
+                          message={`Delete ${l.name}? This will remove it from any equipment assignments.`}
+                          onConfirm={() => confirmDelete(l.id, () => deleteLabor(model.id, l.id))}
+                          onCancel={cancelDelete}
+                        />
+                      </TableCell>
+                    ) : (<>
                     <TableCell className="font-mono font-medium">{l.name}</TableCell>
                     <TableCell>
                       <Input type="number" className="h-8 w-20 font-mono" value={l.count} onChange={(e) => handleCellChange(l.id, 'count', +e.target.value)} />
@@ -168,12 +179,14 @@ export default function LaborData() {
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.lab4} onChange={(e) => handleCellChange(l.id, 'lab4', +e.target.value)} /></TableCell>
                     </>}
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteLabor(model.id, l.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => requestDelete(l.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
+                    </>)}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
