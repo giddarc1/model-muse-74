@@ -207,9 +207,11 @@ export default function ProductData() {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs font-mono" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                        <ExternalLink className="h-3 w-3" /> View
-                      </Button>
+                      <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className={`h-7 gap-1 text-xs font-mono ${ibomCount(p.id) === 0 ? 'text-muted-foreground' : ''}`} onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
+                          <GitBranch className="h-3 w-3" />{ibomCount(p.id)}
+                        </Button>
+                      </TooltipTrigger><TooltipContent className="text-xs">View IBOM for {p.name}</TooltipContent></Tooltip></TooltipProvider>
                     </TableCell>
                     <TableCell><Input className="h-8 w-32" value={p.comments} onChange={(e) => handleCellChange(p.id, 'comments', e.target.value)} /></TableCell>
                     <TableCell>
