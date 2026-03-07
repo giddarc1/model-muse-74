@@ -122,7 +122,7 @@ export default function OperationsRouting() {
   }, [productOps, productRouting]);
 
   const hasAnyRouting = productRouting.length > 0;
-  const showDefaultRoutingBanner = productOps.length > 0 && !hasAnyRouting;
+  const showDefaultRoutingBanner = hasUserOps && !hasAnyRouting;
 
   // Compute actual times
   const getActualTimes = (op: Operation) => {
