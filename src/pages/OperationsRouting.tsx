@@ -309,17 +309,24 @@ export default function OperationsRouting() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 mt-6">
+          {/* Rule A warning: first op must be DOCK */}
+          {dockWarning && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-[13px] text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              This routing should start with DOCK (the cell entry point). DOCK requires no equipment or labor times.
+            </div>
+          )}
+
           {/* Operations Table */}
           <Card className={activeScenarioId ? 'border-l-[3px] border-l-amber-400' : ''}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{selectedProduct.name}</span></CardTitle>
+                  <CardTitle className="text-base">Operations for <span className="font-mono text-primary">{effectiveProduct.name}</span></CardTitle>
                   <CardDescription>{productOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
-                  {/* View/Edit toggle — visually distinct */}
                   <div className="flex border rounded-md overflow-hidden">
                     <Button
                       variant={!viewActualTimes ? 'secondary' : 'ghost'}
@@ -351,12 +358,7 @@ export default function OperationsRouting() {
               </div>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
-              {productOps.length === 0 ? (
-                <div className="py-10 text-center text-muted-foreground text-sm">
-                  No operations yet. Click "Add Operation" to define the first step.
-                </div>
-              ) : (
-                <Table>
+              <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="font-mono text-xs w-16">Op #</TableHead>
