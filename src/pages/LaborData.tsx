@@ -38,6 +38,7 @@ export default function LaborData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
