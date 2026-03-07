@@ -802,7 +802,7 @@ export default function OperationsRouting() {
                             onUpdateRoute={handleUpdateInlineRoute}
                             onDeleteRoute={(id) => deleteRouting(model.id, id)}
                             colSpan={totalCols}
-                            hideDelete={isDock}
+                            hideDelete={false}
                           />
                         )}
                       </>
