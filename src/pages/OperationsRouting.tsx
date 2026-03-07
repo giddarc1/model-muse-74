@@ -112,12 +112,23 @@ export default function OperationsRouting() {
     if (allFromOps.length <= 1 && productOps.length <= 1) return 'empty';
 
     let complete = true;
+
+    // Condition D: No operation has % Assign > 100
+    for (const op of opsNeedingRouting) {
+      if (op.pct_assigned > 100) { complete = false; break; }
+    }
+
     for (const opName of allFromOps) {
-      if (opName === 'DOCK' && productOps.length <= 1) continue; // just DOCK, no other ops
+      if (opName === 'DOCK' && productOps.length <= 1) continue;
       const routes = productRouting.filter(r => r.from_op_name === opName);
+      // Condition A: every op has at least one outgoing path
       if (routes.length === 0) { complete = false; break; }
+      // Condition B: sum of % Routed must be exactly 100 (integer check)
       const total = routes.reduce((s, r) => s + r.pct_routed, 0);
-      if (Math.abs(total - 100) > 0.01) { complete = false; break; }
+      if (total !== 100) { complete = false; break; }
+      // Condition C: no duplicate destinations
+      const destSet = new Set(routes.map(r => r.to_op_name));
+      if (destSet.size !== routes.length) { complete = false; break; }
     }
 
     // Check all paths reach STOCK or SCRAP (dead-end check)
