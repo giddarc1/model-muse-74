@@ -43,6 +43,23 @@ export default function IBOMScreen() {
   const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
   const [showEmptyPicker, setShowEmptyPicker] = useState(false);
 
+  // Read product param from URL and pre-select on mount
+  const initializedRef = useRef(false);
+  useMemo(() => {
+    if (initializedRef.current || !model) return;
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get('product');
+    if (productParam) {
+      // Try matching by ID first, then by name
+      const match = model.products.find(p => p.id === productParam || p.name === productParam);
+      if (match) {
+        setViewAssemblyId(match.id);
+        setSelectedProductId(match.id);
+        initializedRef.current = true;
+      }
+    }
+  }, [model]);
+
   // Track previous valid values for revert on blur
   const prevUpaValues = useRef<Map<string, number>>(new Map());
 
