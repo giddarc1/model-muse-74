@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { useNavigate, useParams, useBlocker } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
