@@ -250,7 +250,7 @@ export default function ProductData() {
                     <GitBranch className="h-3.5 w-3.5" /> Operations ({opsCount(p.id)})
                   </Button>
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={() => navigate(`/models/${model.id}/ibom?product=${p.id}`)}>
-                    <ExternalLink className="h-3.5 w-3.5" /> IBOM
+                    <GitBranch className="h-3.5 w-3.5" /> IBOM ({ibomCount(p.id)})
                   </Button>
 
                   {showAdvanced && (
