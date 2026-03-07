@@ -387,19 +387,14 @@ export default function OperationsRouting() {
         </Card>
       ) : (
         <div className="space-y-4 mt-4">
-          {/* Default routing banner */}
-          {showDefaultRoutingBanner && (
+          {/* Auto-generate confirmation */}
+          {showAutoRouteConfirm && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-amber-500/10 border border-amber-500/30">
-              <div className="flex items-center gap-2 text-[13px] text-amber-700">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  No routing defined. Generate a linear route: DOCK →{' '}
-                  {productOps.filter(o => o.op_name !== 'DOCK').map(o => o.op_name).join(' → ')} → STOCK
-                </span>
+              <span className="text-sm text-amber-700">This will replace all existing routing. Continue?</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setShowAutoRouteConfirm(false)}>Cancel</Button>
+                <Button variant="destructive" size="sm" onClick={handleAutoRoute}>Replace</Button>
               </div>
-              <Button size="sm" className="gap-1.5 shrink-0" onClick={handleAutoRoute}>
-                <Zap className="h-3.5 w-3.5" /> Generate Default Routing
-              </Button>
             </div>
           )}
 
