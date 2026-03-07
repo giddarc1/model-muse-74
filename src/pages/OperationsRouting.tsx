@@ -233,7 +233,7 @@ export default function OperationsRouting() {
 
   const handleRoutingChange = (routeId: string, field: string, value: number, route: typeof productRouting[0]) => {
     if (activeScenarioId && activeScenario) {
-      const productName = selectedProduct?.name || '';
+      const productName = effectiveProduct?.name || '';
       const entityName = `${productName}: ${route.from_op_name}→${route.to_op_name}`;
       applyScenarioChange(activeScenarioId, 'Routing', routeId, entityName, field, field === 'pct_routed' ? 'Routing %' : field, value);
     }
