@@ -596,29 +596,41 @@ export default function OperationsRouting() {
 
                           {/* Routing column */}
                           <TableCell className="py-0">
-                            {!isDock && op.pct_assigned > 100 ? (
-                              <span className="text-sm text-red-600 whitespace-nowrap block">
-                                ⚠ % Assign &gt; 100
-                              </span>
-                            ) : (
-                            <span
-                              className={`text-sm truncate cursor-pointer whitespace-nowrap block ${
-                                opRoutes.length === 0
-                                  ? 'text-amber-600'
-                                  : 'text-muted-foreground'
-                              } ${isExpanded ? 'font-medium' : ''}`}
-                              onClick={() => {
-                                const name = isDock ? 'DOCK' : op.op_name;
-                                setExpandedRoutingOp(isExpanded ? null : name);
-                              }}
-                            >
-                              {opRoutes.length === 0
-                                ? '⚠ No routing'
-                                : opRoutes.length === 1
-                                  ? `→ ${opRoutes[0].to_op_name}`
-                                  : `→ ${opRoutes.length} paths`}
-                            </span>
-                            )}
+                            {(() => {
+                              // Determine routing text and color
+                              if (!isDock && op.pct_assigned > 100) {
+                                return (
+                                  <span className="text-sm text-red-600 whitespace-nowrap block truncate">
+                                    ⚠ % Assign &gt; 100
+                                  </span>
+                                );
+                              }
+                              const total = opRoutes.reduce((s, r) => s + r.pct_routed, 0);
+                              const hasSumError = opRoutes.length > 0 && total !== 100;
+                              let text: string;
+                              let colorClass: string;
+                              if (opRoutes.length === 0) {
+                                text = '⚠ No routing';
+                                colorClass = 'text-amber-600';
+                              } else if (hasSumError) {
+                                text = `⚠ ${total}% — must be 100%`;
+                                colorClass = 'text-red-600';
+                              } else if (opRoutes.length === 1) {
+                                text = `→ ${opRoutes[0].to_op_name}`;
+                                colorClass = 'text-gray-500';
+                              } else {
+                                text = `→ ${opRoutes.length} paths`;
+                                colorClass = 'text-gray-500';
+                              }
+                              return (
+                                <span
+                                  className={`text-sm whitespace-nowrap block truncate ${colorClass} ${isExpanded ? 'font-medium' : ''} ${isDock ? '' : 'cursor-pointer'}`}
+                                  onClick={isDock ? undefined : () => setExpandedRoutingOp(isExpanded ? null : op.op_name)}
+                                >
+                                  {text}
+                                </span>
+                              );
+                            })()}
                           </TableCell>
 
                           {/* Formula Builder trigger */}
