@@ -1,18 +1,16 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useBlocker } from 'react-router-dom';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronRight, ChevronDown, Network, FlaskConical, Trash2, X, Search, Package, PlusCircle, GitBranch } from 'lucide-react';
+import { ChevronRight, ChevronDown, Network, FlaskConical, X, Search, Package, PlusCircle, GitBranch, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TreeNode {
@@ -23,6 +21,14 @@ interface TreeNode {
   depth: number;
 }
 
+// Draft component entry for local editing
+interface DraftComponent {
+  id: string;
+  component_product_id: string;
+  units_per_assy: number;
+  isNew?: boolean; // newly added, not yet saved
+}
+
 export default function IBOMScreen() {
   const navigate = useNavigate();
   const { modelId } = useParams<{ modelId: string }>();
@@ -30,6 +36,7 @@ export default function IBOMScreen() {
   const addIBOM = useModelStore((s) => s.addIBOM);
   const updateIBOM = useModelStore((s) => s.updateIBOM);
   const deleteIBOM = useModelStore((s) => s.deleteIBOM);
+  const setIBOMForParent = useModelStore((s) => s.setIBOMForParent);
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
 
@@ -42,6 +49,45 @@ export default function IBOMScreen() {
   const [filterText, setFilterText] = useState('');
   const [upaErrors, setUpaErrors] = useState<Set<string>>(new Set());
   const [showEmptyPicker, setShowEmptyPicker] = useState(false);
+
+  // ═══ DRAFT STATE ═══
+  // draftComponents: local working copy of components for the selected product
+  // savedSnapshot: the components as they were when last saved/loaded
+  const [draftComponents, setDraftComponents] = useState<DraftComponent[]>([]);
+  const [savedSnapshot, setSavedSnapshot] = useState<DraftComponent[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Pending switch target when dirty
+  const [pendingSwitchId, setPendingSwitchId] = useState<string | null>(null);
+
+  // Compute dirty state
+  const isDirty = useMemo(() => {
+    if (draftComponents.length !== savedSnapshot.length) return true;
+    for (let i = 0; i < draftComponents.length; i++) {
+      const d = draftComponents[i];
+      const s = savedSnapshot.find(x => x.id === d.id);
+      if (!s) return true; // new component
+      if (d.units_per_assy !== s.units_per_assy) return true;
+      if (d.component_product_id !== s.component_product_id) return true;
+    }
+    // Check if any saved items were removed
+    for (const s of savedSnapshot) {
+      if (!draftComponents.find(d => d.id === s.id)) return true;
+    }
+    return false;
+  }, [draftComponents, savedSnapshot]);
+
+  // Track which UPA values changed from saved state
+  const changedUpaIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const d of draftComponents) {
+      const s = savedSnapshot.find(x => x.id === d.id);
+      if (s && d.units_per_assy !== s.units_per_assy) {
+        ids.add(d.id);
+      }
+    }
+    return ids;
+  }, [draftComponents, savedSnapshot]);
 
   // Read product param from URL and pre-select on mount
   const initializedRef = useRef(false);
@@ -58,6 +104,25 @@ export default function IBOMScreen() {
       }
     }
   }, [model]);
+
+  // Sync draft when selectedProductId changes (load from model)
+  const editParentId = selectedProductId || '';
+  useEffect(() => {
+    if (!model || !editParentId) {
+      setDraftComponents([]);
+      setSavedSnapshot([]);
+      return;
+    }
+    const entries = model.ibom
+      .filter((e) => e.parent_product_id === editParentId)
+      .map(e => ({ id: e.id, component_product_id: e.component_product_id, units_per_assy: e.units_per_assy }));
+    setDraftComponents(entries);
+    setSavedSnapshot(entries);
+    setCheckedAllowable(new Set());
+    setConfirmingRemoveId(null);
+    setShowEmptyPicker(false);
+    setUpaErrors(new Set());
+  }, [editParentId, model?.id]); // Only reset when product selection changes, not on every model update
 
   // Track previous valid values for revert on blur
   const prevUpaValues = useRef<Map<string, number>>(new Map());
@@ -92,7 +157,6 @@ export default function IBOMScreen() {
     return buildTree(viewAssemblyId, 0, new Set());
   }, [viewAssemblyId, buildTree]);
 
-  // Compute max depth of tree
   const maxDepth = useMemo(() => {
     function getDepth(nodes: TreeNode[]): number {
       if (nodes.length === 0) return 0;
@@ -101,7 +165,6 @@ export default function IBOMScreen() {
     return getDepth(tree);
   }, [tree]);
 
-  // Compute Units / Final Assembly for each component
   const unitsPerFinalAssy = useMemo(() => {
     if (!model || !viewAssemblyId) return new Map<string, number>();
     const result = new Map<string, number>();
@@ -121,7 +184,6 @@ export default function IBOMScreen() {
     return result;
   }, [model, viewAssemblyId]);
 
-  // Filter tree nodes
   const filterTree = useCallback((nodes: TreeNode[], query: string): TreeNode[] => {
     if (!query) return nodes;
     const lq = query.toLowerCase();
@@ -136,16 +198,10 @@ export default function IBOMScreen() {
 
   const filteredTree = useMemo(() => filterTree(tree, filterText), [tree, filterText, filterTree]);
 
-  // Bottom panel: components of selected product
-  const editParentId = selectedProductId || '';
-  const currentComponents = useMemo(() => {
-    if (!model || !editParentId) return [];
-    return model.ibom.filter((e) => e.parent_product_id === editParentId);
-  }, [model, editParentId]);
-
+  // ═══ DRAFT-AWARE: allowableProducts based on draft, not model ═══
   const allowableProducts = useMemo(() => {
     if (!model || !editParentId) return [];
-    const currentCompIds = new Set(currentComponents.map((c) => c.component_product_id));
+    const currentCompIds = new Set(draftComponents.map((c) => c.component_product_id));
     const ancestors = getAncestors(editParentId);
     return model.products.filter((p) => {
       if (p.id === editParentId) return false;
@@ -153,13 +209,134 @@ export default function IBOMScreen() {
       if (ancestors.has(p.id)) return false;
       return true;
     });
-  }, [model, editParentId, currentComponents, getAncestors]);
+  }, [model, editParentId, draftComponents, getAncestors]);
 
-  // Check if selected product is a what-if edit target
   const isWhatIfTarget = useMemo(() => {
     if (!activeScenario || !editParentId) return false;
     return activeScenario.changes.some(c => c.entityId === editParentId);
   }, [activeScenario, editParentId]);
+
+  // ═══ SAVE / DISCARD ═══
+  const handleSave = async () => {
+    if (!model || !editParentId) return;
+    setIsSaving(true);
+    try {
+      const newEntries: IBOMEntry[] = draftComponents.map(d => ({
+        id: d.id,
+        parent_product_id: editParentId,
+        component_product_id: d.component_product_id,
+        units_per_assy: d.units_per_assy,
+      }));
+      setIBOMForParent(model.id, editParentId, newEntries);
+      const snapshot = draftComponents.map(d => ({ ...d }));
+      setSavedSnapshot(snapshot);
+      setDraftComponents(snapshot);
+      toast.success(`IBOM updated for ${prodName(editParentId)}`);
+    } catch {
+      toast.error('Failed to save IBOM changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscard = () => {
+    setDraftComponents(savedSnapshot.map(s => ({ ...s })));
+    setUpaErrors(new Set());
+    prevUpaValues.current.clear();
+    setCheckedAllowable(new Set());
+    setConfirmingRemoveId(null);
+  };
+
+  // ═══ DRAFT MUTATIONS (local only) ═══
+  const handleAddChecked = () => {
+    if (!editParentId || checkedAllowable.size === 0) return;
+    const newDrafts: DraftComponent[] = [];
+    checkedAllowable.forEach(pId => {
+      newDrafts.push({
+        id: crypto.randomUUID(),
+        component_product_id: pId,
+        units_per_assy: 1,
+        isNew: true,
+      });
+    });
+    setDraftComponents(prev => [...prev, ...newDrafts]);
+    toast.info(`${checkedAllowable.size} component(s) staged`);
+    setCheckedAllowable(new Set());
+  };
+
+  const handleAddAll = () => {
+    const newDrafts: DraftComponent[] = allowableProducts.map(p => ({
+      id: crypto.randomUUID(),
+      component_product_id: p.id,
+      units_per_assy: 1,
+      isNew: true,
+    }));
+    setDraftComponents(prev => [...prev, ...newDrafts]);
+    toast.info(`${allowableProducts.length} component(s) staged`);
+  };
+
+  const handleRemoveDraft = (draftId: string) => {
+    setDraftComponents(prev => prev.filter(d => d.id !== draftId));
+    setConfirmingRemoveId(null);
+  };
+
+  const handleRemoveAll = () => {
+    setDraftComponents([]);
+    setShowRemoveAllDialog(false);
+  };
+
+  const handleUpaChange = (entryId: string, value: string, currentValid: number) => {
+    const num = Number(value);
+    if (!prevUpaValues.current.has(entryId)) {
+      prevUpaValues.current.set(entryId, currentValid);
+    }
+    if (value === '' || num <= 0) {
+      setUpaErrors(prev => new Set(prev).add(entryId));
+      return;
+    }
+    setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
+    setDraftComponents(prev => prev.map(d => d.id === entryId ? { ...d, units_per_assy: num } : d));
+    prevUpaValues.current.set(entryId, num);
+  };
+
+  const handleUpaBlur = (entryId: string) => {
+    if (upaErrors.has(entryId)) {
+      const revert = prevUpaValues.current.get(entryId) || 1;
+      setDraftComponents(prev => prev.map(d => d.id === entryId ? { ...d, units_per_assy: revert } : d));
+      setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
+    }
+  };
+
+  // ═══ NAVIGATION GUARD: product switch within IBOM ═══
+  const handleSelectRow = (productId: string) => {
+    if (productId === selectedProductId) return;
+    if (isDirty) {
+      setPendingSwitchId(productId);
+      return;
+    }
+    doSwitch(productId);
+  };
+
+  const doSwitch = (productId: string) => {
+    setSelectedProductId(productId);
+    setCheckedAllowable(new Set());
+    setConfirmingRemoveId(null);
+    setShowEmptyPicker(false);
+    setPendingSwitchId(null);
+  };
+
+  const handleSaveAndSwitch = async () => {
+    await handleSave();
+    if (pendingSwitchId) doSwitch(pendingSwitchId);
+  };
+
+  const handleDiscardAndSwitch = () => {
+    handleDiscard();
+    if (pendingSwitchId) doSwitch(pendingSwitchId);
+  };
+
+  // ═══ NAVIGATION GUARD: route-level (leaving IBOM screen) ═══
+  const blocker = useBlocker(isDirty);
 
   // No products empty state
   if (!model) return null;
@@ -199,45 +376,6 @@ export default function IBOMScreen() {
     });
   };
 
-  const handleSelectRow = (productId: string) => {
-    setSelectedProductId(productId);
-    setCheckedAllowable(new Set());
-    setConfirmingRemoveId(null);
-    setShowEmptyPicker(false);
-  };
-
-  const handleAddChecked = () => {
-    if (!editParentId || checkedAllowable.size === 0) return;
-    checkedAllowable.forEach(pId => {
-      addIBOM(model.id, {
-        id: crypto.randomUUID(),
-        parent_product_id: editParentId,
-        component_product_id: pId,
-        units_per_assy: 1,
-      });
-    });
-    toast.success(`Added ${checkedAllowable.size} component(s)`);
-    setCheckedAllowable(new Set());
-  };
-
-  const handleAddAll = () => {
-    allowableProducts.forEach((p) => {
-      addIBOM(model.id, {
-        id: crypto.randomUUID(),
-        parent_product_id: editParentId,
-        component_product_id: p.id,
-        units_per_assy: 1,
-      });
-    });
-    toast.success(`Added ${allowableProducts.length} components`);
-  };
-
-  const handleRemoveAll = () => {
-    currentComponents.forEach((c) => deleteIBOM(model.id, c.id));
-    toast.success('All components removed');
-    setShowRemoveAllDialog(false);
-  };
-
   const expandAll = () => {
     const allKeys = new Set<string>();
     const collectKeys = (nodes: TreeNode[], parentKey: string) => {
@@ -250,29 +388,6 @@ export default function IBOMScreen() {
     setExpandedNodes(allKeys);
   };
 
-  const handleUpaChange = (entryId: string, value: string, currentValid: number) => {
-    const num = Number(value);
-    if (!prevUpaValues.current.has(entryId)) {
-      prevUpaValues.current.set(entryId, currentValid);
-    }
-    if (value === '' || num <= 0) {
-      setUpaErrors(prev => new Set(prev).add(entryId));
-      return;
-    }
-    setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
-    updateIBOM(model.id, entryId, { units_per_assy: num });
-    prevUpaValues.current.set(entryId, num);
-  };
-
-  const handleUpaBlur = (entryId: string) => {
-    if (upaErrors.has(entryId)) {
-      const revert = prevUpaValues.current.get(entryId) || 1;
-      updateIBOM(model.id, entryId, { units_per_assy: revert });
-      setUpaErrors(prev => { const n = new Set(prev); n.delete(entryId); return n; });
-    }
-  };
-
-  // Filter dropdown products too
   const filteredDropdownProducts = filterText
     ? allProducts.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()))
     : allProducts;
@@ -391,7 +506,6 @@ export default function IBOMScreen() {
                 )}
               </div>
             </div>
-            {/* Filter input */}
             {viewAssemblyId && (
               <div className="relative mt-2">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -463,13 +577,11 @@ export default function IBOMScreen() {
                   <span className="ml-auto w-16 text-right font-mono text-xs text-muted-foreground">—</span>
                   <span className="w-20 text-right font-mono text-xs text-muted-foreground/60">—</span>
                 </div>
-                {/* Hint when no components */}
                 {tree.length === 0 && (
                   <div className="pl-10 py-2 text-xs text-muted-foreground">
                     → Click the row above to add components.
                   </div>
                 )}
-                {/* Tree nodes */}
                 {filteredTree.map((node, i) => renderTreeNode(node, 'root', i))}
                 {filterText && filteredTree.length === 0 && tree.length > 0 && (
                   <div className="flex items-center justify-center py-6 text-muted-foreground text-xs">
@@ -484,7 +596,7 @@ export default function IBOMScreen() {
 
       {/* ═══ BOTTOM PANEL — Edit Components ═══ */}
       <div className="flex-1 min-h-0 px-6 pt-2 pb-4 overflow-y-auto" style={{ maxHeight: '50vh' }}>
-        <Card className="flex flex-col">
+        <Card className="flex flex-col relative">
           <CardHeader className="py-2 px-4 shrink-0">
             <div className="flex items-center gap-2">
               <CardTitle className="text-[13px] font-medium">
@@ -505,7 +617,7 @@ export default function IBOMScreen() {
               <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                 Click any product in the tree above to edit its components.
               </div>
-            ) : currentComponents.length === 0 && !showEmptyPicker ? (
+            ) : draftComponents.length === 0 && !showEmptyPicker ? (
               /* ── Empty state: no components ── */
               <div className="flex flex-col items-center justify-center py-8 gap-3">
                 <div className="rounded-full bg-muted p-3">
@@ -519,7 +631,7 @@ export default function IBOMScreen() {
                   <PlusCircle className="h-3.5 w-3.5" /> Add Components
                 </Button>
               </div>
-            ) : currentComponents.length === 0 && showEmptyPicker ? (
+            ) : draftComponents.length === 0 && showEmptyPicker ? (
               /* ── Empty state with inline picker ── */
               <div className="space-y-3">
                 <div className="flex flex-col items-center gap-2 pt-4 pb-2">
@@ -566,21 +678,29 @@ export default function IBOMScreen() {
             ) : (
               /* ── Two-column editing layout ── */
               <div className="grid grid-cols-2 gap-4">
-                {/* Left: Current Components */}
+                {/* Left: Current Components (from draft) */}
                 <div>
                   <p className="text-[13px] font-medium py-2">Current Components</p>
                   <div className="border rounded-md overflow-hidden">
-                    {currentComponents.map((c) => {
+                    {draftComponents.map((c) => {
                       const isConfirming = confirmingRemoveId === c.id;
                       const hasError = upaErrors.has(c.id);
+                      const isUpaChanged = changedUpaIds.has(c.id);
+                      const isNewlyAdded = !!c.isNew;
                       return (
-                        <div key={c.id} className={`flex items-center px-2 border-b border-border/50 last:border-0 ${isConfirming ? 'bg-destructive/10' : ''}`} style={{ height: 36 }}>
+                        <div
+                          key={c.id}
+                          className={`flex items-center px-2 border-b border-border/50 last:border-0 ${
+                            isConfirming ? 'bg-destructive/10' : ''
+                          } ${isUpaChanged ? 'border-l-2 border-l-amber-400' : ''}`}
+                          style={{ height: 36 }}
+                        >
                           {isConfirming ? (
                             <div className="flex items-center justify-between w-full text-xs">
                               <span className="text-destructive font-medium">Remove {prodName(c.component_product_id)}?</span>
                               <div className="flex gap-1">
                                 <Button variant="destructive" size="sm" className="h-6 text-[11px] px-2"
-                                  onClick={() => { deleteIBOM(model.id, c.id); setConfirmingRemoveId(null); toast.success('Component removed'); }}>
+                                  onClick={() => handleRemoveDraft(c.id)}>
                                   Confirm
                                 </Button>
                                 <Button variant="ghost" size="sm" className="h-6 text-[11px] px-2" onClick={() => setConfirmingRemoveId(null)}>
@@ -590,12 +710,15 @@ export default function IBOMScreen() {
                             </div>
                           ) : (
                             <>
-                              <span className="flex-1 text-[13px] truncate">{prodName(c.component_product_id)}</span>
+                              <span className={`flex-1 text-[13px] truncate ${isNewlyAdded ? 'text-primary font-medium' : ''}`}>
+                                {prodName(c.component_product_id)}
+                              </span>
                               <div className="shrink-0 ml-2">
                                 <Input
                                   type="number"
-                                  className={`h-7 w-14 text-[13px] font-mono text-center ${hasError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                  className={`h-7 w-14 text-[13px] font-mono text-center ${hasError ? 'border-destructive focus-visible:ring-destructive' : isUpaChanged ? 'border-amber-400' : ''}`}
                                   defaultValue={c.units_per_assy}
+                                  key={`${c.id}-${savedSnapshot.find(s => s.id === c.id)?.units_per_assy ?? 'new'}`}
                                   min={1}
                                   onChange={(e) => handleUpaChange(c.id, e.target.value, c.units_per_assy)}
                                   onBlur={() => handleUpaBlur(c.id)}
@@ -622,7 +745,7 @@ export default function IBOMScreen() {
                       size="sm"
                       className="h-7 text-xs text-destructive hover:text-destructive"
                       onClick={() => setShowRemoveAllDialog(true)}
-                      disabled={currentComponents.length === 0}
+                      disabled={draftComponents.length === 0}
                     >
                       Remove All
                     </Button>
@@ -671,6 +794,47 @@ export default function IBOMScreen() {
                 </div>
               </div>
             )}
+
+            {/* ═══ SAVE / DISCARD ACTION BAR ═══ */}
+            {isDirty && editParentId && !pendingSwitchId && (
+              <div className="sticky bottom-0 mt-3 -mx-4 -mb-4 px-4 py-2.5 bg-muted/80 backdrop-blur-sm border-t border-border flex items-center justify-between rounded-b-lg">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <span className="text-[13px] text-amber-600 dark:text-amber-400 font-medium">Unsaved changes</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={handleDiscard}>
+                    Discard
+                  </Button>
+                  <Button size="sm" className="h-8 text-xs" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ═══ INLINE SWITCH CONFIRMATION ═══ */}
+            {pendingSwitchId && isDirty && editParentId && (
+              <div className="sticky bottom-0 mt-3 -mx-4 -mb-4 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border-t border-amber-300 dark:border-amber-700 flex items-center justify-between rounded-b-lg">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <span className="text-[13px] text-amber-700 dark:text-amber-300 font-medium">
+                    You have unsaved changes for {prodName(editParentId)}. Save before switching?
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setPendingSwitchId(null)}>
+                    Stay
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleDiscardAndSwitch}>
+                    Discard & Switch
+                  </Button>
+                  <Button size="sm" className="h-7 text-xs" onClick={handleSaveAndSwitch}>
+                    Save & Switch
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -681,12 +845,35 @@ export default function IBOMScreen() {
           <DialogHeader>
             <DialogTitle>Remove All Components</DialogTitle>
             <DialogDescription>
-              Remove all {currentComponents.length} components from {editParentId ? prodName(editParentId) : ''}? This cannot be undone.
+              Remove all {draftComponents.length} components from {editParentId ? prodName(editParentId) : ''}? You can discard this change before saving.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowRemoveAllDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleRemoveAll}>Remove All</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ ROUTE-LEVEL NAVIGATION GUARD ═══ */}
+      <Dialog open={blocker.state === 'blocked'} onOpenChange={(open) => { if (!open) blocker.reset?.(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Unsaved IBOM Changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes for {editParentId ? prodName(editParentId) : 'this product'}. Save before leaving?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => blocker.reset?.()}>
+              Stay
+            </Button>
+            <Button variant="outline" onClick={() => { handleDiscard(); blocker.proceed?.(); }}>
+              Discard & Leave
+            </Button>
+            <Button onClick={async () => { await handleSave(); blocker.proceed?.(); }}>
+              Save & Leave
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
