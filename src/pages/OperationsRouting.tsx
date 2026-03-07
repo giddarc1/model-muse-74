@@ -52,6 +52,7 @@ export default function OperationsRouting() {
   const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
   const [viewActualTimes, setViewActualTimes] = useState(false);
   const [expandedRoutingOp, setExpandedRoutingOp] = useState<string | null>(null);
+  const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
 
   const newOpNameRef = useRef<HTMLInputElement>(null);
 
