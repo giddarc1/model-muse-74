@@ -127,11 +127,10 @@ export function InlineRoutingEditor({
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground shrink-0">%:</span>
-                <Input
-                  type="number"
+                <PctInput
                   className="h-7 w-16 font-mono text-xs"
                   value={r.pct_routed}
-                  onChange={e => onUpdateRoute(r.id, { pct_routed: +e.target.value })}
+                  onChange={v => onUpdateRoute(r.id, { pct_routed: v })}
                 />
                 {!hideDelete && (
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive shrink-0" onClick={() => {
