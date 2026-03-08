@@ -768,7 +768,7 @@ function ScenarioView({
             {activeTab === 'general' && <EditableGeneralTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'labor' && <EditableLaborTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'equipment' && <EditableEquipmentTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
+            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} userLevel={userLevel} />}
             {activeTab === 'operations' && <EditableOperationsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
