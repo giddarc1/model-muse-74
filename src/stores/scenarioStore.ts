@@ -246,7 +246,11 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
         if (entity) basecaseValue = (entity as any)[field];
       } else if (dataType === 'Product') {
         const entity = model.products.find(p => p.id === entityId);
-        if (entity) basecaseValue = (entity as any)[field];
+        if (field === 'included') {
+          basecaseValue = 'true'; // all products included by default
+        } else if (entity) {
+          basecaseValue = (entity as any)[field];
+        }
       } else if (dataType === 'General') {
         basecaseValue = (model.general as any)[field];
       } else if (dataType === 'Routing') {

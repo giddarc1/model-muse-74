@@ -83,13 +83,19 @@ function applyScenario(model: Model, scenario: Scenario | null): Model {
       const item = m.equipment.find(e => e.id === c.entityId);
       if (item) (item as any)[c.field] = c.whatIfValue;
     } else if (c.dataType === 'Product') {
-      const item = m.products.find(p => p.id === c.entityId);
-      if (item) (item as any)[c.field] = c.whatIfValue;
+      if (c.field === 'included' && String(c.whatIfValue) === 'false') {
+        // Product exclusion: zero out demand
+        const prod = m.products.find(p => p.id === c.entityId);
+        if (prod) prod.demand = 0;
+      } else {
+        const item = m.products.find(p => p.id === c.entityId);
+        if (item) (item as any)[c.field] = c.whatIfValue;
+      }
     } else if (c.dataType === 'Routing') {
       const item = m.routing.find(r => r.id === c.entityId);
       if (item) (item as any)[c.field] = Number(c.whatIfValue);
     } else if (c.dataType === 'Product Inclusion') {
-      // Exclude products marked as 'No'
+      // Legacy support: exclude products marked as 'No'
       if (c.whatIfValue === 'No') {
         const prod = m.products.find(p => p.id === c.entityId);
         if (prod) prod.demand = 0;

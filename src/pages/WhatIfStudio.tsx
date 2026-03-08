@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange, type ScenarioFamily } from '@/stores/scenarioStore';
@@ -553,9 +554,52 @@ function ReadOnlyEquipmentTab({ model }: { model: Model }) {
   return <ReadOnlyTable headers={['Name', 'Type', 'Count', 'MTTF', 'MTTR', 'Unavail%']} rows={model.equipment.map(e => [e.name, e.equip_type, e.count, e.mttf, e.mttr, e.unavail_pct])} />;
 }
 
-function ReadOnlyProductsTab({ model }: { model: Model }) {
+function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model; scenario?: Scenario | null; userLevel?: UserLevel }) {
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
-  return <ReadOnlyTable headers={['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept']} rows={model.products.map(p => [p.name, p.demand, p.lot_size, p.tbatch_size, p.dept_code || '—'])} />;
+  const { applyScenarioChange, removeChange } = useScenarioStore();
+  const showInclude = !!scenario && !!ul && isVisible('product_inclusion', ul);
+
+  const isExcluded = (productId: string) => {
+    if (!scenario) return false;
+    return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
+  };
+
+  const toggleInclude = (productId: string, productName: string) => {
+    if (!scenario) return;
+    if (isExcluded(productId)) {
+      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
+      if (change) removeChange(scenario.id, change.id);
+    } else {
+      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
+    }
+  };
+
+  const headers = showInclude ? ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept', 'Include'] : ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept'];
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <table className="w-full text-xs">
+        <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
+        <tbody>{model.products.map(p => (
+          <tr key={p.id} className="border-t border-border">
+            <td className="p-2 font-medium">{p.name}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.demand}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.lot_size}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.tbatch_size}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.dept_code || '—'}</td>
+            {showInclude && (
+              <td className="p-2">
+                <Checkbox
+                  checked={!isExcluded(p.id)}
+                  onCheckedChange={() => toggleInclude(p.id, p.name)}
+                />
+              </td>
+            )}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  );
 }
 
 function ReadOnlyOperationsTab({ model }: { model: Model }) {
@@ -724,7 +768,7 @@ function ScenarioView({
             {activeTab === 'general' && <EditableGeneralTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'labor' && <EditableLaborTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'equipment' && <EditableEquipmentTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
+            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} userLevel={userLevel} />}
             {activeTab === 'operations' && <EditableOperationsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
@@ -733,7 +777,7 @@ function ScenarioView({
             {activeTab === 'general' && <ReadOnlyGeneralTab model={model} />}
             {activeTab === 'labor' && <ReadOnlyLaborTab model={model} />}
             {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
-            {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
+            {activeTab === 'products' && <ReadOnlyProductsTab model={model} scenario={scenario} userLevel={userLevel} />}
             {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
@@ -881,14 +925,56 @@ function EditableEquipmentTab({ model, scenario, getWhatIfValue, onBlur }: Edita
   return <EditableParamTable headers={['Equipment Group', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
 }
 
-function EditableProductsTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
+function EditableProductsTab({ model, scenario, getWhatIfValue, onBlur, userLevel: ul }: EditableTabProps & { userLevel?: UserLevel }) {
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
+  const { applyScenarioChange, removeChange } = useScenarioStore();
+  const showInclude = !!ul && isVisible('product_inclusion', ul);
+
+  const isExcluded = (productId: string) => {
+    return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
+  };
+
+  const toggleInclude = (productId: string, productName: string) => {
+    if (isExcluded(productId)) {
+      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
+      if (change) removeChange(scenario.id, change.id);
+    } else {
+      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
+    }
+  };
+
   const rows: ParamRow[] = model.products.flatMap(p => [
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'demand', fieldLabel: 'Demand / Production Qty', basecaseValue: p.demand },
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'lot_size', fieldLabel: 'Lot Size', basecaseValue: p.lot_size },
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'tbatch_size', fieldLabel: 'Transfer Batch Size', basecaseValue: p.tbatch_size },
   ]);
-  return <EditableParamTable headers={['Product', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
+
+  if (!showInclude) {
+    return <EditableParamTable headers={['Product', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
+  }
+
+  // Group rows by product for include toggle
+  return (
+    <div className="space-y-0">
+      {model.products.map(p => {
+        const productRows = rows.filter(r => r.entityId === p.id);
+        const excluded = isExcluded(p.id);
+        return (
+          <div key={p.id} className={`${excluded ? 'opacity-50' : ''}`}>
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/30 border border-border border-b-0 rounded-t-md mt-3 first:mt-0">
+              <Checkbox
+                checked={!excluded}
+                onCheckedChange={() => toggleInclude(p.id, p.name)}
+              />
+              <span className="text-xs font-semibold">{p.name}</span>
+              {excluded && <span className="text-[10px] text-muted-foreground italic">Excluded from calculation</span>}
+            </div>
+            <EditableParamTable headers={['Product', 'Parameter']} rows={productRows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function EditableOperationsTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
@@ -996,9 +1082,12 @@ function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
           </thead>
           <tbody>
             {scenario.changes.map((c, idx) => {
+              const isIncluded = c.field === 'included' && c.dataType === 'Product';
+              const displayBase = isIncluded ? 'Yes' : c.basecaseValue;
+              const displayWi = isIncluded ? 'No' : c.whatIfValue;
               const base = Number(c.basecaseValue);
               const wi = Number(c.whatIfValue);
-              const delta = (!isNaN(base) && !isNaN(wi)) ? wi - base : null;
+              const delta = (!isNaN(base) && !isNaN(wi) && !isIncluded) ? wi - base : null;
               return (
                 <tr key={c.id} className="border-t border-border hover:bg-amber-500/5">
                   <td className="p-2 text-muted-foreground">{idx + 1}</td>
@@ -1007,22 +1096,22 @@ function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
                   </td>
                   <td className="p-2 font-medium">{c.entityName}</td>
                   <td className="p-2 text-muted-foreground">{c.fieldLabel}</td>
-                  <td className={`p-2 text-right font-mono ${directEdits ? 'bg-red-50/50' : ''}`}>
-                    {directEdits ? (
+                  <td className={`p-2 text-right font-mono ${directEdits && !isIncluded ? 'bg-red-50/50' : ''}`}>
+                    {directEdits && !isIncluded ? (
                       <input type="number" defaultValue={c.basecaseValue}
                         onBlur={e => handleBasecaseEdit(c, e.target.value)}
                         className="w-full text-right bg-transparent border border-destructive/30 rounded px-1 py-0.5 font-mono text-xs focus:border-destructive focus:outline-none" />
                     ) : (
-                      <span className="text-muted-foreground">{c.basecaseValue}</span>
+                      <span className="text-muted-foreground">{displayBase}</span>
                     )}
                   </td>
                   <td className="p-2 text-right font-mono">
-                    {directEdits ? (
+                    {directEdits && !isIncluded ? (
                       <input type="number" defaultValue={c.whatIfValue}
                         onBlur={e => handleWhatIfEdit(c.id, e.target.value)}
                         className="w-full text-right bg-transparent border border-border rounded px-1 py-0.5 font-mono text-xs focus:border-primary focus:outline-none" />
                     ) : (
-                      <span className="font-semibold text-primary">{c.whatIfValue}</span>
+                      <span className="font-semibold text-primary">{displayWi}</span>
                     )}
                   </td>
                   <td className="p-2 text-right font-mono">

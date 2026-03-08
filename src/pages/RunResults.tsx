@@ -22,7 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip as ShadTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
-  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
+  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, RefreshCw, Clock,
   TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
 } from 'lucide-react';
 import IBOMOutput, { MCT_COLORS, TreeChart, TreeTable, PolesChart, PolesTable, MCTLegend, ZoomSelect, buildNodeTree, buildPoles } from '@/components/IBOMOutput';
@@ -206,7 +206,7 @@ function buildProductionData(results: CalcResults, model: any) {
 }
 
 // Extended run mode type for advanced modes
-type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'tbatch_range' | 'optimize_lots';
+type ExtendedRunMode = RunMode | 'max_throughput' | 'lot_size_range' | 'tbatch_range' | 'optimize_lots';
 
 const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
   { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis with utilization, MCT, WIP, and queue times.' },
@@ -215,7 +215,6 @@ const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string;
 ];
 
 const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
-  { mode: 'product_inclusion', icon: ListChecks, label: 'Product Inclusion', description: 'Select which products to include. Saves as a What-If scenario.' },
   { mode: 'max_throughput', icon: TrendingUp, label: 'Max Throughput', description: 'Find the maximum achievable demand for a selected product.' },
 ];
 
@@ -243,9 +242,6 @@ export default function RunResults() {
   // ibomProduct state removed — now managed inside IBOMOutput component
 
   // Advanced mode state — must be before early return
-  const [piModalOpen, setPiModalOpen] = useState(false);
-  const [piSelectedProducts, setPiSelectedProducts] = useState<Set<string>>(new Set(model?.products.map(p => p.id) || []));
-  const [piScenarioName, setPiScenarioName] = useState('Product Inclusion');
   const [mtProduct, setMtProduct] = useState(model?.products[0]?.id || '');
   const [mtScenarioName, setMtScenarioName] = useState('');
   const [mtResult, setMtResult] = useState<{demand: number; limitingResource: string} | null>(null);
@@ -363,24 +359,6 @@ export default function RunResults() {
   // Advanced run handlers
   const handleAdvancedRun = useCallback(async () => {
     if (!model || advRunning) return;
-
-    if (extRunMode === 'product_inclusion') {
-      const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
-      if (excluded.length === 0) { handleRun('full'); return; }
-      const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
-      excluded.forEach(p => {
-        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
-      });
-      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
-      if (scenario) {
-        const calcResults = calculate(model, scenario);
-        setStoreResults(scenarioId, calcResults);
-        useScenarioStore.getState().markCalculated(scenarioId);
-        scenarioDb.saveResults(scenarioId, calcResults);
-      }
-      toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
-      return;
-    }
 
     if (extRunMode === 'max_throughput') {
       setAdvRunning(true);
@@ -560,9 +538,9 @@ export default function RunResults() {
       toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
       return;
     }
-  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
+  }, [model, extRunMode, advRunning, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
 
-  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
+  const isAdvancedMode = ['max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   const [activeTab, setActiveTab] = useState('summary');
   const [equipSubTab, setEquipSubTab] = useState('util-chart');
@@ -605,7 +583,7 @@ export default function RunResults() {
   );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : extRunMode === 'tbatch_range' ? 'Run TBatch Range' : 'Run Optimize';
+  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : extRunMode === 'tbatch_range' ? 'Run TBatch Range' : 'Run Optimize';
 
   // Status chip
   const statusChip = isRunning || advRunning
@@ -654,12 +632,12 @@ export default function RunResults() {
         )}
 
         {/* Vertical divider before Advanced section */}
-        {isVisible('product_inclusion', userLevel) && (
+        {isVisible('max_throughput', userLevel) && (
           <div className="h-[60%] w-px bg-border self-center" />
         )}
 
         {/* Advanced dropdown — Advanced users only */}
-        {isVisible('product_inclusion', userLevel) && (
+        {isVisible('max_throughput', userLevel) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-9 gap-1.5 px-3 text-xs">
@@ -667,13 +645,6 @@ export default function RunResults() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuItem onClick={() => {
-                setPiSelectedProducts(new Set(model?.products.map(p => p.id) || []));
-                setPiScenarioName('Product Inclusion');
-                setPiModalOpen(true);
-              }}>
-                <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 setMtModalProduct(model?.products[0]?.id || '');
                 setMtModalName('');
@@ -1622,72 +1593,6 @@ export default function RunResults() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Product Inclusion Modal ── */}
-      <Dialog open={piModalOpen} onOpenChange={setPiModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Product Inclusion</DialogTitle>
-            <DialogDescription>Select which products to include in the calculation.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="pi-name" className="text-sm font-medium">What-if Name</Label>
-              <Input
-                id="pi-name"
-                value={piScenarioName}
-                onChange={e => setPiScenarioName(e.target.value)}
-                placeholder="Product Inclusion"
-              />
-            </div>
-            <div className="border border-border rounded-md max-h-64 overflow-y-auto">
-              {model?.products.map(p => (
-                <label key={p.id} className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 cursor-pointer border-b border-border last:border-b-0">
-                  <Checkbox
-                    checked={piSelectedProducts.has(p.id)}
-                    onCheckedChange={(checked) => {
-                      setPiSelectedProducts(prev => {
-                        const next = new Set(prev);
-                        if (checked) next.add(p.id); else next.delete(p.id);
-                        return next;
-                      });
-                    }}
-                  />
-                  <span className="text-sm">{p.name}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              MPX will automatically create a What-if before calculating, so no existing data will be lost.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPiModalOpen(false)}>Cancel</Button>
-            <Button
-              disabled={piSelectedProducts.size === 0 || advRunning}
-              onClick={async () => {
-                setPiModalOpen(false);
-                if (!model) return;
-                const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
-                if (excluded.length === 0) { handleRun('full'); return; }
-                const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
-                excluded.forEach(p => {
-                  useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
-                });
-                const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
-                if (scenario) {
-                  const calcResults = calculate(model, scenario);
-                  setStoreResults(scenarioId, calcResults);
-                  useScenarioStore.getState().markCalculated(scenarioId);
-                  scenarioDb.saveResults(scenarioId, calcResults);
-                }
-                toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
-              }}
-            >
-              Run
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
