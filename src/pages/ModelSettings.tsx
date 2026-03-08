@@ -396,7 +396,7 @@ export default function ModelSettings() {
       <h1 className="text-xl font-bold mb-1">Model Settings</h1>
       <p className="text-sm text-muted-foreground mb-6">Configure model metadata, parameter labels, and manage versions.</p>
 
-      <Tabs defaultValue="general">
+      <Tabs defaultValue={initialTab}>
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="params">Parameter Names</TabsTrigger>
