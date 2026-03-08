@@ -17,7 +17,7 @@ const navItems: { label: string; icon: typeof LayoutDashboard; path: string; fea
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
   { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all_operations' },
-  { label: 'Parameter Names', icon: Tag, path: 'param-names', feature: 'parameter_names' },
+  
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif', feature: null },
