@@ -606,9 +606,9 @@ export default function OperationsRouting() {
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleResort} disabled={productOps.length <= 1}>
                     <SortAsc className="h-3.5 w-3.5" /> Re-sort
                   </Button>
-                  {hasAnyRouting && (
+                  {hasUserOps && (
                     <Button variant="outline" size="sm" className="gap-1 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => setShowClearRoutingConfirm(true)}>
-                      <Trash2 className="h-3.5 w-3.5" /> Clear Routing
+                      <Trash2 className="h-3.5 w-3.5" /> Reset Product
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleAutoGenerateClick}>
