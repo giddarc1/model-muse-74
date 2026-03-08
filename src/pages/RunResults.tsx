@@ -583,7 +583,7 @@ export default function RunResults() {
   );
 
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
-  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'product_inclusion' ? 'Run Product Inclusion' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : extRunMode === 'tbatch_range' ? 'Run TBatch Range' : 'Run Optimize';
+  const modeLabel = extRunMode === 'full' ? 'Run Full Calculate' : extRunMode === 'verify' ? 'Verify Data' : extRunMode === 'util_only' ? 'Calculate Utilization' : extRunMode === 'max_throughput' ? 'Find Max Throughput' : extRunMode === 'lot_size_range' ? 'Run Lot Size Range' : extRunMode === 'tbatch_range' ? 'Run TBatch Range' : 'Run Optimize';
 
   // Status chip
   const statusChip = isRunning || advRunning
