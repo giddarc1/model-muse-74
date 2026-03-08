@@ -360,24 +360,6 @@ export default function RunResults() {
   const handleAdvancedRun = useCallback(async () => {
     if (!model || advRunning) return;
 
-    if (extRunMode === 'product_inclusion') {
-      const excluded = model.products.filter(p => !piSelectedProducts.has(p.id));
-      if (excluded.length === 0) { handleRun('full'); return; }
-      const scenarioId = await createScenario(model.id, piScenarioName || 'Product Inclusion');
-      excluded.forEach(p => {
-        useScenarioStore.getState().applyScenarioChange(scenarioId, 'Product Inclusion', p.id, p.name, 'included', 'Included in Run', 'No');
-      });
-      const scenario = useScenarioStore.getState().scenarios.find(s => s.id === scenarioId);
-      if (scenario) {
-        const calcResults = calculate(model, scenario);
-        setStoreResults(scenarioId, calcResults);
-        useScenarioStore.getState().markCalculated(scenarioId);
-        scenarioDb.saveResults(scenarioId, calcResults);
-      }
-      toast.success(`Product Inclusion scenario saved with ${excluded.length} product(s) excluded`);
-      return;
-    }
-
     if (extRunMode === 'max_throughput') {
       setAdvRunning(true);
       const product = model.products.find(p => p.id === mtProduct);
