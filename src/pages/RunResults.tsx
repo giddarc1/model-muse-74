@@ -538,7 +538,7 @@ export default function RunResults() {
       toast.success(`Optimization complete — WIP reduced by ${Math.round((1 - bestWip / baseWip) * 100)}%`);
       return;
     }
-  }, [model, extRunMode, advRunning, piSelectedProducts, piScenarioName, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
+  }, [model, extRunMode, advRunning, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
 
   const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
