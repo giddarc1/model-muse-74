@@ -44,6 +44,8 @@ interface Version {
 }
 
 export default function ModelSettings() {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'general';
   const model = useModelStore(s => s.getActiveModel());
   const renameModel = useModelStore(s => s.renameModel);
   const archiveModel = useModelStore(s => s.archiveModel);
