@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { supabase } from '@/integrations/supabase/client';
 import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
 import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
