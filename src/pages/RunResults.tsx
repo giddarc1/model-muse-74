@@ -206,7 +206,7 @@ function buildProductionData(results: CalcResults, model: any) {
 }
 
 // Extended run mode type for advanced modes
-type ExtendedRunMode = RunMode | 'product_inclusion' | 'max_throughput' | 'lot_size_range' | 'tbatch_range' | 'optimize_lots';
+type ExtendedRunMode = RunMode | 'max_throughput' | 'lot_size_range' | 'tbatch_range' | 'optimize_lots';
 
 const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
   { mode: 'full', icon: Play, label: 'Full Calculate', description: 'Complete queuing analysis with utilization, MCT, WIP, and queue times.' },
