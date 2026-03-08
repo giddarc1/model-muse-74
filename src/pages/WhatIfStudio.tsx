@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange, type ScenarioFamily } from '@/stores/scenarioStore';
