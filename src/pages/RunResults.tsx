@@ -646,13 +646,6 @@ export default function RunResults() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
               <DropdownMenuItem onClick={() => {
-                setPiSelectedProducts(new Set(model?.products.map(p => p.id) || []));
-                setPiScenarioName('Product Inclusion');
-                setPiModalOpen(true);
-              }}>
-                <ListChecks className="h-4 w-4 mr-2" /> Product Inclusion…
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
                 setMtModalProduct(model?.products[0]?.id || '');
                 setMtModalName('');
                 setMtModalMode('max_throughput');
