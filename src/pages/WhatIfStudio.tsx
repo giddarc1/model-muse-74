@@ -1082,9 +1082,12 @@ function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
           </thead>
           <tbody>
             {scenario.changes.map((c, idx) => {
+              const isIncluded = c.field === 'included' && c.dataType === 'Product';
+              const displayBase = isIncluded ? 'Yes' : c.basecaseValue;
+              const displayWi = isIncluded ? 'No' : c.whatIfValue;
               const base = Number(c.basecaseValue);
               const wi = Number(c.whatIfValue);
-              const delta = (!isNaN(base) && !isNaN(wi)) ? wi - base : null;
+              const delta = (!isNaN(base) && !isNaN(wi) && !isIncluded) ? wi - base : null;
               return (
                 <tr key={c.id} className="border-t border-border hover:bg-amber-500/5">
                   <td className="p-2 text-muted-foreground">{idx + 1}</td>
@@ -1093,22 +1096,22 @@ function ChangesTab({ scenario, isActive, userLevel, modelId, onPromote }: {
                   </td>
                   <td className="p-2 font-medium">{c.entityName}</td>
                   <td className="p-2 text-muted-foreground">{c.fieldLabel}</td>
-                  <td className={`p-2 text-right font-mono ${directEdits ? 'bg-red-50/50' : ''}`}>
-                    {directEdits ? (
+                  <td className={`p-2 text-right font-mono ${directEdits && !isIncluded ? 'bg-red-50/50' : ''}`}>
+                    {directEdits && !isIncluded ? (
                       <input type="number" defaultValue={c.basecaseValue}
                         onBlur={e => handleBasecaseEdit(c, e.target.value)}
                         className="w-full text-right bg-transparent border border-destructive/30 rounded px-1 py-0.5 font-mono text-xs focus:border-destructive focus:outline-none" />
                     ) : (
-                      <span className="text-muted-foreground">{c.basecaseValue}</span>
+                      <span className="text-muted-foreground">{displayBase}</span>
                     )}
                   </td>
                   <td className="p-2 text-right font-mono">
-                    {directEdits ? (
+                    {directEdits && !isIncluded ? (
                       <input type="number" defaultValue={c.whatIfValue}
                         onBlur={e => handleWhatIfEdit(c.id, e.target.value)}
                         className="w-full text-right bg-transparent border border-border rounded px-1 py-0.5 font-mono text-xs focus:border-primary focus:outline-none" />
                     ) : (
-                      <span className="font-semibold text-primary">{c.whatIfValue}</span>
+                      <span className="font-semibold text-primary">{displayWi}</span>
                     )}
                   </td>
                   <td className="p-2 text-right font-mono">
