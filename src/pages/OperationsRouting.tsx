@@ -491,18 +491,70 @@ export default function OperationsRouting() {
         </Card>
       ) : (
         <div className="space-y-4 mt-4">
-          {/* Clear routing confirmation */}
+          {/* Reset product confirmation */}
           {showClearRoutingConfirm && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/30">
-              <span className="text-sm text-red-700">Clear all routing for <strong>{effectiveProduct?.name}</strong>? This cannot be undone.</span>
+              <span className="text-sm text-red-700">Reset <strong>{effectiveProduct?.name}</strong>? This will delete all operations and routing for this product. This cannot be undone.</span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setShowClearRoutingConfirm(false)}>Cancel</Button>
-                <Button variant="destructive" size="sm" onClick={() => {
-                  setRouting(model.id, effectiveProductId, []);
-                  setExpandedRoutingOp(null);
+                <Button variant="destructive" size="sm" onClick={async () => {
                   setShowClearRoutingConfirm(false);
-                  toast.success('All routing cleared');
-                }}>Clear All</Button>
+                  try {
+                    // Step 1: Collect op IDs (exclude DOCK — it's virtual, not in DB for reset purposes)
+                    const nonDockOps = userOps; // userOps already excludes DOCK
+                    const opIds = nonDockOps.map(o => o.id);
+                    
+                    // Step 2: Delete routing by from_op_id
+                    if (opIds.length > 0) {
+                      const { error: e1 } = await supabase.from('model_routing').delete().in('from_op_id', opIds);
+                      if (e1) throw e1;
+                    }
+                    
+                    // Step 3: Delete all remaining routing for this product
+                    const { error: e2 } = await supabase.from('model_routing').delete()
+                      .eq('product_id', effectiveProductId).eq('model_id', model.id);
+                    if (e2) throw e2;
+                    
+                    // Step 4: Delete all operations for this product
+                    const { error: e3 } = await supabase.from('model_operations').delete()
+                      .eq('product_id', effectiveProductId).eq('model_id', model.id);
+                    if (e3) throw e3;
+                    
+                    // Step 5: Mark model dirty
+                    const { error: e4 } = await supabase.from('models').update({
+                      run_status: 'needs_recalc',
+                      updated_at: new Date().toISOString(),
+                    }).eq('id', model.id);
+                    if (e4) throw e4;
+                    
+                    // Update local state
+                    // Remove all operations for this product
+                    const opsToRemove = productOps.map(o => o.id);
+                    opsToRemove.forEach(id => {
+                      useModelStore.setState(state => ({
+                        models: state.models.map(m => m.id === model.id ? {
+                          ...m,
+                          operations: m.operations.filter(o => o.id !== id),
+                        } : m),
+                      }));
+                    });
+                    // Remove all routing for this product
+                    useModelStore.setState(state => ({
+                      models: state.models.map(m => m.id === model.id ? {
+                        ...m,
+                        routing: m.routing.filter(r => r.product_id !== effectiveProductId),
+                        run_status: 'needs_recalc',
+                        updated_at: new Date().toISOString(),
+                      } : m),
+                    }));
+                    
+                    setExpandedRoutingOp(null);
+                    toast.success(`Reset complete for ${effectiveProduct?.name}`);
+                  } catch (err) {
+                    console.error('Reset failed:', err);
+                    toast.error('Reset failed — please try again');
+                  }
+                }}>Reset Product</Button>
               </div>
             </div>
           )}
