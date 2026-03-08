@@ -925,14 +925,56 @@ function EditableEquipmentTab({ model, scenario, getWhatIfValue, onBlur }: Edita
   return <EditableParamTable headers={['Equipment Group', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
 }
 
-function EditableProductsTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
+function EditableProductsTab({ model, scenario, getWhatIfValue, onBlur, userLevel: ul }: EditableTabProps & { userLevel?: UserLevel }) {
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
+  const { applyScenarioChange, removeChange } = useScenarioStore();
+  const showInclude = !!ul && isVisible('product_inclusion', ul);
+
+  const isExcluded = (productId: string) => {
+    return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
+  };
+
+  const toggleInclude = (productId: string, productName: string) => {
+    if (isExcluded(productId)) {
+      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
+      if (change) removeChange(scenario.id, change.id);
+    } else {
+      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
+    }
+  };
+
   const rows: ParamRow[] = model.products.flatMap(p => [
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'demand', fieldLabel: 'Demand / Production Qty', basecaseValue: p.demand },
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'lot_size', fieldLabel: 'Lot Size', basecaseValue: p.lot_size },
     { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'tbatch_size', fieldLabel: 'Transfer Batch Size', basecaseValue: p.tbatch_size },
   ]);
-  return <EditableParamTable headers={['Product', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
+
+  if (!showInclude) {
+    return <EditableParamTable headers={['Product', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
+  }
+
+  // Group rows by product for include toggle
+  return (
+    <div className="space-y-0">
+      {model.products.map(p => {
+        const productRows = rows.filter(r => r.entityId === p.id);
+        const excluded = isExcluded(p.id);
+        return (
+          <div key={p.id} className={`${excluded ? 'opacity-50' : ''}`}>
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/30 border border-border border-b-0 rounded-t-md mt-3 first:mt-0">
+              <Checkbox
+                checked={!excluded}
+                onCheckedChange={() => toggleInclude(p.id, p.name)}
+              />
+              <span className="text-xs font-semibold">{p.name}</span>
+              {excluded && <span className="text-[10px] text-muted-foreground italic">Excluded from calculation</span>}
+            </div>
+            <EditableParamTable headers={['Product', 'Parameter']} rows={productRows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function EditableOperationsTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
