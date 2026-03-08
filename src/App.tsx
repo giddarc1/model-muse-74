@@ -19,7 +19,7 @@ import ProductData from "./pages/ProductData";
 import OperationsRouting from "./pages/OperationsRouting";
 import AllOperations from "./pages/AllOperations";
 import IBOMScreen from "./pages/IBOMScreen";
-import ParameterNames from "./pages/ParameterNames";
+
 import RunResults from "./pages/RunResults";
 import WhatIfStudio from "./pages/WhatIfStudio";
 import Reports from "./pages/Reports";
@@ -57,7 +57,7 @@ const App = () => (
               <Route path="operations" element={<OperationsRouting />} />
               <Route path="all-operations" element={<AllOperations />} />
               <Route path="ibom" element={<IBOMScreen />} />
-              <Route path="param-names" element={<ParameterNames />} />
+              <Route path="param-names" element={<Navigate to="../settings?tab=params" replace />} />
               <Route path="run" element={<RunResults />} />
               <Route path="whatif" element={<WhatIfStudio />} />
               <Route path="reports" element={<Reports />} />

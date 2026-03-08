@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock, Pencil, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface ParamNames {
   gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
@@ -44,6 +44,8 @@ interface Version {
 }
 
 export default function ModelSettings() {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'general';
   const model = useModelStore(s => s.getActiveModel());
   const renameModel = useModelStore(s => s.renameModel);
   const archiveModel = useModelStore(s => s.archiveModel);
@@ -396,7 +398,7 @@ export default function ModelSettings() {
       <h1 className="text-xl font-bold mb-1">Model Settings</h1>
       <p className="text-sm text-muted-foreground mb-6">Configure model metadata, parameter labels, and manage versions.</p>
 
-      <Tabs defaultValue="general">
+      <Tabs defaultValue={initialTab}>
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="params">Parameter Names</TabsTrigger>
