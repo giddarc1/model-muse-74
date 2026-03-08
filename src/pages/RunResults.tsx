@@ -22,7 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip as ShadTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
-  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, ListChecks, RefreshCw, Clock,
+  Play, CheckCircle, AlertTriangle, Shield, XCircle, RotateCcw, Network, Gauge, RefreshCw, Clock,
   TrendingUp, BarChart3, Settings2, Square, ChevronRight, ToggleLeft, Layers,
 } from 'lucide-react';
 import IBOMOutput, { MCT_COLORS, TreeChart, TreeTable, PolesChart, PolesTable, MCTLegend, ZoomSelect, buildNodeTree, buildPoles } from '@/components/IBOMOutput';
