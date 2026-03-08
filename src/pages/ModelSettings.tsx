@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock, Pencil, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface ParamNames {
   gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
