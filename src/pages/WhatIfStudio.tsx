@@ -554,9 +554,52 @@ function ReadOnlyEquipmentTab({ model }: { model: Model }) {
   return <ReadOnlyTable headers={['Name', 'Type', 'Count', 'MTTF', 'MTTR', 'Unavail%']} rows={model.equipment.map(e => [e.name, e.equip_type, e.count, e.mttf, e.mttr, e.unavail_pct])} />;
 }
 
-function ReadOnlyProductsTab({ model }: { model: Model }) {
+function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model; scenario?: Scenario | null; userLevel?: UserLevel }) {
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
-  return <ReadOnlyTable headers={['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept']} rows={model.products.map(p => [p.name, p.demand, p.lot_size, p.tbatch_size, p.dept_code || '—'])} />;
+  const { applyScenarioChange, removeChange } = useScenarioStore();
+  const showInclude = !!scenario && !!ul && isVisible('product_inclusion', ul);
+
+  const isExcluded = (productId: string) => {
+    if (!scenario) return false;
+    return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
+  };
+
+  const toggleInclude = (productId: string, productName: string) => {
+    if (!scenario) return;
+    if (isExcluded(productId)) {
+      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
+      if (change) removeChange(scenario.id, change.id);
+    } else {
+      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
+    }
+  };
+
+  const headers = showInclude ? ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept', 'Include'] : ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept'];
+
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      <table className="w-full text-xs">
+        <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
+        <tbody>{model.products.map(p => (
+          <tr key={p.id} className="border-t border-border">
+            <td className="p-2 font-medium">{p.name}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.demand}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.lot_size}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.tbatch_size}</td>
+            <td className="p-2 text-muted-foreground font-mono">{p.dept_code || '—'}</td>
+            {showInclude && (
+              <td className="p-2">
+                <Checkbox
+                  checked={!isExcluded(p.id)}
+                  onCheckedChange={() => toggleInclude(p.id, p.name)}
+                />
+              </td>
+            )}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  );
 }
 
 function ReadOnlyOperationsTab({ model }: { model: Model }) {
