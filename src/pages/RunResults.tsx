@@ -632,7 +632,7 @@ export default function RunResults() {
         )}
 
         {/* Vertical divider before Advanced section */}
-        {isVisible('product_inclusion', userLevel) && (
+        {isVisible('max_throughput', userLevel) && (
           <div className="h-[60%] w-px bg-border self-center" />
         )}
 
