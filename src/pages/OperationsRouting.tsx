@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useModelStore, type Operation, type RoutingEntry } from '@/stores/modelStore';
+import { supabase } from '@/integrations/supabase/client';
 import { useDeleteConfirmation } from '@/hooks/useDeleteConfirmation';
 import { DeleteConfirmInline } from '@/components/DeleteConfirmInline';
 import { useScenarioStore } from '@/stores/scenarioStore';
@@ -491,18 +492,70 @@ export default function OperationsRouting() {
         </Card>
       ) : (
         <div className="space-y-4 mt-4">
-          {/* Clear routing confirmation */}
+          {/* Reset product confirmation */}
           {showClearRoutingConfirm && (
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md bg-red-500/10 border border-red-500/30">
-              <span className="text-sm text-red-700">Clear all routing for <strong>{effectiveProduct?.name}</strong>? This cannot be undone.</span>
+              <span className="text-sm text-red-700">Reset <strong>{effectiveProduct?.name}</strong>? This will delete all operations and routing for this product. This cannot be undone.</span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setShowClearRoutingConfirm(false)}>Cancel</Button>
-                <Button variant="destructive" size="sm" onClick={() => {
-                  setRouting(model.id, effectiveProductId, []);
-                  setExpandedRoutingOp(null);
+                <Button variant="destructive" size="sm" onClick={async () => {
                   setShowClearRoutingConfirm(false);
-                  toast.success('All routing cleared');
-                }}>Clear All</Button>
+                  try {
+                    // Step 1: Collect op IDs (exclude DOCK — it's virtual, not in DB for reset purposes)
+                    const nonDockOps = userOps; // userOps already excludes DOCK
+                    const opIds = nonDockOps.map(o => o.id);
+                    
+                    // Step 2: Delete routing by from_op_id
+                    if (opIds.length > 0) {
+                      const { error: e1 } = await supabase.from('model_routing').delete().in('from_op_id', opIds);
+                      if (e1) throw e1;
+                    }
+                    
+                    // Step 3: Delete all remaining routing for this product
+                    const { error: e2 } = await supabase.from('model_routing').delete()
+                      .eq('product_id', effectiveProductId).eq('model_id', model.id);
+                    if (e2) throw e2;
+                    
+                    // Step 4: Delete all operations for this product
+                    const { error: e3 } = await supabase.from('model_operations').delete()
+                      .eq('product_id', effectiveProductId).eq('model_id', model.id);
+                    if (e3) throw e3;
+                    
+                    // Step 5: Mark model dirty
+                    const { error: e4 } = await supabase.from('models').update({
+                      run_status: 'needs_recalc',
+                      updated_at: new Date().toISOString(),
+                    }).eq('id', model.id);
+                    if (e4) throw e4;
+                    
+                    // Update local state
+                    // Remove all operations for this product
+                    const opsToRemove = productOps.map(o => o.id);
+                    opsToRemove.forEach(id => {
+                      useModelStore.setState(state => ({
+                        models: state.models.map(m => m.id === model.id ? {
+                          ...m,
+                          operations: m.operations.filter(o => o.id !== id),
+                        } : m),
+                      }));
+                    });
+                    // Remove all routing for this product
+                    useModelStore.setState(state => ({
+                      models: state.models.map(m => m.id === model.id ? {
+                        ...m,
+                        routing: m.routing.filter(r => r.product_id !== effectiveProductId),
+                        run_status: 'needs_recalc',
+                        updated_at: new Date().toISOString(),
+                      } : m),
+                    }));
+                    
+                    setExpandedRoutingOp(null);
+                    toast.success(`Reset complete for ${effectiveProduct?.name}`);
+                  } catch (err) {
+                    console.error('Reset failed:', err);
+                    toast.error('Reset failed — please try again');
+                  }
+                }}>Reset Product</Button>
               </div>
             </div>
           )}
@@ -553,9 +606,9 @@ export default function OperationsRouting() {
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleResort} disabled={productOps.length <= 1}>
                     <SortAsc className="h-3.5 w-3.5" /> Re-sort
                   </Button>
-                  {hasAnyRouting && (
+                  {hasUserOps && (
                     <Button variant="outline" size="sm" className="gap-1 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => setShowClearRoutingConfirm(true)}>
-                      <Trash2 className="h-3.5 w-3.5" /> Clear Routing
+                      <Trash2 className="h-3.5 w-3.5" /> Reset Product
                     </Button>
                   )}
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleAutoGenerateClick}>
