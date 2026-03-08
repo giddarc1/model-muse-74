@@ -777,7 +777,7 @@ function ScenarioView({
             {activeTab === 'general' && <ReadOnlyGeneralTab model={model} />}
             {activeTab === 'labor' && <ReadOnlyLaborTab model={model} />}
             {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
-            {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
+            {activeTab === 'products' && <ReadOnlyProductsTab model={model} scenario={scenario} userLevel={userLevel} />}
             {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
