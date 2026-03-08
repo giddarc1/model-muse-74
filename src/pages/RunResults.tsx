@@ -215,7 +215,6 @@ const STANDARD_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string;
 ];
 
 const SCENARIO_MODES: { mode: ExtendedRunMode; icon: typeof Play; label: string; description: string }[] = [
-  { mode: 'product_inclusion', icon: ListChecks, label: 'Product Inclusion', description: 'Select which products to include. Saves as a What-If scenario.' },
   { mode: 'max_throughput', icon: TrendingUp, label: 'Max Throughput', description: 'Find the maximum achievable demand for a selected product.' },
 ];
 
