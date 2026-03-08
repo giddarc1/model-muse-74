@@ -637,7 +637,7 @@ export default function RunResults() {
         )}
 
         {/* Advanced dropdown — Advanced users only */}
-        {isVisible('product_inclusion', userLevel) && (
+        {isVisible('max_throughput', userLevel) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="ghost" className="h-9 gap-1.5 px-3 text-xs">
