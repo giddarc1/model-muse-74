@@ -6,6 +6,29 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, X, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { RoutingEntry } from '@/stores/modelStore';
 
+/** Percentage input that uses local state and only commits on blur/Enter */
+function PctInput({ value, onChange, className }: { value: number; onChange: (v: number) => void; className?: string }) {
+  const [local, setLocal] = useState(String(value));
+  const committed = useRef(value);
+  useEffect(() => { setLocal(String(value)); committed.current = value; }, [value]);
+  const commit = () => {
+    const n = +local;
+    if (!isNaN(n) && n !== committed.current) {
+      committed.current = n;
+      onChange(n);
+    }
+  };
+  return (
+    <Input
+      type="number"
+      className={className}
+      value={local}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => { if (e.key === 'Enter') { commit(); (e.target as HTMLInputElement).blur(); } }}
+    />
+  );
+}
 interface InlineRoutingEditorProps {
   opName: string;
   routes: RoutingEntry[];
