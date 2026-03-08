@@ -540,7 +540,7 @@ export default function RunResults() {
     }
   }, [model, extRunMode, advRunning, mtProduct, mtScenarioName, lsrProduct, lsrMin, lsrMax, lsrStep, tbrProduct, tbrMin, tbrMax, tbrStep, optProducts, createScenario, setStoreResults, handleRun]);
 
-  const isAdvancedMode = ['product_inclusion', 'max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
+  const isAdvancedMode = ['max_throughput', 'lot_size_range', 'tbatch_range', 'optimize_lots'].includes(extRunMode);
 
   const [activeTab, setActiveTab] = useState('summary');
   const [equipSubTab, setEquipSubTab] = useState('util-chart');
