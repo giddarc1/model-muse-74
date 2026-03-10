@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useModelStore } from '@/stores/modelStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { supabase } from '@/integrations/supabase/client';
