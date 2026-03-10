@@ -208,10 +208,7 @@ export default function EquipmentData() {
                       <TableCell>
                         <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} section="equipment" className="h-8 w-28" />
                       </TableCell>
-                      <TableCell>
-                        <Checkbox checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)} />
-                      </TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
+                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /></TableCell>
