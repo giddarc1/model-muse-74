@@ -537,29 +537,80 @@ function KVGrid({ items }: { items: { label: string; value: string | number }[] 
   return <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">{items.map(i => <div key={i.label}><span className="text-xs text-muted-foreground">{i.label}</span><p className="text-sm font-mono">{i.value}</p></div>)}</div>;
 }
 
+function AdvancedToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex justify-end mb-3">
+      <Button variant="outline" size="sm" onClick={onToggle} className="gap-1 text-xs">
+        {show ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        {show ? 'Hide Advanced' : 'Show Advanced'}
+      </Button>
+    </div>
+  );
+}
+
 function ReadOnlyGeneralTab({ model }: { model: Model }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const g = model.general;
-  return <KVGrid items={[
+  const baseItems = [
     { label: 'Model Title', value: g.model_title || '—' }, { label: 'Author', value: g.author || '—' },
     { label: 'Ops Time Unit', value: g.ops_time_unit }, { label: 'MCT Time Unit', value: g.mct_time_unit },
     { label: 'Production Period', value: g.prod_period_unit }, { label: 'Conv1', value: g.conv1 },
     { label: 'Conv2', value: g.conv2 }, { label: 'Utilisation Limit', value: `${g.util_limit}%` },
+  ];
+  const advancedItems = [
     { label: 'Var Equip', value: `${g.var_equip}%` }, { label: 'Var Labor', value: `${g.var_labor}%` },
     { label: 'Var Prod', value: `${g.var_prod}%` },
-  ]} />;
+    { label: 'Gen1', value: g.gen1 }, { label: 'Gen2', value: g.gen2 },
+    { label: 'Gen3', value: g.gen3 }, { label: 'Gen4', value: g.gen4 },
+  ];
+  return (
+    <div>
+      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      <KVGrid items={showAdvanced ? [...baseItems, ...advancedItems] : baseItems} />
+    </div>
+  );
 }
 
 function ReadOnlyLaborTab({ model }: { model: Model }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   if (!model.labor.length) return <p className="text-sm text-muted-foreground">No labor groups.</p>;
-  return <ReadOnlyTable headers={['Name', 'Count', 'OT%', 'Unavail%', 'Dept']} rows={model.labor.map(l => [l.name, l.count, l.overtime_pct, l.unavail_pct, l.dept_code || '—'])} />;
+  const baseHeaders = ['Name', 'Count', 'OT%', 'Unavail%', 'Dept'];
+  const advHeaders = ['Run Fac', 'Setup Fac', 'Var Fac', 'Priority', model.param_names.lab1_name, model.param_names.lab2_name, model.param_names.lab3_name, model.param_names.lab4_name];
+  const headers = showAdvanced ? [...baseHeaders, ...advHeaders] : baseHeaders;
+  const rows = model.labor.map(l => {
+    const base = [l.name, l.count, l.overtime_pct, l.unavail_pct, l.dept_code || '—'];
+    if (showAdvanced) base.push(l.run_factor as any, l.setup_factor as any, l.var_factor as any, l.prioritize_use ? 'Yes' : 'No', l.lab1 as any, l.lab2 as any, l.lab3 as any, l.lab4 as any);
+    return base;
+  });
+  return (
+    <div>
+      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      <ReadOnlyTable headers={headers} rows={rows} />
+    </div>
+  );
 }
 
 function ReadOnlyEquipmentTab({ model }: { model: Model }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   if (!model.equipment.length) return <p className="text-sm text-muted-foreground">No equipment.</p>;
-  return <ReadOnlyTable headers={['Name', 'Type', 'Count', 'MTTF', 'MTTR', 'Unavail%']} rows={model.equipment.map(e => [e.name, e.equip_type, e.count, e.mttf, e.mttr, e.unavail_pct])} />;
+  const baseHeaders = ['Name', 'Type', 'Count', 'MTTF', 'MTTR', 'Unavail%'];
+  const advHeaders = ['OT%', 'Dept', 'Run Fac', 'Setup Fac', 'Var Fac', model.param_names.eq1_name, model.param_names.eq2_name, model.param_names.eq3_name, model.param_names.eq4_name];
+  const headers = showAdvanced ? [...baseHeaders, ...advHeaders] : baseHeaders;
+  const rows = model.equipment.map(e => {
+    const base: (string | number)[] = [e.name, e.equip_type, e.count, e.mttf, e.mttr, e.unavail_pct];
+    if (showAdvanced) base.push(e.overtime_pct as any, e.dept_code || '—', e.run_factor as any, e.setup_factor as any, e.var_factor as any, e.eq1 as any, e.eq2 as any, e.eq3 as any, e.eq4 as any);
+    return base;
+  });
+  return (
+    <div>
+      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      <ReadOnlyTable headers={headers} rows={rows} />
+    </div>
+  );
 }
 
 function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model; scenario?: Scenario | null; userLevel?: UserLevel }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
   const { applyScenarioChange, removeChange } = useScenarioStore();
   const showInclude = !!scenario && !!ul && isVisible('product_inclusion', ul);
@@ -579,39 +630,70 @@ function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model;
     }
   };
 
-  const headers = showInclude ? ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept', 'Include'] : ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept'];
+  const baseHeaders = ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept'];
+  const advHeaders = ['Demand Fac', 'Lot Fac', 'Var Fac', 'MTS', 'Gather', model.param_names.prod1_name, model.param_names.prod2_name, model.param_names.prod3_name, model.param_names.prod4_name];
+  let headers = showAdvanced ? [...baseHeaders, ...advHeaders] : [...baseHeaders];
+  if (showInclude) headers.push('Include');
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="w-full text-xs">
-        <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
-        <tbody>{model.products.map(p => (
-          <tr key={p.id} className="border-t border-border">
-            <td className="p-2 font-medium">{p.name}</td>
-            <td className="p-2 text-muted-foreground font-mono">{p.demand}</td>
-            <td className="p-2 text-muted-foreground font-mono">{p.lot_size}</td>
-            <td className="p-2 text-muted-foreground font-mono">{p.tbatch_size}</td>
-            <td className="p-2 text-muted-foreground font-mono">{p.dept_code || '—'}</td>
-            {showInclude && (
-              <td className="p-2">
-                <Checkbox
-                  checked={!isExcluded(p.id)}
-                  onCheckedChange={() => toggleInclude(p.id, p.name)}
-                />
-              </td>
-            )}
-          </tr>
-        ))}</tbody>
-      </table>
+    <div>
+      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      <div className="rounded-lg border border-border overflow-hidden">
+        <table className="w-full text-xs">
+          <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
+          <tbody>{model.products.map(p => (
+            <tr key={p.id} className="border-t border-border">
+              <td className="p-2 font-medium">{p.name}</td>
+              <td className="p-2 text-muted-foreground font-mono">{p.demand}</td>
+              <td className="p-2 text-muted-foreground font-mono">{p.lot_size}</td>
+              <td className="p-2 text-muted-foreground font-mono">{p.tbatch_size}</td>
+              <td className="p-2 text-muted-foreground font-mono">{p.dept_code || '—'}</td>
+              {showAdvanced && <>
+                <td className="p-2 text-muted-foreground font-mono">{p.demand_factor}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.lot_factor}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.var_factor}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.make_to_stock ? 'Yes' : 'No'}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.gather_tbatches ? 'Yes' : 'No'}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.prod1}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.prod2}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.prod3}</td>
+                <td className="p-2 text-muted-foreground font-mono">{p.prod4}</td>
+              </>}
+              {showInclude && (
+                <td className="p-2">
+                  <Checkbox
+                    checked={!isExcluded(p.id)}
+                    onCheckedChange={() => toggleInclude(p.id, p.name)}
+                  />
+                </td>
+              )}
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 function ReadOnlyOperationsTab({ model }: { model: Model }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   if (!model.operations.length) return <p className="text-sm text-muted-foreground">No operations.</p>;
   const pm = Object.fromEntries(model.products.map(p => [p.id, p.name]));
   const em = Object.fromEntries(model.equipment.map(e => [e.id, e.name]));
-  return <ReadOnlyTable headers={['Product', 'Op#', 'Op Name', 'Equipment', 'Eq Setup/Lot', 'Eq Run/Pc']} rows={model.operations.map(o => [pm[o.product_id] || '—', o.op_number, o.op_name, em[o.equip_id] || '—', o.equip_setup_lot, o.equip_run_piece])} />;
+  const baseHeaders = ['Product', 'Op#', 'Op Name', 'Equipment', 'Eq Setup/Lot', 'Eq Run/Pc'];
+  const advHeaders = ['Eq Setup/Pc', 'Eq Run/Lot', 'Eq Setup/TB', 'Eq Run/TB', 'Lab Setup/Lot', 'Lab Run/Pc', 'Lab Setup/Pc', 'Lab Run/Lot', 'Lab Setup/TB', 'Lab Run/TB', '% Assigned'];
+  const headers = showAdvanced ? [...baseHeaders, ...advHeaders] : baseHeaders;
+  const rows = model.operations.map(o => {
+    const base: (string | number)[] = [pm[o.product_id] || '—', o.op_number, o.op_name, em[o.equip_id] || '—', o.equip_setup_lot, o.equip_run_piece];
+    if (showAdvanced) base.push(o.equip_setup_piece, o.equip_run_lot, o.equip_setup_tbatch, o.equip_run_tbatch, o.labor_setup_lot, o.labor_run_piece, o.labor_setup_piece, o.labor_run_lot, o.labor_setup_tbatch, o.labor_run_tbatch, o.pct_assigned);
+    return base;
+  });
+  return (
+    <div>
+      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      <ReadOnlyTable headers={headers} rows={rows} />
+    </div>
+  );
 }
 
 
