@@ -638,8 +638,8 @@ function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model;
   return (
     <div>
       <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-      <div className="rounded-lg border border-border overflow-hidden">
-        <table className="w-full text-xs">
+      <div className="rounded-lg border border-border overflow-x-auto">
+        <table className="min-w-max w-full text-xs">
           <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
           <tbody>{model.products.map(p => (
             <tr key={p.id} className="border-t border-border">
