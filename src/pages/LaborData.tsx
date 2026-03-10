@@ -117,6 +117,15 @@ export default function LaborData() {
           <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1">
             <Plus className="h-4 w-4" /> Add Labor Group
           </Button>
+          <Button
+            size="sm"
+            className="gap-1"
+            variant={isDirty ? 'default' : 'outline'}
+            disabled={!isDirty && !justSaved}
+            onClick={handleSave}
+          >
+            {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
+          </Button>
         </div>
       </div>
 
