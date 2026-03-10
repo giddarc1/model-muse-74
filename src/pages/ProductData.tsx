@@ -203,7 +203,9 @@ export default function ProductData() {
                         <Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} />
                         <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
                       </TableCell>
-                      <TableCell><Input className="h-8 w-24" value={p.dept_code} onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8 w-28" />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
