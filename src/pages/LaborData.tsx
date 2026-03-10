@@ -194,7 +194,7 @@ export default function LaborData() {
                     </TableCell>
                     {showAdvanced && <>
                       <TableCell>
-                        <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} className="h-8 w-28" />
+                        <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} section="labor" className="h-8 w-28" />
                       </TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.setup_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'setup_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={l.run_factor} step="0.1" onChange={(e) => handleCellChange(l.id, 'run_factor', +e.target.value)} /></TableCell>
