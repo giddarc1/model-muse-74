@@ -257,7 +257,7 @@ export default function LaborData() {
                           <Label className="text-xs">Group / Dept / Area</Label>
                           <InfoTip text="Optional organisational label. No direct effect on calculations — provided for reference and model documentation." />
                         </div>
-                        <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} className="h-8" />
+                        <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} section="labor" className="h-8" />
                       </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
