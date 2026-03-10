@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { DeptCodeSelect } from '@/components/DeptCodeSelect';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
@@ -205,7 +206,9 @@ export default function EquipmentData() {
                     </TableCell>
                     <TableCell><Input className="h-8 w-32" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Notes…" /></TableCell>
                     {showAdvanced && <>
-                      <TableCell><Input className="h-8 w-24" value={eq.dept_code} onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} className="h-8 w-28" />
+                      </TableCell>
                       <TableCell>
                         <Checkbox checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)} />
                       </TableCell>
@@ -296,7 +299,7 @@ export default function EquipmentData() {
                     <div className="pt-2 border-t border-border space-y-3">
                       <div>
                         <Label className="text-xs">Group / Dept / Area</Label>
-                        <Input className="h-8" value={eq.dept_code} placeholder="e.g. Cell 1" onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} />
+                        <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} className="h-8" />
                       </div>
                       <div className="flex items-center gap-2">
                         <Checkbox

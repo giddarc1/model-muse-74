@@ -26,6 +26,7 @@ function InfoTip({ text }: { text: string }) {
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { DeptCodeSelect } from '@/components/DeptCodeSelect';
 
 const FIELD_LABELS: Record<string, string> = {
   demand: 'End Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
@@ -202,7 +203,9 @@ export default function ProductData() {
                         <Input type="number" className="h-8 w-20 font-mono" value={p.tbatch_size} onChange={(e) => handleCellChange(p.id, 'tbatch_size', +e.target.value)} />
                         <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
                       </TableCell>
-                      <TableCell><Input className="h-8 w-24" value={p.dept_code} onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} /></TableCell>
+                      <TableCell>
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8 w-28" />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Input type="number" className="h-8 w-20 font-mono" value={p.demand_factor} step="0.1" onChange={(e) => handleCellChange(p.id, 'demand_factor', +e.target.value)} />
@@ -325,7 +328,7 @@ export default function ProductData() {
                           <Label className="text-xs">Group / Dept / Area</Label>
                           <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Products with the same Group label will be subtotalled together in the Output Summary.</TooltipContent></Tooltip></TooltipProvider>
                         </div>
-                        <Input className="h-8" value={p.dept_code} placeholder="e.g. Hubs, Components" onChange={(e) => handleCellChange(p.id, 'dept_code', e.target.value)} />
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8" />
                       </div>
                       {/* Prod1-4 parameter variables */}
                       <div className="pt-2 border-t border-border">

@@ -17,9 +17,10 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock, Pencil, ChevronDown } from 'lucide-react';
+import { Save, Trash2, Archive, Download, RotateCcw, X, Plus, Clock, Pencil, ChevronDown, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useDeptCodes } from '@/hooks/useDeptCodes';
 
 interface ParamNames {
   gen1_name: string; gen2_name: string; gen3_name: string; gen4_name: string;
@@ -402,6 +403,7 @@ export default function ModelSettings() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="params">Parameter Names</TabsTrigger>
+          <TabsTrigger value="deptcodes">Group/Dept/Area</TabsTrigger>
           <TabsTrigger value="versions">Version History</TabsTrigger>
           <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
@@ -525,6 +527,10 @@ export default function ModelSettings() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="deptcodes" className="mt-4 space-y-4">
+          <DeptCodesTab modelId={model.id} />
         </TabsContent>
 
         <TabsContent value="versions" className="mt-4 space-y-4">
@@ -727,5 +733,104 @@ export default function ModelSettings() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function DeptCodesTab({ modelId }: { modelId: string }) {
+  const { deptCodes, addDeptCode, updateDeptCode, deleteDeptCode } = useDeptCodes(modelId);
+  const [newValue, setNewValue] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+
+  const handleAdd = async () => {
+    if (!newValue.trim()) return;
+    if (deptCodes.some(d => d.value.toLowerCase() === newValue.trim().toLowerCase())) {
+      toast.error('This value already exists');
+      return;
+    }
+    const result = await addDeptCode(newValue.trim());
+    if (result?.error) toast.error('Failed to add value');
+    else { toast.success('Value added'); setNewValue(''); }
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    if (!editingValue.trim()) return;
+    if (deptCodes.some(d => d.id !== id && d.value.toLowerCase() === editingValue.trim().toLowerCase())) {
+      toast.error('This value already exists');
+      return;
+    }
+    const result = await updateDeptCode(id, editingValue.trim());
+    if (result?.error) toast.error('Failed to update');
+    else { toast.success('Updated'); setEditingId(null); }
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await deleteDeptCode(id);
+    if (result?.error) toast.error('Failed to delete');
+    else toast.success('Deleted');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Group / Dept / Area Values</CardTitle>
+        <CardDescription>Define valid values for the Group/Dept/Area field used across Labor, Equipment, and Products. These values populate the dropdown selectors on each data screen.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Input
+            value={newValue}
+            onChange={e => setNewValue(e.target.value)}
+            placeholder="Add new value…"
+            className="h-8"
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+          <Button size="sm" variant="outline" onClick={handleAdd} disabled={!newValue.trim()}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add
+          </Button>
+        </div>
+
+        <div className="space-y-1">
+          {deptCodes.map(dc => (
+            <div key={dc.id} className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background">
+              {editingId === dc.id ? (
+                <>
+                  <Input
+                    className="h-7 flex-1 text-sm"
+                    value={editingValue}
+                    onChange={e => setEditingValue(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSaveEdit(dc.id)}
+                    autoFocus
+                  />
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleSaveEdit(dc.id)}>Save</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingId(null)}>Cancel</Button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm font-mono">{dc.value}</span>
+                  {dc.is_default ? (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Lock className="h-3 w-3" /> Required
+                    </div>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingId(dc.id); setEditingValue(dc.value); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(dc.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+          {deptCodes.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4 text-center">No values defined yet. Add your first value above.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
