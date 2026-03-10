@@ -4,6 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useModelStore, type Model } from '@/stores/modelStore';
 import { useScenarioStore, type Scenario, type ScenarioChange, type ScenarioFamily } from '@/stores/scenarioStore';
 import FamiliesTabContent from '@/components/FamiliesPanel';
+import { WhatIfGeneralTab } from '@/components/whatif/WhatIfGeneralTab';
+import { WhatIfLaborTab } from '@/components/whatif/WhatIfLaborTab';
+import { WhatIfEquipmentTab } from '@/components/whatif/WhatIfEquipmentTab';
+import { WhatIfProductsTab } from '@/components/whatif/WhatIfProductsTab';
+import { WhatIfOperationsTab } from '@/components/whatif/WhatIfOperationsTab';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useUserLevelStore, isVisible, type UserLevel } from '@/hooks/useUserLevel';
 import { calculate } from '@/lib/calculationEngine';
@@ -494,7 +499,7 @@ function BasecaseView({ model }: { model: Model }) {
       </div>
       <div className="border-b border-border shrink-0">
         <div className="flex px-6">
-          {['general','labor','equipment','products','operations','ibom'].map(tab => (
+          {['general','labor','equipment','products','operations'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
@@ -510,7 +515,6 @@ function BasecaseView({ model }: { model: Model }) {
         {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
         {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
         {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
-        {activeTab === 'ibom' && <ReadOnlyIBOMTab model={model} />}
       </div>
     </div>
   );
@@ -609,11 +613,8 @@ function ReadOnlyOperationsTab({ model }: { model: Model }) {
   return <ReadOnlyTable headers={['Product', 'Op#', 'Op Name', 'Equipment', 'Eq Setup/Lot', 'Eq Run/Pc']} rows={model.operations.map(o => [pm[o.product_id] || '—', o.op_number, o.op_name, em[o.equip_id] || '—', o.equip_setup_lot, o.equip_run_piece])} />;
 }
 
-function ReadOnlyIBOMTab({ model }: { model: Model }) {
-  if (!model.ibom.length) return <p className="text-sm text-muted-foreground">No IBOM entries.</p>;
-  const pm = Object.fromEntries(model.products.map(p => [p.id, p.name]));
-  return <ReadOnlyTable headers={['Parent', 'Component', 'Units/Assy']} rows={model.ibom.map(b => [pm[b.parent_product_id] || '—', pm[b.component_product_id] || '—', b.units_per_assy])} />;
-}
+
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // Scenario View — the core editing view
@@ -765,11 +766,11 @@ function ScenarioView({
       <div className="flex-1 overflow-y-auto p-6">
         {isActive ? (
           <>
-            {activeTab === 'general' && <EditableGeneralTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'labor' && <EditableLaborTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'equipment' && <EditableEquipmentTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} userLevel={userLevel} />}
-            {activeTab === 'operations' && <EditableOperationsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
+            {activeTab === 'general' && <WhatIfGeneralTab model={model} scenario={scenario} />}
+            {activeTab === 'labor' && <WhatIfLaborTab model={model} scenario={scenario} />}
+            {activeTab === 'equipment' && <WhatIfEquipmentTab model={model} scenario={scenario} />}
+            {activeTab === 'products' && <WhatIfProductsTab model={model} scenario={scenario} userLevel={userLevel} />}
+            {activeTab === 'operations' && <WhatIfOperationsTab model={model} scenario={scenario} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
         ) : (
@@ -787,225 +788,7 @@ function ScenarioView({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Editable What-if Cell
-// ═══════════════════════════════════════════════════════════════════════
-function WhatIfCell({ basecaseValue, whatIfValue, onBlur }: {
-  basecaseValue: number | string;
-  whatIfValue: string | number | null;
-  onBlur: (value: string) => void;
-}) {
-  const [localVal, setLocalVal] = useState(whatIfValue != null ? String(whatIfValue) : '');
-  useEffect(() => { setLocalVal(whatIfValue != null ? String(whatIfValue) : ''); }, [whatIfValue]);
 
-  const hasChange = whatIfValue != null && String(whatIfValue) !== String(basecaseValue);
-
-  return (
-    <input
-      type="number"
-      value={localVal}
-      onChange={e => setLocalVal(e.target.value)}
-      onBlur={() => onBlur(localVal)}
-      placeholder={String(basecaseValue)}
-      className={`w-full text-right bg-transparent border rounded px-1.5 py-1 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 ${hasChange ? 'border-amber-400 bg-amber-500/5' : 'border-border'}`}
-    />
-  );
-}
-
-function DeltaCell({ basecaseValue, whatIfValue }: { basecaseValue: number | string; whatIfValue: string | number | null }) {
-  if (whatIfValue == null) return <td className="p-2 text-right font-mono text-xs text-muted-foreground">—</td>;
-  const base = Number(basecaseValue);
-  const wi = Number(whatIfValue);
-  if (isNaN(base) || isNaN(wi) || base === wi) return <td className="p-2 text-right font-mono text-xs text-muted-foreground">—</td>;
-  const delta = wi - base;
-  return (
-    <td className="p-2 text-right font-mono text-xs">
-      <span className={delta >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-        {delta >= 0 ? '+' : ''}{delta % 1 === 0 ? delta : delta.toFixed(2)}
-      </span>
-    </td>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Editable Param Table wrapper
-// ═══════════════════════════════════════════════════════════════════════
-interface ParamRow {
-  dataType: ScenarioChange['dataType'];
-  entityId: string;
-  entityName: string;
-  field: string;
-  fieldLabel: string;
-  basecaseValue: number;
-}
-
-function EditableParamTable({
-  headers, rows, getWhatIfValue, onBlur,
-}: {
-  headers: string[];
-  rows: ParamRow[];
-  getWhatIfValue: (dt: ScenarioChange['dataType'], entityId: string, field: string) => string | number | null;
-  onBlur: (dt: ScenarioChange['dataType'], entityId: string, entityName: string, field: string, fieldLabel: string, value: string, basecaseValue: number | string) => void;
-}) {
-  return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="bg-muted/50 text-muted-foreground">
-            {headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}
-            <th className="text-right p-2 font-medium">Basecase Value</th>
-            <th className="text-right p-2 font-medium w-32">What-if Value</th>
-            <th className="text-right p-2 font-medium w-20">Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const wiVal = getWhatIfValue(r.dataType, r.entityId, r.field);
-            return (
-              <tr key={`${r.entityId}-${r.field}-${i}`} className={`border-t border-border ${wiVal != null ? 'bg-amber-500/5' : ''}`}>
-                <td className="p-2 font-medium">{r.entityName}</td>
-                {headers.length > 1 && <td className="p-2 text-muted-foreground">{r.fieldLabel}</td>}
-                <td className="p-2 text-right font-mono text-muted-foreground">{r.basecaseValue}</td>
-                <td className="p-2">
-                  <WhatIfCell basecaseValue={r.basecaseValue} whatIfValue={wiVal}
-                    onBlur={(val) => onBlur(r.dataType, r.entityId, r.entityName, r.field, r.fieldLabel, val, r.basecaseValue)} />
-                </td>
-                <DeltaCell basecaseValue={r.basecaseValue} whatIfValue={wiVal} />
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Editable Tab Implementations
-// ═══════════════════════════════════════════════════════════════════════
-type EditableTabProps = {
-  model: Model; scenario: Scenario;
-  getWhatIfValue: (dt: ScenarioChange['dataType'], entityId: string, field: string) => string | number | null;
-  onBlur: (dt: ScenarioChange['dataType'], entityId: string, entityName: string, field: string, fieldLabel: string, value: string, basecaseValue: number | string) => void;
-};
-
-function EditableGeneralTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
-  const g = model.general;
-  const rows: ParamRow[] = [
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'conv1', fieldLabel: 'Conv1 (Shifts × Hours)', basecaseValue: g.conv1 },
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'conv2', fieldLabel: 'Conv2 (Days per Period)', basecaseValue: g.conv2 },
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'util_limit', fieldLabel: 'Utilisation Limit %', basecaseValue: g.util_limit },
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'var_equip', fieldLabel: 'Var Equip %', basecaseValue: g.var_equip },
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'var_labor', fieldLabel: 'Var Labor %', basecaseValue: g.var_labor },
-    { dataType: 'General', entityId: 'general', entityName: 'General', field: 'var_prod', fieldLabel: 'Var Prod %', basecaseValue: g.var_prod },
-  ];
-  return <EditableParamTable headers={['Parameter', 'Detail']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
-}
-
-function EditableLaborTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
-  if (!model.labor.length) return <p className="text-sm text-muted-foreground">No labor groups.</p>;
-  const rows: ParamRow[] = model.labor.flatMap(l => [
-    { dataType: 'Labor' as const, entityId: l.id, entityName: l.name, field: 'count', fieldLabel: 'No. in Group', basecaseValue: l.count },
-    { dataType: 'Labor' as const, entityId: l.id, entityName: l.name, field: 'unavail_pct', fieldLabel: 'Unavailability %', basecaseValue: l.unavail_pct },
-    { dataType: 'Labor' as const, entityId: l.id, entityName: l.name, field: 'overtime_pct', fieldLabel: 'Overtime %', basecaseValue: l.overtime_pct },
-  ]);
-  return <EditableParamTable headers={['Labor Group', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
-}
-
-function EditableEquipmentTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
-  if (!model.equipment.length) return <p className="text-sm text-muted-foreground">No equipment.</p>;
-  const rows: ParamRow[] = model.equipment.flatMap(e => [
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'count', fieldLabel: 'No. in Group', basecaseValue: e.count },
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'unavail_pct', fieldLabel: 'Unavailability %', basecaseValue: e.unavail_pct },
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'setup_factor', fieldLabel: 'Setup Time Factor', basecaseValue: e.setup_factor },
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'run_factor', fieldLabel: 'Run Time Factor', basecaseValue: e.run_factor },
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'mttf', fieldLabel: 'MTTF', basecaseValue: e.mttf },
-    { dataType: 'Equipment' as const, entityId: e.id, entityName: e.name, field: 'mttr', fieldLabel: 'MTTR', basecaseValue: e.mttr },
-  ]);
-  return <EditableParamTable headers={['Equipment Group', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
-}
-
-function EditableProductsTab({ model, scenario, getWhatIfValue, onBlur, userLevel: ul }: EditableTabProps & { userLevel?: UserLevel }) {
-  if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
-  const { applyScenarioChange, removeChange } = useScenarioStore();
-  const showInclude = !!ul && isVisible('product_inclusion', ul);
-
-  const isExcluded = (productId: string) => {
-    return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
-  };
-
-  const toggleInclude = (productId: string, productName: string) => {
-    if (isExcluded(productId)) {
-      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
-      if (change) removeChange(scenario.id, change.id);
-    } else {
-      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
-    }
-  };
-
-  const rows: ParamRow[] = model.products.flatMap(p => [
-    { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'demand', fieldLabel: 'Demand / Production Qty', basecaseValue: p.demand },
-    { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'lot_size', fieldLabel: 'Lot Size', basecaseValue: p.lot_size },
-    { dataType: 'Product' as const, entityId: p.id, entityName: p.name, field: 'tbatch_size', fieldLabel: 'Transfer Batch Size', basecaseValue: p.tbatch_size },
-  ]);
-
-  if (!showInclude) {
-    return <EditableParamTable headers={['Product', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
-  }
-
-  // Group rows by product for include toggle
-  return (
-    <div className="space-y-0">
-      {model.products.map(p => {
-        const productRows = rows.filter(r => r.entityId === p.id);
-        const excluded = isExcluded(p.id);
-        return (
-          <div key={p.id} className={`${excluded ? 'opacity-50' : ''}`}>
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/30 border border-border border-b-0 rounded-t-md mt-3 first:mt-0">
-              <Checkbox
-                checked={!excluded}
-                onCheckedChange={() => toggleInclude(p.id, p.name)}
-              />
-              <span className="text-xs font-semibold">{p.name}</span>
-              {excluded && <span className="text-[10px] text-muted-foreground italic">Excluded from calculation</span>}
-            </div>
-            <EditableParamTable headers={['Product', 'Parameter']} rows={productRows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function EditableOperationsTab({ model, scenario, getWhatIfValue, onBlur }: EditableTabProps) {
-  if (!model.operations.length) return <p className="text-sm text-muted-foreground">No operations.</p>;
-  const prodMap = Object.fromEntries(model.products.map(p => [p.id, p.name]));
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, typeof model.operations>();
-    model.operations.forEach(o => {
-      const list = map.get(o.product_id) || [];
-      list.push(o);
-      map.set(o.product_id, list);
-    });
-    return map;
-  }, [model.operations]);
-
-  const rows: ParamRow[] = [];
-  grouped.forEach((ops, productId) => {
-    ops.forEach(o => {
-      const prefix = `${prodMap[productId] || '—'} · ${o.op_name}`;
-      rows.push(
-        { dataType: 'Equipment' as const, entityId: o.id, entityName: prefix, field: 'equip_setup_lot', fieldLabel: 'Equip Setup/Lot', basecaseValue: o.equip_setup_lot },
-        { dataType: 'Equipment' as const, entityId: o.id, entityName: prefix, field: 'equip_run_piece', fieldLabel: 'Equip Run/Pc', basecaseValue: o.equip_run_piece },
-        { dataType: 'Labor' as const, entityId: o.id, entityName: prefix, field: 'labor_setup_lot', fieldLabel: 'Labor Setup/Lot', basecaseValue: o.labor_setup_lot },
-        { dataType: 'Labor' as const, entityId: o.id, entityName: prefix, field: 'labor_run_piece', fieldLabel: 'Labor Run/Pc', basecaseValue: o.labor_run_piece },
-      );
-    });
-  });
-
-  return <EditableParamTable headers={['Product · Operation', 'Parameter']} rows={rows} getWhatIfValue={getWhatIfValue} onBlur={onBlur} />;
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // Changes Tab (audit trail)
