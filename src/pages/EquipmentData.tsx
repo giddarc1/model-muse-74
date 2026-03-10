@@ -85,6 +85,15 @@ export default function EquipmentData() {
     } else {
       updateEquipment(model.id, id, { [field]: value });
     }
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const laborName = (id: string) => model.labor.find((l) => l.id === id)?.name || '—';
