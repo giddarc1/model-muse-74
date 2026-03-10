@@ -606,6 +606,9 @@ export default function OperationsRouting() {
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleAutoGenerateClick}>
                     <Zap className="h-3.5 w-3.5" /> Auto-Generate
                   </Button>
+                  <Button size="sm" className="gap-1" variant={isDirty ? 'default' : 'outline'} disabled={!isDirty && !justSaved} onClick={handleSave}>
+                    {justSaved ? <><Check className="h-3.5 w-3.5" /> Saved</> : <><Save className="h-3.5 w-3.5" /> Save</>}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
