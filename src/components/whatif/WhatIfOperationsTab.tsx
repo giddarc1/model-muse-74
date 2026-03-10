@@ -85,7 +85,7 @@ export function WhatIfOperationsTab({ model, scenario }: { model: Model; scenari
 
           <Card className="border-l-[3px] border-l-amber-400">
             <CardContent className="p-0 overflow-x-auto">
-              <Table>
+              <Table className="min-w-max">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="font-mono text-xs w-10"></TableHead>
