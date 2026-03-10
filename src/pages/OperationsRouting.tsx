@@ -382,6 +382,15 @@ export default function OperationsRouting() {
       applyScenarioChange(activeScenarioId, 'Routing', op.id, entityName, field, field, value);
     }
     updateOperation(model.id, op.id, { [field]: value });
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const handleAddInlineRoute = (fromOpName: string, toOpName: string, pct: number) => {
