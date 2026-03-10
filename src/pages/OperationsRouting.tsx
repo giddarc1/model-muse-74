@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Wand2, AlertTriangle, SortAsc, FlaskConical, Calculator, FunctionSquare, Lock, Zap, CheckCircle, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
 import { ProductSelectorBar } from '@/components/ProductSelectorBar';
@@ -433,6 +434,8 @@ export default function OperationsRouting() {
   ) : null;
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} onSave={handleSave} />
     <div className="p-6 animate-fade-in">
       {activeScenarioId && activeScenario && (
         <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
@@ -910,5 +913,6 @@ export default function OperationsRouting() {
         onApply={(value) => toast.success(`Interpolated value: ${value} — use it in a time field`)}
       />
     </div>
+    </>
   );
 }

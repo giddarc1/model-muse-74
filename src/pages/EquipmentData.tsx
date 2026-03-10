@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
@@ -100,6 +101,8 @@ export default function EquipmentData() {
   const laborName = (id: string) => model.labor.find((l) => l.id === id)?.name || '—';
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} onSave={handleSave} />
     <div className="p-6 animate-fade-in">
       {activeScenarioId && activeScenario && (
         <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
@@ -336,5 +339,6 @@ export default function EquipmentData() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
