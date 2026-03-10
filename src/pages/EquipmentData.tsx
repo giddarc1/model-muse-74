@@ -85,6 +85,9 @@ export default function EquipmentData() {
     }
     if (field === 'equip_type' && value === 'delay') {
       updateEquipment(model.id, id, { [field]: value, count: -1 });
+    } else if (field === 'dept_code') {
+      const isOutOfArea = typeof value === 'string' && value.toLowerCase() === 'out of area';
+      updateEquipment(model.id, id, { [field]: value, out_of_area: isOutOfArea });
     } else {
       updateEquipment(model.id, id, { [field]: value });
     }
@@ -153,9 +156,8 @@ export default function EquipmentData() {
                    <TableHead className="font-mono text-xs">Labor</TableHead>
                    <TableHead className="font-mono text-xs">Comments</TableHead>
                   {showAdvanced && <>
-                    <TableHead className="font-mono text-xs">Dept/Area</TableHead>
-                    <TableHead className="font-mono text-xs">Out of Area</TableHead>
-                    <TableHead className="font-mono text-xs">Unavail %</TableHead>
+                     <TableHead className="font-mono text-xs">Dept/Area</TableHead>
+                     <TableHead className="font-mono text-xs">Unavail %</TableHead>
                     <TableHead className="font-mono text-xs">Setup Fac</TableHead>
                     <TableHead className="font-mono text-xs">Run Fac</TableHead>
                     <TableHead className="font-mono text-xs">Var Fac</TableHead>
@@ -173,7 +175,7 @@ export default function EquipmentData() {
                   return (
                   <TableRow key={eq.id} className={isConfirming ? 'bg-destructive/10' : ''}>
                     {isConfirming ? (
-                      <TableCell colSpan={showAdvanced ? 19 : 9}>
+                      <TableCell colSpan={showAdvanced ? 18 : 9}>
                         <DeleteConfirmInline
                           message={`Delete ${eq.name}? This will remove its operations and labor assignments.`}
                           onConfirm={() => confirmDelete(eq.id, () => deleteEquipment(model.id, eq.id))}
@@ -209,10 +211,7 @@ export default function EquipmentData() {
                       <TableCell>
                         <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} section="equipment" className="h-8 w-28" />
                       </TableCell>
-                      <TableCell>
-                        <Checkbox checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)} />
-                      </TableCell>
-                      <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
+                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.unavail_pct} onChange={(e) => handleCellChange(eq.id, 'unavail_pct', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.setup_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'setup_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.run_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'run_factor', +e.target.value)} /></TableCell>
                       <TableCell><Input type="number" className="h-8 w-20 font-mono" value={eq.var_factor} step="0.1" onChange={(e) => handleCellChange(eq.id, 'var_factor', +e.target.value)} /></TableCell>
@@ -300,15 +299,6 @@ export default function EquipmentData() {
                       <div>
                         <Label className="text-xs">Group / Dept / Area</Label>
                         <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} section="equipment" className="h-8" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`ooa-${eq.id}`}
-                          checked={eq.out_of_area}
-                          onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)}
-                        />
-                        <Label htmlFor={`ooa-${eq.id}`} className="text-xs cursor-pointer">Out of Area equipment</Label>
-                        <InfoTip text="When checked, this equipment is treated as out-of-area for MCT chart colour coding." />
                       </div>
                     </div>
                     {/* Eq1-4 parameter variables */}
