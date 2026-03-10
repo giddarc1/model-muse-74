@@ -299,7 +299,7 @@ export default function EquipmentData() {
                     <div className="pt-2 border-t border-border space-y-3">
                       <div>
                         <Label className="text-xs">Group / Dept / Area</Label>
-                        <Input className="h-8" value={eq.dept_code} placeholder="e.g. Cell 1" onChange={(e) => handleCellChange(eq.id, 'dept_code', e.target.value)} />
+                        <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} className="h-8" />
                       </div>
                       <div className="flex items-center gap-2">
                         <Checkbox

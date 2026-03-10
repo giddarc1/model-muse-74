@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { DeptCodeSelect } from '@/components/DeptCodeSelect';
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', overtime_pct: 'Overtime %', unavail_pct: 'Unavail %',
