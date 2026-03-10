@@ -90,6 +90,8 @@ export default function GeneralData() {
   const savedProd = savedUnitsRef.current?.prod ?? g.prod_period_unit;
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} onSave={handleSave} />
     <div className="p-6 max-w-3xl animate-fade-in">
       {activeScenarioId && activeScenario && (
         <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
@@ -99,7 +101,18 @@ export default function GeneralData() {
           </span>
         </div>
       )}
-      <h1 className="text-xl font-bold mb-1">General Data</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-xl font-bold">General Data</h1>
+        <Button
+          size="sm"
+          className="gap-1"
+          variant={isDirty ? 'default' : 'outline'}
+          disabled={!isDirty && !justSaved}
+          onClick={handleSave}
+        >
+          {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
+        </Button>
+      </div>
       <p className="text-sm text-muted-foreground mb-6">Configure time settings, variability parameters, and model metadata.</p>
 
       <Tabs defaultValue="time">
