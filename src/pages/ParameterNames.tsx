@@ -71,7 +71,12 @@ export default function ParameterNames() {
             <TableBody>
               {ROWS.map(row => (
                 <TableRow key={row.key}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{row.variable}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      {row.variable}
+                      <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-gray-400 cursor-help" /></TooltipTrigger><TooltipContent className="max-w-[280px] text-xs">Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder.</TooltipContent></Tooltip></TooltipProvider>
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] font-mono">{row.category}</Badge>
                   </TableCell>

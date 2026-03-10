@@ -243,9 +243,8 @@ export default function LaborData() {
                       <div className="grid grid-cols-4 gap-3 mt-1.5">
                         {(['lab1', 'lab2', 'lab3', 'lab4'] as const).map(key => (
                           <div key={key}>
-                            <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                            <Label className="text-xs flex items-center gap-1">{model.param_names[`${key}_name` as keyof typeof model.param_names]}<InfoTip text="Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder." /></Label>
                             <Input type="number" className="h-8 font-mono" value={l[key]} onChange={(e) => handleCellChange(l.id, key, +e.target.value)} />
-                            <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
                           </div>
                         ))}
                       </div>
