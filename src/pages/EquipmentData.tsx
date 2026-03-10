@@ -42,6 +42,8 @@ export default function EquipmentData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
