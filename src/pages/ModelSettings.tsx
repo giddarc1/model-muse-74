@@ -529,6 +529,10 @@ export default function ModelSettings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="deptcodes" className="mt-4 space-y-4">
+          <DeptCodesTab modelId={model.id} />
+        </TabsContent>
+
         <TabsContent value="versions" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
