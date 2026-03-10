@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Wand2, AlertTriangle, SortAsc, FlaskConical, Calculator, FunctionSquare, Eye, Edit, Lock, Zap, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Wand2, AlertTriangle, SortAsc, FlaskConical, Calculator, FunctionSquare, Lock, Zap, CheckCircle, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
