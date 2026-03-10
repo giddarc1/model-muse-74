@@ -713,13 +713,6 @@ export default function OperationsRouting() {
                               <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>
                             </>
-                          ) : viewActualTimes && actual ? (
-                            <>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_setup_lot}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_run_piece}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_setup_lot}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_run_piece}</TableCell>
-                            </>
                           ) : (
                             <>
                               <TableCell><Input type="number" className="h-8 w-20 font-mono" value={op.equip_setup_lot} step="0.1" onChange={(e) => handleOpFieldChange(op, 'equip_setup_lot', +e.target.value)} /></TableCell>
