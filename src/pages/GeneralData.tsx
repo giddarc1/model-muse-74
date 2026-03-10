@@ -292,5 +292,6 @@ export default function GeneralData() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }
