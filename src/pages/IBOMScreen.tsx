@@ -856,3 +856,61 @@ export default function IBOMScreen() {
     </div>
   );
 }
+
+function AssemblySelector({ products, ibom, value, onSelect }: {
+  products: { id: string; name: string }[];
+  ibom: IBOMEntry[];
+  value: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = products.find(p => p.id === value);
+  const compCount = (pid: string) => ibom.filter(e => e.parent_product_id === pid).length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-52 justify-between h-7 font-mono text-xs"
+        >
+          {selected ? (
+            <span className="truncate">
+              {selected.name}
+              {compCount(selected.id) > 0 && <span className="text-muted-foreground ml-1">({compCount(selected.id)})</span>}
+            </span>
+          ) : (
+            'Select assembly…'
+          )}
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search products…" className="h-8" />
+          <CommandList>
+            <CommandEmpty>No products found.</CommandEmpty>
+            {products.map(p => {
+              const cc = compCount(p.id);
+              return (
+                <CommandItem
+                  key={p.id}
+                  value={p.name}
+                  onSelect={() => { onSelect(p.id); setOpen(false); }}
+                  className="font-mono text-xs flex items-center justify-between"
+                >
+                  <span>{p.name}</span>
+                  {cc > 0 && (
+                    <span className="text-muted-foreground text-[10px] ml-2">({cc})</span>
+                  )}
+                </CommandItem>
+              );
+            })}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
