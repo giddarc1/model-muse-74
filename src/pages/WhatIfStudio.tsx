@@ -510,7 +510,7 @@ function BasecaseView({ model }: { model: Model }) {
           ))}
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
         {activeTab === 'general' && <ReadOnlyGeneralTab model={model} />}
         {activeTab === 'labor' && <ReadOnlyLaborTab model={model} />}
         {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
