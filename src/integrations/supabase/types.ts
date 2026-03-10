@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      model_dept_codes: {
+        Row: {
+          id: string
+          is_default: boolean
+          model_id: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          is_default?: boolean
+          model_id: string
+          value: string
+        }
+        Update: {
+          id?: string
+          is_default?: boolean
+          model_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_dept_codes_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_equipment: {
         Row: {
           comments: string | null
