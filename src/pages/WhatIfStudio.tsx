@@ -623,12 +623,12 @@ function ReadOnlyOperationsTab({ model }: { model: Model }) {
 function ScenarioView({
   model, modelId, scenario, isActive,
   onActivate, onDelete, onRename,
-  onRunScenario, onSaveAs, onReturnToBasecase, onPromote, onRunAndView, userLevel,
+  onRunScenario, onSave, onSaveAs, onReturnToBasecase, onPromote, onRunAndView, userLevel,
 }: {
   model: Model; modelId: string; scenario: Scenario; isActive: boolean;
   onActivate: () => void; onDelete: () => void;
   onRename: (id: string, name: string) => void;
-  onRunScenario: (s: Scenario) => void; onSaveAs: (s: Scenario) => void;
+  onRunScenario: (s: Scenario) => void; onSave: (s: Scenario) => void; onSaveAs: (s: Scenario) => void;
   onReturnToBasecase: () => void; onPromote: () => void;
   onRunAndView: (s: Scenario) => void;
   userLevel: UserLevel;
