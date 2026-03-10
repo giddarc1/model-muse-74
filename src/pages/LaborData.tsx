@@ -234,7 +234,9 @@ export default function LaborData() {
                   <div><Label className="text-xs">Count</Label><Input type="number" className="h-8 font-mono" value={l.count} onChange={(e) => handleCellChange(l.id, 'count', +e.target.value)} /></div>
                   <div><Label className="text-xs">Overtime %</Label><Input type="number" className="h-8 font-mono" value={l.overtime_pct} onChange={(e) => handleCellChange(l.id, 'overtime_pct', +e.target.value)} /></div>
                   <div><Label className="text-xs">Unavail %</Label><Input type="number" className="h-8 font-mono" value={l.unavail_pct} onChange={(e) => handleCellChange(l.id, 'unavail_pct', +e.target.value)} /></div>
-                  <div><Label className="text-xs">Dept Code</Label><Input className="h-8" value={l.dept_code} onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} /></div>
+                   <div><Label className="text-xs">Dept Code</Label>
+                     <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} className="h-8" />
+                   </div>
                 </div>
                 <div><Label className="text-xs">Comments</Label><Input className="h-8" value={l.comments} onChange={(e) => handleCellChange(l.id, 'comments', e.target.value)} /></div>
                 {showAdvanced && (
