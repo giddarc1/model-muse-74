@@ -45,7 +45,7 @@ export function WhatIfGeneralTab({ model, scenario }: { model: Model; scenario: 
   const { userLevel } = useUserLevelStore();
   const showAdvancedParams = isVisible('advanced_parameters', userLevel);
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
-  const updateGeneral = useScenarioStore._modelUpdate ?? null;
+  const updateGeneral = useModelStore(s => s.updateGeneral);
 
   const g = model.general;
   const pn = model.param_names;
@@ -55,9 +55,7 @@ export function WhatIfGeneralTab({ model, scenario }: { model: Model; scenario: 
       const fieldLabel = FIELD_LABELS[field] || field;
       applyScenarioChange(scenario.id, 'General', 'general', 'General', field, fieldLabel, value as string | number);
     });
-    // Also update the model store so UI reflects the change
-    const { updateGeneral: ug } = require('@/stores/modelStore').useModelStore.getState();
-    ug(model.id, data);
+    updateGeneral(model.id, data);
   };
 
   return (
