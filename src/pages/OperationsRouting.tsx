@@ -449,7 +449,7 @@ export default function OperationsRouting() {
           <p className="text-sm text-muted-foreground">Define operations and routing flow per product</p>
         </div>
         <div className="flex items-center gap-2">
-          {showFormulaBuilder && (
+          {showFormulaBuilder && showAdvancedTimes && (
             <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowInterpolator(true)}>
               <Calculator className="h-3.5 w-3.5" /> Interpolate
             </Button>
