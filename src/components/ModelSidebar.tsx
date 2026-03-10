@@ -4,7 +4,7 @@ import { useUserLevelStore, isVisible, type FeatureKey } from '@/hooks/useUserLe
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
-  Network, Play, FlaskConical, FileText, Wrench, Grid3X3, Menu, X
+  Network, Play, FlaskConical, FileText, Wrench, Sparkles, Menu, X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ const navItems: { label: string; icon: typeof LayoutDashboard; path: string; fea
   { label: 'Equipment', icon: Cpu, path: 'equipment', feature: null },
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
-  { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all_operations' },
+  { label: 'Trooba Intelligence', icon: Sparkles, path: 'intelligence', feature: 'all_operations' },
   
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },

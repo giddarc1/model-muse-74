@@ -17,7 +17,7 @@ import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
 import OperationsRouting from "./pages/OperationsRouting";
-import AllOperations from "./pages/AllOperations";
+import TroobaIntelligence from "./pages/TroobaIntelligence";
 import IBOMScreen from "./pages/IBOMScreen";
 
 import RunResults from "./pages/RunResults";
@@ -55,7 +55,8 @@ const App = () => (
               <Route path="equipment" element={<EquipmentData />} />
               <Route path="products" element={<ProductData />} />
               <Route path="operations" element={<OperationsRouting />} />
-              <Route path="all-operations" element={<AllOperations />} />
+              <Route path="intelligence" element={<TroobaIntelligence />} />
+              <Route path="all-operations" element={<TroobaIntelligence />} />
               <Route path="ibom" element={<IBOMScreen />} />
               <Route path="param-names" element={<Navigate to="../settings?tab=params" replace />} />
               <Route path="run" element={<RunResults />} />
