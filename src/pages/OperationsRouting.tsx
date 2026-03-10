@@ -624,7 +624,7 @@ export default function OperationsRouting() {
                       </>
                     )}
                     <TableHead className="font-mono text-xs">Routing</TableHead>
-                    {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
+                    {showFormulaBuilder && showAdvancedTimes && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
