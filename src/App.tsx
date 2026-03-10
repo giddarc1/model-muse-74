@@ -55,7 +55,8 @@ const App = () => (
               <Route path="equipment" element={<EquipmentData />} />
               <Route path="products" element={<ProductData />} />
               <Route path="operations" element={<OperationsRouting />} />
-              <Route path="all-operations" element={<AllOperations />} />
+              <Route path="intelligence" element={<TroobaIntelligence />} />
+              <Route path="all-operations" element={<TroobaIntelligence />} />
               <Route path="ibom" element={<IBOMScreen />} />
               <Route path="param-names" element={<Navigate to="../settings?tab=params" replace />} />
               <Route path="run" element={<RunResults />} />
