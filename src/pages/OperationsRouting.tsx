@@ -204,24 +204,6 @@ export default function OperationsRouting() {
   const [showAutoRouteConfirm, setShowAutoRouteConfirm] = useState(false);
   const [showClearRoutingConfirm, setShowClearRoutingConfirm] = useState(false);
 
-  // Compute actual times
-  const getActualTimes = (op: Operation) => {
-    if (!model) return null;
-    const eq = model.equipment.find(e => e.id === op.equip_id);
-    const prod = model.products.find(p => p.id === op.product_id);
-    const eqSetupF = eq?.setup_factor ?? 1;
-    const eqRunF = eq?.run_factor ?? 1;
-    const labGroup = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
-    const labSetupF = labGroup?.setup_factor ?? 1;
-    const labRunF = labGroup?.run_factor ?? 1;
-    const prodSetupF = prod?.setup_factor ?? 1;
-    return {
-      equip_setup_lot: Math.round(op.equip_setup_lot * eqSetupF * prodSetupF * 1000) / 1000,
-      equip_run_piece: Math.round(op.equip_run_piece * eqRunF * 1000) / 1000,
-      labor_setup_lot: Math.round(op.labor_setup_lot * labSetupF * prodSetupF * 1000) / 1000,
-      labor_run_piece: Math.round(op.labor_run_piece * labRunF * 1000) / 1000,
-    };
-  };
 
   if (!model) return null;
 
