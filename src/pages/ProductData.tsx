@@ -91,6 +91,15 @@ export default function ProductData() {
       applyScenarioChange(activeScenarioId, 'Product', id, entityName, field, fieldLabel, value as string | number);
     }
     updateProduct(model.id, id, { [field]: value });
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const goToOps = (productId: string) => {
