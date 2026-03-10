@@ -204,7 +204,7 @@ export default function ProductData() {
                         <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
                       </TableCell>
                       <TableCell>
-                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8 w-28" />
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} section="product" className="h-8 w-28" />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -328,7 +328,7 @@ export default function ProductData() {
                           <Label className="text-xs">Group / Dept / Area</Label>
                           <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger><TooltipContent className="max-w-[200px] text-xs">Products with the same Group label will be subtotalled together in the Output Summary.</TooltipContent></Tooltip></TooltipProvider>
                         </div>
-                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8" />
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} section="product" className="h-8" />
                       </div>
                       {/* Prod1-4 parameter variables */}
                       <div className="pt-2 border-t border-border">

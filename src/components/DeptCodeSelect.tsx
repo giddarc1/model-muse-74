@@ -1,15 +1,16 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDeptCodes } from '@/hooks/useDeptCodes';
+import { useDeptCodes, type DeptCodeSection } from '@/hooks/useDeptCodes';
 
 interface DeptCodeSelectProps {
   modelId: string;
   value: string;
   onChange: (value: string) => void;
+  section: DeptCodeSection;
   className?: string;
 }
 
-export function DeptCodeSelect({ modelId, value, onChange, className }: DeptCodeSelectProps) {
-  const { deptCodes, loading } = useDeptCodes(modelId);
+export function DeptCodeSelect({ modelId, value, onChange, section, className }: DeptCodeSelectProps) {
+  const { deptCodes, loading } = useDeptCodes(modelId, section);
 
   return (
     <Select value={value || '__blank__'} onValueChange={(v) => onChange(v === '__blank__' ? '' : v)}>

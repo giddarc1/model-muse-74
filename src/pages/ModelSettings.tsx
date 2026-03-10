@@ -530,7 +530,9 @@ export default function ModelSettings() {
         </TabsContent>
 
         <TabsContent value="deptcodes" className="mt-4 space-y-4">
-          <DeptCodesTab modelId={model.id} />
+          <DeptCodesSection modelId={model.id} section="labor" title="Labor Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Labor section." />
+          <DeptCodesSection modelId={model.id} section="equipment" title="Equipment Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Equipment section. The 'out of area' entry is permanent and cannot be deleted." />
+          <DeptCodesSection modelId={model.id} section="product" title="Product Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Products section." />
         </TabsContent>
 
         <TabsContent value="versions" className="mt-4 space-y-4">
@@ -736,8 +738,8 @@ export default function ModelSettings() {
   );
 }
 
-function DeptCodesTab({ modelId }: { modelId: string }) {
-  const { deptCodes, addDeptCode, updateDeptCode, deleteDeptCode } = useDeptCodes(modelId);
+function DeptCodesSection({ modelId, section, title, description }: { modelId: string; section: 'labor' | 'equipment' | 'product'; title: string; description: string }) {
+  const { deptCodes, addDeptCode, updateDeptCode, deleteDeptCode } = useDeptCodes(modelId, section);
   const [newValue, setNewValue] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState('');
@@ -773,8 +775,8 @@ function DeptCodesTab({ modelId }: { modelId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Group / Dept / Area Values</CardTitle>
-        <CardDescription>Define valid values for the Group/Dept/Area field used across Labor, Equipment, and Products. These values populate the dropdown selectors on each data screen.</CardDescription>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
@@ -827,7 +829,7 @@ function DeptCodesTab({ modelId }: { modelId: string }) {
             </div>
           ))}
           {deptCodes.length === 0 && (
-            <p className="text-sm text-muted-foreground py-4 text-center">No values defined yet. Add your first value above.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">No values defined yet.</p>
           )}
         </div>
       </CardContent>
