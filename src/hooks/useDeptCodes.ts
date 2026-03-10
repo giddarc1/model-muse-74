@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type DeptCodeSection = 'labor' | 'equipment' | 'product';
+
 export interface DeptCode {
   id: string;
   model_id: string;
   value: string;
   is_default: boolean;
+  section: DeptCodeSection;
 }
 
 const DEFAULT_VALUE = 'out of area';
 
-export function useDeptCodes(modelId: string | undefined) {
+export function useDeptCodes(modelId: string | undefined, section: DeptCodeSection) {
   const [deptCodes, setDeptCodes] = useState<DeptCode[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,16 +23,17 @@ export function useDeptCodes(modelId: string | undefined) {
       .from('model_dept_codes')
       .select('*')
       .eq('model_id', modelId)
+      .eq('section', section)
       .order('is_default', { ascending: false })
       .order('value');
     
     const rows = (data as DeptCode[]) || [];
     
-    // Ensure the default "out of area" entry always exists
-    if (!rows.some(r => r.value.toLowerCase() === DEFAULT_VALUE)) {
+    // Ensure the default "out of area" entry always exists for equipment
+    if (section === 'equipment' && !rows.some(r => r.value.toLowerCase() === DEFAULT_VALUE)) {
       const { data: inserted } = await supabase
         .from('model_dept_codes')
-        .insert({ model_id: modelId, value: DEFAULT_VALUE, is_default: true })
+        .insert({ model_id: modelId, value: DEFAULT_VALUE, is_default: true, section: 'equipment' })
         .select()
         .single();
       if (inserted) {
@@ -39,7 +43,7 @@ export function useDeptCodes(modelId: string | undefined) {
     
     setDeptCodes(rows);
     setLoading(false);
-  }, [modelId]);
+  }, [modelId, section]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -49,7 +53,7 @@ export function useDeptCodes(modelId: string | undefined) {
     if (deptCodes.some(d => d.value.toLowerCase() === trimmed.toLowerCase())) return;
     const { data, error } = await supabase
       .from('model_dept_codes')
-      .insert({ model_id: modelId, value: trimmed, is_default: false })
+      .insert({ model_id: modelId, value: trimmed, is_default: false, section })
       .select()
       .single();
     if (!error && data) {
