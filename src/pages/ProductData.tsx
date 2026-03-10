@@ -26,6 +26,7 @@ function InfoTip({ text }: { text: string }) {
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { DeptCodeSelect } from '@/components/DeptCodeSelect';
 
 const FIELD_LABELS: Record<string, string> = {
   demand: 'End Demand', lot_size: 'Lot Size', tbatch_size: 'TBatch Size',
