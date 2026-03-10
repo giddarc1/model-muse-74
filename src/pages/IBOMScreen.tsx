@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useModelStore, type IBOMEntry } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -489,22 +491,12 @@ export default function IBOMScreen() {
               <div className="flex items-center gap-2">
                 <Network className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">View assembly:</span>
-                <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); setFilterText(''); }}>
-                  <SelectTrigger className="h-7 w-48 text-xs">
-                    <SelectValue placeholder="Select assembly…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allProducts.map((p) => {
-                      const compCount = model.ibom.filter(e => e.parent_product_id === p.id).length;
-                      return (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                          {compCount > 0 && <span className="text-muted-foreground ml-1">({compCount})</span>}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <AssemblySelector
+                  products={allProducts}
+                  ibom={model.ibom}
+                  value={viewAssemblyId}
+                  onSelect={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); setFilterText(''); }}
+                />
                 {viewAssemblyId && (
                   <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setViewAssemblyId(''); setSelectedProductId(''); setExpandedNodes(new Set()); setFilterText(''); }}>
                     <X className="h-3 w-3 mr-1" /> Clear
@@ -862,5 +854,63 @@ export default function IBOMScreen() {
       </Dialog>
 
     </div>
+  );
+}
+
+function AssemblySelector({ products, ibom, value, onSelect }: {
+  products: { id: string; name: string }[];
+  ibom: IBOMEntry[];
+  value: string;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = products.find(p => p.id === value);
+  const compCount = (pid: string) => ibom.filter(e => e.parent_product_id === pid).length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-52 justify-between h-7 font-mono text-xs"
+        >
+          {selected ? (
+            <span className="truncate">
+              {selected.name}
+              {compCount(selected.id) > 0 && <span className="text-muted-foreground ml-1">({compCount(selected.id)})</span>}
+            </span>
+          ) : (
+            'Select assembly…'
+          )}
+          <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search products…" className="h-8" />
+          <CommandList>
+            <CommandEmpty>No products found.</CommandEmpty>
+            {products.map(p => {
+              const cc = compCount(p.id);
+              return (
+                <CommandItem
+                  key={p.id}
+                  value={p.name}
+                  onSelect={() => { onSelect(p.id); setOpen(false); }}
+                  className="font-mono text-xs flex items-center justify-between"
+                >
+                  <span>{p.name}</span>
+                  {cc > 0 && (
+                    <span className="text-muted-foreground text-[10px] ml-2">({cc})</span>
+                  )}
+                </CommandItem>
+              );
+            })}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
