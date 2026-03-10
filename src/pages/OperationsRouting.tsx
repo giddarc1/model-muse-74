@@ -792,7 +792,7 @@ export default function OperationsRouting() {
                           </TableCell>
 
                           {/* Formula Builder trigger */}
-                          {showFormulaBuilder && (
+                          {showFormulaBuilder && showAdvancedTimes && (
                             <TableCell>
                               {!isDock && (
                                 <Select onValueChange={(field) => {
