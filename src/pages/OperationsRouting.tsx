@@ -415,7 +415,7 @@ export default function OperationsRouting() {
   // Calculate total columns for inline editor colSpan
   const baseColCount = 10; // lock/# + op# + name + equip + %assign + 4 times + routing
   const advancedColCount = showAdvancedTimes ? 12 : 0;
-  const formulaColCount = showFormulaBuilder && !showAdvancedTimes ? 1 : (showFormulaBuilder && showAdvancedTimes ? 1 : 0);
+  const formulaColCount = showFormulaBuilder && showAdvancedTimes ? 1 : 0;
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
@@ -449,7 +449,7 @@ export default function OperationsRouting() {
           <p className="text-sm text-muted-foreground">Define operations and routing flow per product</p>
         </div>
         <div className="flex items-center gap-2">
-          {showFormulaBuilder && (
+          {showFormulaBuilder && showAdvancedTimes && (
             <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowInterpolator(true)}>
               <Calculator className="h-3.5 w-3.5" /> Interpolate
             </Button>
@@ -624,7 +624,7 @@ export default function OperationsRouting() {
                       </>
                     )}
                     <TableHead className="font-mono text-xs">Routing</TableHead>
-                    {showFormulaBuilder && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
+                    {showFormulaBuilder && showAdvancedTimes && <TableHead className="font-mono text-xs w-10">ƒ</TableHead>}
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -792,7 +792,7 @@ export default function OperationsRouting() {
                           </TableCell>
 
                           {/* Formula Builder trigger */}
-                          {showFormulaBuilder && (
+                          {showFormulaBuilder && showAdvancedTimes && (
                             <TableCell>
                               {!isDock && (
                                 <Select onValueChange={(field) => {
