@@ -491,22 +491,12 @@ export default function IBOMScreen() {
               <div className="flex items-center gap-2">
                 <Network className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">View assembly:</span>
-                <Select value={viewAssemblyId} onValueChange={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); setFilterText(''); }}>
-                  <SelectTrigger className="h-7 w-48 text-xs">
-                    <SelectValue placeholder="Select assembly…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allProducts.map((p) => {
-                      const compCount = model.ibom.filter(e => e.parent_product_id === p.id).length;
-                      return (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                          {compCount > 0 && <span className="text-muted-foreground ml-1">({compCount})</span>}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <AssemblySelector
+                  products={allProducts}
+                  ibom={model.ibom}
+                  value={viewAssemblyId}
+                  onSelect={(v) => { setViewAssemblyId(v); setExpandedNodes(new Set()); setSelectedProductId(''); setFilterText(''); }}
+                />
                 {viewAssemblyId && (
                   <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setViewAssemblyId(''); setSelectedProductId(''); setExpandedNodes(new Set()); setFilterText(''); }}>
                     <X className="h-3 w-3 mr-1" /> Clear
