@@ -434,6 +434,8 @@ export default function OperationsRouting() {
   ) : null;
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} onSave={handleSave} />
     <div className="p-6 animate-fade-in">
       {activeScenarioId && activeScenario && (
         <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
