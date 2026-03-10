@@ -499,7 +499,7 @@ function BasecaseView({ model }: { model: Model }) {
       </div>
       <div className="border-b border-border shrink-0">
         <div className="flex px-6">
-          {['general','labor','equipment','products','operations','ibom'].map(tab => (
+          {['general','labor','equipment','products','operations'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
