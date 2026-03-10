@@ -621,22 +621,10 @@ export default function OperationsRouting() {
                     <TableHead className="font-mono text-xs">Op Name</TableHead>
                     <TableHead className="font-mono text-xs">Equipment</TableHead>
                     <TableHead className="font-mono text-xs w-20">% Assign</TableHead>
-                    <TableHead className="font-mono text-xs">
-                      E.Setup/Lot
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      E.Run/Pc
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      L.Setup/Lot
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      L.Run/Pc
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
+                    <TableHead className="font-mono text-xs">E.Setup/Lot</TableHead>
+                    <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
+                    <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
+                    <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
                     {showAdvancedTimes && (
                       <>
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
