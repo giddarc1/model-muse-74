@@ -85,6 +85,9 @@ export default function EquipmentData() {
     }
     if (field === 'equip_type' && value === 'delay') {
       updateEquipment(model.id, id, { [field]: value, count: -1 });
+    } else if (field === 'dept_code') {
+      const isOutOfArea = typeof value === 'string' && value.toLowerCase() === 'out of area';
+      updateEquipment(model.id, id, { [field]: value, out_of_area: isOutOfArea });
     } else {
       updateEquipment(model.id, id, { [field]: value });
     }
