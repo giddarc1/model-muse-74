@@ -175,7 +175,7 @@ export default function EquipmentData() {
                   return (
                   <TableRow key={eq.id} className={isConfirming ? 'bg-destructive/10' : ''}>
                     {isConfirming ? (
-                      <TableCell colSpan={showAdvanced ? 19 : 9}>
+                      <TableCell colSpan={showAdvanced ? 18 : 9}>
                         <DeleteConfirmInline
                           message={`Delete ${eq.name}? This will remove its operations and labor assignments.`}
                           onConfirm={() => confirmDelete(eq.id, () => deleteEquipment(model.id, eq.id))}
