@@ -51,7 +51,8 @@ export default function OperationsRouting() {
   const [newOpNumber, setNewOpNumber] = useState(10);
   const [newOpEquip, setNewOpEquip] = useState('');
   const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
-  const [viewActualTimes, setViewActualTimes] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [expandedRoutingOp, setExpandedRoutingOp] = useState<string | null>(null);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
 
