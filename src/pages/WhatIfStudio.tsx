@@ -268,6 +268,7 @@ export default function WhatIfStudio() {
             onDelete={() => setShowDeleteModal(selectedScenario.id)}
             onRename={renameScenario}
             onRunScenario={handleRunScenario}
+            onSave={(s) => { handleRunScenario(s); setActiveScenario(null); }}
             onSaveAs={handleSaveAs}
             onReturnToBasecase={handleReturnToBasecase}
             onPromote={() => setShowPromoteModal(true)}
@@ -622,12 +623,12 @@ function ReadOnlyOperationsTab({ model }: { model: Model }) {
 function ScenarioView({
   model, modelId, scenario, isActive,
   onActivate, onDelete, onRename,
-  onRunScenario, onSaveAs, onReturnToBasecase, onPromote, onRunAndView, userLevel,
+  onRunScenario, onSave, onSaveAs, onReturnToBasecase, onPromote, onRunAndView, userLevel,
 }: {
   model: Model; modelId: string; scenario: Scenario; isActive: boolean;
   onActivate: () => void; onDelete: () => void;
   onRename: (id: string, name: string) => void;
-  onRunScenario: (s: Scenario) => void; onSaveAs: (s: Scenario) => void;
+  onRunScenario: (s: Scenario) => void; onSave: (s: Scenario) => void; onSaveAs: (s: Scenario) => void;
   onReturnToBasecase: () => void; onPromote: () => void;
   onRunAndView: (s: Scenario) => void;
   userLevel: UserLevel;
@@ -713,25 +714,19 @@ function ScenarioView({
         <div className="flex-1" />
         {isActive ? (
           <>
-            <Button size="sm" variant="secondary" className="h-8 text-xs" onClick={() => onRunScenario(scenario)}>
-              <Save className="h-3.5 w-3.5 mr-1" /> Save What-if
+            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => onSave(scenario)}>
+              <Save className="h-3.5 w-3.5 mr-1" /> Save
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => onSaveAs(scenario)}>
-              <Copy className="h-3.5 w-3.5 mr-1" /> Save As…
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={onReturnToBasecase}>
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Return to Basecase
-            </Button>
-            <Button size="sm" className="h-8 text-xs" onClick={() => onRunAndView(scenario)}>
-              <Play className="h-3.5 w-3.5 mr-1" /> Run & View Results
+            <Button size="sm" variant="ghost" className="text-destructive border border-destructive/30 hover:bg-destructive/5 hover:text-destructive h-8 text-xs" onClick={onDelete}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
             </Button>
           </>
         ) : (
           <>
-            <Button size="sm" onClick={onActivate}>
-              <Play className="h-3.5 w-3.5 mr-1" /> Activate for Editing
+            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onActivate}>
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
             </Button>
-            <Button size="sm" variant="ghost" className="text-destructive border border-destructive/30 hover:bg-destructive/5 hover:text-destructive" onClick={onDelete}>
+            <Button size="sm" variant="ghost" className="text-destructive border border-destructive/30 hover:bg-destructive/5 hover:text-destructive h-8 text-xs" onClick={onDelete}>
               <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
             </Button>
           </>
