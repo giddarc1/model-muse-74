@@ -22,7 +22,7 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
-const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 

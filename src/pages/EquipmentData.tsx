@@ -23,7 +23,7 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
-const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', equip_type: 'Type', mttf: 'MTTF', mttr: 'MTTR',

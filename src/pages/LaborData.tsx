@@ -21,7 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   lab1: 'Lab1', lab2: 'Lab2', lab3: 'Lab3', lab4: 'Lab4', comments: 'Comments',
 };
 
-const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 
 function InfoTip({ text }: { text: string }) {
   return (
