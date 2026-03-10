@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', overtime_pct: 'Overtime %', unavail_pct: 'Unavail %',
