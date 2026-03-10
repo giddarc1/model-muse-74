@@ -67,6 +67,15 @@ export default function GeneralData() {
       });
     }
     updateGeneral(model.id, data);
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const UNIT_LABELS: Record<string, string> = {
