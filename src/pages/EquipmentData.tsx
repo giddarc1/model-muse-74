@@ -153,9 +153,8 @@ export default function EquipmentData() {
                    <TableHead className="font-mono text-xs">Labor</TableHead>
                    <TableHead className="font-mono text-xs">Comments</TableHead>
                   {showAdvanced && <>
-                    <TableHead className="font-mono text-xs">Dept/Area</TableHead>
-                    <TableHead className="font-mono text-xs">Out of Area</TableHead>
-                    <TableHead className="font-mono text-xs">Unavail %</TableHead>
+                     <TableHead className="font-mono text-xs">Dept/Area</TableHead>
+                     <TableHead className="font-mono text-xs">Unavail %</TableHead>
                     <TableHead className="font-mono text-xs">Setup Fac</TableHead>
                     <TableHead className="font-mono text-xs">Run Fac</TableHead>
                     <TableHead className="font-mono text-xs">Var Fac</TableHead>
