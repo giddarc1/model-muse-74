@@ -613,11 +613,8 @@ function ReadOnlyOperationsTab({ model }: { model: Model }) {
   return <ReadOnlyTable headers={['Product', 'Op#', 'Op Name', 'Equipment', 'Eq Setup/Lot', 'Eq Run/Pc']} rows={model.operations.map(o => [pm[o.product_id] || '—', o.op_number, o.op_name, em[o.equip_id] || '—', o.equip_setup_lot, o.equip_run_piece])} />;
 }
 
-function ReadOnlyIBOMTab({ model }: { model: Model }) {
-  if (!model.ibom.length) return <p className="text-sm text-muted-foreground">No IBOM entries.</p>;
-  const pm = Object.fromEntries(model.products.map(p => [p.id, p.name]));
-  return <ReadOnlyTable headers={['Parent', 'Component', 'Units/Assy']} rows={model.ibom.map(b => [pm[b.parent_product_id] || '—', pm[b.component_product_id] || '—', b.units_per_assy])} />;
-}
+
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // Scenario View — the core editing view
