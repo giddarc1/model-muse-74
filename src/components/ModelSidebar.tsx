@@ -4,7 +4,7 @@ import { useUserLevelStore, isVisible, type FeatureKey } from '@/hooks/useUserLe
 import { NavLink } from '@/components/NavLink';
 import {
   LayoutDashboard, Settings2, Users, Cpu, Package, GitBranch,
-  Network, Play, FlaskConical, FileText, Wrench, Grid3X3, Menu, X
+  Network, Play, FlaskConical, FileText, Wrench, Sparkles, Menu, X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
