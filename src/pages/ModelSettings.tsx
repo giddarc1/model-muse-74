@@ -529,10 +529,12 @@ export default function ModelSettings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="deptcodes" className="mt-4 space-y-4">
-          <DeptCodesSection modelId={model.id} section="labor" title="Labor Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Labor section." />
-          <DeptCodesSection modelId={model.id} section="equipment" title="Equipment Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Equipment section. The 'out of area' entry is permanent and cannot be deleted." />
-          <DeptCodesSection modelId={model.id} section="product" title="Product Group/Dept/Area Values" description="Define valid values for the Group/Dept/Area dropdown in the Products section." />
+        <TabsContent value="deptcodes" className="mt-4 space-y-6">
+          <DeptCodesSection modelId={model.id} section="labor" title="Labor" />
+          <Separator />
+          <DeptCodesSection modelId={model.id} section="equipment" title="Equipment" />
+          <Separator />
+          <DeptCodesSection modelId={model.id} section="product" title="Products" />
         </TabsContent>
 
         <TabsContent value="versions" className="mt-4 space-y-4">
