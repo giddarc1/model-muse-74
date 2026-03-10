@@ -268,6 +268,7 @@ export default function WhatIfStudio() {
             onDelete={() => setShowDeleteModal(selectedScenario.id)}
             onRename={renameScenario}
             onRunScenario={handleRunScenario}
+            onSave={(s) => { handleRunScenario(s); setActiveScenario(null); }}
             onSaveAs={handleSaveAs}
             onReturnToBasecase={handleReturnToBasecase}
             onPromote={() => setShowPromoteModal(true)}
