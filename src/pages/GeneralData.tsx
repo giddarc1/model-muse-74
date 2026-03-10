@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, FlaskConical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Info, FlaskConical, Save, Check } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+import { toast } from 'sonner';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 
 const FIELD_LABELS: Record<string, string> = {
   model_title: 'Model Title', ops_time_unit: 'Ops Time Unit', mct_time_unit: 'MCT Time Unit',
