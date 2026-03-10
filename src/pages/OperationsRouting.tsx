@@ -648,7 +648,7 @@ export default function OperationsRouting() {
                 </TableHeader>
                 <TableBody>
                   {productOps.map((op) => {
-                    const actual = viewActualTimes ? getActualTimes(op) : null;
+                    const isDock = op.op_name === 'DOCK';
                     const isDock = op.op_name === 'DOCK';
                     const opRoutes = getRoutesForOp(op.op_name);
                     const isExpanded = expandedRoutingOp === op.op_name;
