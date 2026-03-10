@@ -769,11 +769,11 @@ function ScenarioView({
       <div className="flex-1 overflow-y-auto p-6">
         {isActive ? (
           <>
-            {activeTab === 'general' && <EditableGeneralTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'labor' && <EditableLaborTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'equipment' && <EditableEquipmentTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
-            {activeTab === 'products' && <EditableProductsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} userLevel={userLevel} />}
-            {activeTab === 'operations' && <EditableOperationsTab model={model} scenario={scenario} getWhatIfValue={getWhatIfValue} onBlur={handleWhatIfBlur} />}
+            {activeTab === 'general' && <WhatIfGeneralTab model={model} scenario={scenario} />}
+            {activeTab === 'labor' && <WhatIfLaborTab model={model} scenario={scenario} />}
+            {activeTab === 'equipment' && <WhatIfEquipmentTab model={model} scenario={scenario} />}
+            {activeTab === 'products' && <WhatIfProductsTab model={model} scenario={scenario} userLevel={userLevel} />}
+            {activeTab === 'operations' && <WhatIfOperationsTab model={model} scenario={scenario} />}
             {activeTab === 'changes' && <ChangesTab scenario={scenario} isActive={isActive} userLevel={userLevel} modelId={modelId} onPromote={onPromote} />}
           </>
         ) : (
