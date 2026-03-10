@@ -713,7 +713,7 @@ function ScenarioView({
         <div className="flex-1" />
         {isActive ? (
           <>
-            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { onRunScenario(scenario); onReturnToBasecase(); }}>
+            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { onRunScenario(scenario); setActiveScenario(null); }}>
               <Save className="h-3.5 w-3.5 mr-1" /> Save
             </Button>
             <Button size="sm" variant="ghost" className="text-destructive border border-destructive/30 hover:bg-destructive/5 hover:text-destructive h-8 text-xs" onClick={onDelete}>
