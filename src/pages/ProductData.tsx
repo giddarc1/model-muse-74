@@ -312,11 +312,11 @@ export default function ProductData() {
                       </div>
                       {/* Prod1-4 parameter variables */}
                       <div className="pt-2 border-t border-border">
-                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Parameter Variables</Label>
+                        <Label className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">Parameter Variables <InfoTip text="Use Display Name to rename the variable. The new label appears across the app and in the Formula Builder." /></Label>
                         <div className="grid grid-cols-4 gap-3 mt-1.5">
                           {(['prod1', 'prod2', 'prod3', 'prod4'] as const).map(key => (
                             <div key={key}>
-                              <Label className="text-xs flex items-center gap-1">{model.param_names[`${key}_name` as keyof typeof model.param_names]}<InfoTip text="Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder." /></Label>
+                              <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
                               <Input type="number" className="h-8 font-mono" value={p[key]} onChange={(e) => handleCellChange(p.id, key, +e.target.value)} />
                             </div>
                           ))}
