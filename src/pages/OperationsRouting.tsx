@@ -649,7 +649,6 @@ export default function OperationsRouting() {
                 <TableBody>
                   {productOps.map((op) => {
                     const isDock = op.op_name === 'DOCK';
-                    const isDock = op.op_name === 'DOCK';
                     const opRoutes = getRoutesForOp(op.op_name);
                     const isExpanded = expandedRoutingOp === op.op_name;
                     const isConfirming = !isDock && pendingDeleteId === op.id;
