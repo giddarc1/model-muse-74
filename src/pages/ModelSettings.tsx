@@ -403,6 +403,7 @@ export default function ModelSettings() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="params">Parameter Names</TabsTrigger>
+          <TabsTrigger value="deptcodes">Group/Dept/Area</TabsTrigger>
           <TabsTrigger value="versions">Version History</TabsTrigger>
           <TabsTrigger value="danger">Danger Zone</TabsTrigger>
         </TabsList>
