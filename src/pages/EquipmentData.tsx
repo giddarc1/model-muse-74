@@ -339,5 +339,6 @@ export default function EquipmentData() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

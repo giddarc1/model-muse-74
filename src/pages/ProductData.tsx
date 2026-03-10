@@ -359,5 +359,6 @@ export default function ProductData() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

@@ -292,5 +292,6 @@ export default function LaborData() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
