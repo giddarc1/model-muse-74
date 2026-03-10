@@ -36,7 +36,7 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
   const [showAdvanced, setShowAdvanced] = useState(false);
   const updateProduct = useModelStore(s => s.updateProduct);
   const { applyScenarioChange, removeChange } = useScenarioStore();
-  const showInclude = isVisible('product_inclusion', userLevel);
+  const showInclude = true;
 
   if (!model.products.length) {
     return <div className="py-12 text-center text-sm text-muted-foreground">No products defined</div>;
