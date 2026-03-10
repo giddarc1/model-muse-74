@@ -1,5 +1,5 @@
-import { useEffect, useCallback } from 'react';
-import { useBlocker } from 'react-router-dom';
+import { useEffect, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -9,6 +9,7 @@ import {
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 interface UnsavedChangesGuardProps {
   isDirty: boolean;
@@ -16,7 +17,12 @@ interface UnsavedChangesGuardProps {
 }
 
 export function UnsavedChangesGuard({ isDirty, onSave }: UnsavedChangesGuardProps) {
-  const blocker = useBlocker(isDirty);
+  const [showDialog, setShowDialog] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
 
   // Browser tab close / refresh
   useEffect(() => {
@@ -28,20 +34,49 @@ export function UnsavedChangesGuard({ isDirty, onSave }: UnsavedChangesGuardProp
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
+  // Intercept link clicks for in-app navigation
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (!isDirtyRef.current) return;
+      const anchor = (e.target as HTMLElement).closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('http') || href.startsWith('#')) return;
+      // Only intercept internal navigation away from current path
+      if (href === location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingPath(href);
+      setShowDialog(true);
+    };
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [location.pathname]);
+
   const handleSave = useCallback(() => {
     onSave();
-    blocker.proceed?.();
-  }, [onSave, blocker]);
+    setShowDialog(false);
+    if (pendingPath) {
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  }, [onSave, navigate, pendingPath]);
 
   const handleDiscard = useCallback(() => {
-    blocker.proceed?.();
-  }, [blocker]);
+    setShowDialog(false);
+    if (pendingPath) {
+      // We need to clear dirty state before navigating
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  }, [navigate, pendingPath]);
 
   const handleCancel = useCallback(() => {
-    blocker.reset?.();
-  }, [blocker]);
+    setShowDialog(false);
+    setPendingPath(null);
+  }, []);
 
-  if (blocker.state !== 'blocked') return null;
+  if (!showDialog) return null;
 
   return (
     <AlertDialog open>
