@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, Network, ChevronDown, ChevronUp, Info, FlaskConical } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Copy, GitBranch, Network, ChevronDown, ChevronUp, Info, FlaskConical, Save, Check } from 'lucide-react';
 
 function InfoTip({ text }: { text: string }) {
   return (
@@ -43,6 +43,8 @@ export default function ProductData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const showAdvancedParams = isVisible('advanced_parameters', userLevel);
@@ -89,6 +91,15 @@ export default function ProductData() {
       applyScenarioChange(activeScenarioId, 'Product', id, entityName, field, fieldLabel, value as string | number);
     }
     updateProduct(model.id, id, { [field]: value });
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const goToOps = (productId: string) => {
@@ -124,6 +135,9 @@ export default function ProductData() {
             <Button variant={viewMode === 'form' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('form')}><LayoutGrid className="h-4 w-4" /></Button>
           </div>
           <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1"><Plus className="h-4 w-4" /> Add Product</Button>
+          <Button size="sm" className="gap-1" variant={isDirty ? 'default' : 'outline'} disabled={!isDirty && !justSaved} onClick={handleSave}>
+            {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
+          </Button>
         </div>
       </div>
 

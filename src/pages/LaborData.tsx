@@ -9,10 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Users, Info, ChevronDown, ChevronUp, FlaskConical, Save, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+import { toast } from 'sonner';
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', overtime_pct: 'Overtime %', unavail_pct: 'Unavail %',
@@ -38,6 +39,8 @@ export default function LaborData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
@@ -72,6 +75,15 @@ export default function LaborData() {
       applyScenarioChange(activeScenarioId, 'Labor', id, entityName, field, fieldLabel, value as string | number);
     }
     updateLabor(model.id, id, { [field]: value });
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   return (
@@ -104,6 +116,15 @@ export default function LaborData() {
           </div>
           <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1">
             <Plus className="h-4 w-4" /> Add Labor Group
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1"
+            variant={isDirty ? 'default' : 'outline'}
+            disabled={!isDirty && !justSaved}
+            onClick={handleSave}
+          >
+            {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
           </Button>
         </div>
       </div>

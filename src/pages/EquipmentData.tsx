@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical, Save, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
@@ -42,6 +43,8 @@ export default function EquipmentData() {
   const [newName, setNewName] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'form'>('table');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
   const { userLevel } = useUserLevelStore();
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
@@ -83,6 +86,15 @@ export default function EquipmentData() {
     } else {
       updateEquipment(model.id, id, { [field]: value });
     }
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const laborName = (id: string) => model.labor.find((l) => l.id === id)?.name || '—';
@@ -112,6 +124,9 @@ export default function EquipmentData() {
             <Button variant={viewMode === 'form' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('form')}><LayoutGrid className="h-4 w-4" /></Button>
           </div>
           <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1"><Plus className="h-4 w-4" /> Add Equipment</Button>
+          <Button size="sm" className="gap-1" variant={isDirty ? 'default' : 'outline'} disabled={!isDirty && !justSaved} onClick={handleSave}>
+            {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
+          </Button>
         </div>
       </div>
 

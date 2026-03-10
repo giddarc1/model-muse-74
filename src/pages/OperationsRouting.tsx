@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Wand2, AlertTriangle, SortAsc, FlaskConical, Calculator, FunctionSquare, Eye, Edit, Lock, Zap, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Wand2, AlertTriangle, SortAsc, FlaskConical, Calculator, FunctionSquare, Lock, Zap, CheckCircle, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormulaBuilder } from '@/components/FormulaBuilder';
 import { InterpolateCalculator } from '@/components/InterpolateCalculator';
@@ -51,7 +51,8 @@ export default function OperationsRouting() {
   const [newOpNumber, setNewOpNumber] = useState(10);
   const [newOpEquip, setNewOpEquip] = useState('');
   const [showAdvancedTimes, setShowAdvancedTimes] = useState(false);
-  const [viewActualTimes, setViewActualTimes] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [expandedRoutingOp, setExpandedRoutingOp] = useState<string | null>(null);
   const { pendingDeleteId, requestDelete, cancelDelete, confirmDelete } = useDeleteConfirmation();
 
@@ -203,24 +204,6 @@ export default function OperationsRouting() {
   const [showAutoRouteConfirm, setShowAutoRouteConfirm] = useState(false);
   const [showClearRoutingConfirm, setShowClearRoutingConfirm] = useState(false);
 
-  // Compute actual times
-  const getActualTimes = (op: Operation) => {
-    if (!model) return null;
-    const eq = model.equipment.find(e => e.id === op.equip_id);
-    const prod = model.products.find(p => p.id === op.product_id);
-    const eqSetupF = eq?.setup_factor ?? 1;
-    const eqRunF = eq?.run_factor ?? 1;
-    const labGroup = eq ? model.labor.find(l => l.id === eq.labor_group_id) : null;
-    const labSetupF = labGroup?.setup_factor ?? 1;
-    const labRunF = labGroup?.run_factor ?? 1;
-    const prodSetupF = prod?.setup_factor ?? 1;
-    return {
-      equip_setup_lot: Math.round(op.equip_setup_lot * eqSetupF * prodSetupF * 1000) / 1000,
-      equip_run_piece: Math.round(op.equip_run_piece * eqRunF * 1000) / 1000,
-      labor_setup_lot: Math.round(op.labor_setup_lot * labSetupF * prodSetupF * 1000) / 1000,
-      labor_run_piece: Math.round(op.labor_run_piece * labRunF * 1000) / 1000,
-    };
-  };
 
   if (!model) return null;
 
@@ -381,6 +364,15 @@ export default function OperationsRouting() {
       applyScenarioChange(activeScenarioId, 'Routing', op.id, entityName, field, field, value);
     }
     updateOperation(model.id, op.id, { [field]: value });
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const handleAddInlineRoute = (fromOpName: string, toOpName: string, pct: number) => {
@@ -582,24 +574,6 @@ export default function OperationsRouting() {
                   <CardDescription>{userOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <div className="flex border rounded-md overflow-hidden">
-                    <Button
-                      variant={!viewActualTimes ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 rounded-none gap-1 text-xs px-3"
-                      onClick={() => setViewActualTimes(false)}
-                    >
-                      <Edit className="h-3 w-3" /> Edit Operation Times
-                    </Button>
-                    <Button
-                      variant={viewActualTimes ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 rounded-none gap-1 text-xs px-3"
-                      onClick={() => setViewActualTimes(true)}
-                    >
-                      <Eye className="h-3 w-3" /> View Actual Times
-                    </Button>
-                  </div>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
                     {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
                   </Button>
@@ -614,6 +588,9 @@ export default function OperationsRouting() {
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleAutoGenerateClick}>
                     <Zap className="h-3.5 w-3.5" /> Auto-Generate
                   </Button>
+                  <Button size="sm" className="gap-1" variant={isDirty ? 'default' : 'outline'} disabled={!isDirty && !justSaved} onClick={handleSave}>
+                    {justSaved ? <><Check className="h-3.5 w-3.5" /> Saved</> : <><Save className="h-3.5 w-3.5" /> Save</>}
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -626,22 +603,10 @@ export default function OperationsRouting() {
                     <TableHead className="font-mono text-xs">Op Name</TableHead>
                     <TableHead className="font-mono text-xs">Equipment</TableHead>
                     <TableHead className="font-mono text-xs w-20">% Assign</TableHead>
-                    <TableHead className="font-mono text-xs">
-                      E.Setup/Lot
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      E.Run/Pc
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      L.Setup/Lot
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
-                    <TableHead className="font-mono text-xs">
-                      L.Run/Pc
-                      {viewActualTimes && <span className="text-[9px] text-muted-foreground ml-0.5">(actual)</span>}
-                    </TableHead>
+                    <TableHead className="font-mono text-xs">E.Setup/Lot</TableHead>
+                    <TableHead className="font-mono text-xs">E.Run/Pc</TableHead>
+                    <TableHead className="font-mono text-xs">L.Setup/Lot</TableHead>
+                    <TableHead className="font-mono text-xs">L.Run/Pc</TableHead>
                     {showAdvancedTimes && (
                       <>
                         <TableHead className="font-mono text-xs">E.Setup/Pc</TableHead>
@@ -665,7 +630,6 @@ export default function OperationsRouting() {
                 </TableHeader>
                 <TableBody>
                   {productOps.map((op) => {
-                    const actual = viewActualTimes ? getActualTimes(op) : null;
                     const isDock = op.op_name === 'DOCK';
                     const opRoutes = getRoutesForOp(op.op_name);
                     const isExpanded = expandedRoutingOp === op.op_name;
@@ -729,13 +693,6 @@ export default function OperationsRouting() {
                               <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>
-                            </>
-                          ) : viewActualTimes && actual ? (
-                            <>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_setup_lot}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.equip_run_piece}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_setup_lot}</TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground bg-muted/30">{actual.labor_run_piece}</TableCell>
                             </>
                           ) : (
                             <>
