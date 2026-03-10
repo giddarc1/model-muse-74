@@ -297,15 +297,6 @@ export default function EquipmentData() {
                         <Label className="text-xs">Group / Dept / Area</Label>
                         <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} section="equipment" className="h-8" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`ooa-${eq.id}`}
-                          checked={eq.out_of_area}
-                          onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)}
-                        />
-                        <Label htmlFor={`ooa-${eq.id}`} className="text-xs cursor-pointer">Out of Area equipment</Label>
-                        <InfoTip text="When checked, this equipment is treated as out-of-area for MCT chart colour coding." />
-                      </div>
                     </div>
                     {/* Eq1-4 parameter variables */}
                     <div className="pt-2 border-t border-border">
