@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, FlaskConical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Info, FlaskConical, Save, Check } from 'lucide-react';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
+import { toast } from 'sonner';
+import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
 
 const FIELD_LABELS: Record<string, string> = {
   model_title: 'Model Title', ops_time_unit: 'Ops Time Unit', mct_time_unit: 'MCT Time Unit',
@@ -33,6 +36,8 @@ export default function GeneralData() {
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Capture saved unit values on mount — labels only update on remount, not live
   const savedUnitsRef = useRef<{ ops: string; mct: string; prod: string } | null>(null);
@@ -62,6 +67,15 @@ export default function GeneralData() {
       });
     }
     updateGeneral(model.id, data);
+    setIsDirty(true);
+    setJustSaved(false);
+  };
+
+  const handleSave = () => {
+    setIsDirty(false);
+    setJustSaved(true);
+    toast.success('Saved');
+    setTimeout(() => setJustSaved(false), 2000);
   };
 
   const UNIT_LABELS: Record<string, string> = {
@@ -76,6 +90,8 @@ export default function GeneralData() {
   const savedProd = savedUnitsRef.current?.prod ?? g.prod_period_unit;
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} onSave={handleSave} />
     <div className="p-6 max-w-3xl animate-fade-in">
       {activeScenarioId && activeScenario && (
         <div className="mb-4 flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-md">
@@ -85,7 +101,18 @@ export default function GeneralData() {
           </span>
         </div>
       )}
-      <h1 className="text-xl font-bold mb-1">General Data</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-xl font-bold">General Data</h1>
+        <Button
+          size="sm"
+          className="gap-1"
+          variant={isDirty ? 'default' : 'outline'}
+          disabled={!isDirty && !justSaved}
+          onClick={handleSave}
+        >
+          {justSaved ? <><Check className="h-4 w-4" /> Saved</> : <><Save className="h-4 w-4" /> Save</>}
+        </Button>
+      </div>
       <p className="text-sm text-muted-foreground mb-6">Configure time settings, variability parameters, and model metadata.</p>
 
       <Tabs defaultValue="time">
@@ -265,5 +292,6 @@ export default function GeneralData() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   );
 }
