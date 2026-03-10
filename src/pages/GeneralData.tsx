@@ -36,6 +36,8 @@ export default function GeneralData() {
   const activeScenarioId = useScenarioStore(s => s.activeScenarioId);
   const activeScenario = useScenarioStore(s => s.scenarios.find(sc => sc.id === s.activeScenarioId));
   const applyScenarioChange = useScenarioStore(s => s.applyScenarioChange);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Capture saved unit values on mount — labels only update on remount, not live
   const savedUnitsRef = useRef<{ ops: string; mct: string; prod: string } | null>(null);
