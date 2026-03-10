@@ -17,7 +17,7 @@ import LaborData from "./pages/LaborData";
 import EquipmentData from "./pages/EquipmentData";
 import ProductData from "./pages/ProductData";
 import OperationsRouting from "./pages/OperationsRouting";
-import AllOperations from "./pages/AllOperations";
+import TroobaIntelligence from "./pages/TroobaIntelligence";
 import IBOMScreen from "./pages/IBOMScreen";
 
 import RunResults from "./pages/RunResults";
