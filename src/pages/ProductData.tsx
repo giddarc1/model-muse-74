@@ -204,7 +204,7 @@ export default function ProductData() {
                         <span className="text-[9px] text-muted-foreground">-1 = lot size</span>
                       </TableCell>
                       <TableCell>
-                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} className="h-8 w-28" />
+                        <DeptCodeSelect modelId={model.id} value={p.dept_code} onChange={(v) => handleCellChange(p.id, 'dept_code', v)} section="product" className="h-8 w-28" />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
