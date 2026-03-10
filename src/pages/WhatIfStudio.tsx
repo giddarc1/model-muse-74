@@ -524,8 +524,8 @@ function BasecaseView({ model }: { model: Model }) {
 // ── Read-only helpers ──
 function ReadOnlyTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="w-full text-xs">
+    <div className="rounded-lg border border-border overflow-x-auto">
+      <table className="min-w-max w-full text-xs">
         <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
         <tbody>{rows.map((row, i) => <tr key={i} className="border-t border-border">{row.map((cell, j) => <td key={j} className={`p-2 ${j === 0 ? 'font-medium' : 'text-muted-foreground font-mono'}`}>{cell}</td>)}</tr>)}</tbody>
       </table>
