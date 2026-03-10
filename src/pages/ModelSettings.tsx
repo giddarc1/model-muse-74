@@ -740,7 +740,7 @@ export default function ModelSettings() {
   );
 }
 
-function DeptCodesSection({ modelId, section, title, description }: { modelId: string; section: 'labor' | 'equipment' | 'product'; title: string; description: string }) {
+function DeptCodesSection({ modelId, section, title }: { modelId: string; section: 'labor' | 'equipment' | 'product'; title: string }) {
   const { deptCodes, addDeptCode, updateDeptCode, deleteDeptCode } = useDeptCodes(modelId, section);
   const [newValue, setNewValue] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -775,66 +775,62 @@ function DeptCodesSection({ modelId, section, title, description }: { modelId: s
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <Input
-            value={newValue}
-            onChange={e => setNewValue(e.target.value)}
-            placeholder="Add new value…"
-            className="h-8"
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          />
-          <Button size="sm" variant="outline" onClick={handleAdd} disabled={!newValue.trim()}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> Add
-          </Button>
-        </div>
+    <div>
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{title}</h4>
 
-        <div className="space-y-1">
-          {deptCodes.map(dc => (
-            <div key={dc.id} className="flex items-center gap-2 px-3 py-2 rounded-md border bg-background">
-              {editingId === dc.id ? (
-                <>
-                  <Input
-                    className="h-7 flex-1 text-sm"
-                    value={editingValue}
-                    onChange={e => setEditingValue(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSaveEdit(dc.id)}
-                    autoFocus
-                  />
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleSaveEdit(dc.id)}>Save</Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingId(null)}>Cancel</Button>
-                </>
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {deptCodes.map(dc => (
+          editingId === dc.id ? (
+            <div key={dc.id} className="inline-flex items-center gap-1">
+              <Input
+                className="h-6 w-32 text-xs font-mono px-2"
+                value={editingValue}
+                onChange={e => setEditingValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(dc.id); if (e.key === 'Escape') setEditingId(null); }}
+                autoFocus
+              />
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleSaveEdit(dc.id)}>
+                <Save className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setEditingId(null)}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <Badge key={dc.id} variant="secondary" className="gap-1 font-mono text-xs cursor-default">
+              {dc.value}
+              {dc.is_default ? (
+                <Tooltip><TooltipTrigger asChild><Lock className="h-2.5 w-2.5 text-muted-foreground" /></TooltipTrigger><TooltipContent className="text-xs">Permanent — required for MCT chart coloring</TooltipContent></Tooltip>
               ) : (
                 <>
-                  <span className="flex-1 text-sm font-mono">{dc.value}</span>
-                  {dc.is_default ? (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Lock className="h-3 w-3" /> Required
-                    </div>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingId(dc.id); setEditingValue(dc.value); }}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(dc.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
+                  <button className="hover:text-foreground text-muted-foreground" onClick={() => { setEditingId(dc.id); setEditingValue(dc.value); }}>
+                    <Pencil className="h-2.5 w-2.5" />
+                  </button>
+                  <button className="hover:text-destructive text-muted-foreground" onClick={() => handleDelete(dc.id)}>
+                    <X className="h-2.5 w-2.5" />
+                  </button>
                 </>
               )}
-            </div>
-          ))}
-          {deptCodes.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No values defined yet.</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            </Badge>
+          )
+        ))}
+        {deptCodes.length === 0 && (
+          <span className="text-xs text-muted-foreground italic">No values defined yet.</span>
+        )}
+      </div>
+
+      <div className="flex gap-1.5 items-center">
+        <Input
+          value={newValue}
+          onChange={e => setNewValue(e.target.value)}
+          placeholder="Add value…"
+          className="h-7 w-40 text-xs"
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+        />
+        <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={handleAdd} disabled={!newValue.trim()}>
+          <Plus className="h-3 w-3 mr-0.5" /> Add
+        </Button>
+      </div>
+    </div>
   );
 }
