@@ -592,24 +592,6 @@ export default function OperationsRouting() {
                   <CardDescription>{userOps.length} operations defined</CardDescription>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <div className="flex border rounded-md overflow-hidden">
-                    <Button
-                      variant={!viewActualTimes ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 rounded-none gap-1 text-xs px-3"
-                      onClick={() => setViewActualTimes(false)}
-                    >
-                      <Edit className="h-3 w-3" /> Edit Operation Times
-                    </Button>
-                    <Button
-                      variant={viewActualTimes ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-8 rounded-none gap-1 text-xs px-3"
-                      onClick={() => setViewActualTimes(true)}
-                    >
-                      <Eye className="h-3 w-3" /> View Actual Times
-                    </Button>
-                  </div>
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => setShowAdvancedTimes(!showAdvancedTimes)}>
                     {showAdvancedTimes ? 'Hide Advanced' : 'Show Advanced'}
                   </Button>
