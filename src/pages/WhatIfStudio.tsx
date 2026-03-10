@@ -515,7 +515,6 @@ function BasecaseView({ model }: { model: Model }) {
         {activeTab === 'equipment' && <ReadOnlyEquipmentTab model={model} />}
         {activeTab === 'products' && <ReadOnlyProductsTab model={model} />}
         {activeTab === 'operations' && <ReadOnlyOperationsTab model={model} />}
-        {activeTab === 'ibom' && <ReadOnlyIBOMTab model={model} />}
       </div>
     </div>
   );
