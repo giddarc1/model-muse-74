@@ -251,13 +251,13 @@ export default function LaborData() {
                         <span className="text-[10px] text-muted-foreground">Effective: {model.general.var_labor}% × {l.var_factor} = {(model.general.var_labor * l.var_factor).toFixed(1)}%</span>
                       </div>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <Label className="text-xs">Group / Dept / Area</Label>
-                        <InfoTip text="Optional organisational label. No direct effect on calculations — provided for reference and model documentation." />
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs">Group / Dept / Area</Label>
+                          <InfoTip text="Optional organisational label. No direct effect on calculations — provided for reference and model documentation." />
+                        </div>
+                        <DeptCodeSelect modelId={model.id} value={l.dept_code} onChange={(v) => handleCellChange(l.id, 'dept_code', v)} className="h-8" />
                       </div>
-                      <Input className="h-8" value={l.dept_code} placeholder="e.g. Assembly, Machining" onChange={(e) => handleCellChange(l.id, 'dept_code', e.target.value)} />
-                    </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Label className="text-xs">Prioritize Use</Label>
