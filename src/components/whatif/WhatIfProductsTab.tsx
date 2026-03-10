@@ -74,7 +74,7 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
       </div>
       <Card className="border-l-[3px] border-l-amber-400">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table className="min-w-max">
             <TableHeader>
               <TableRow>
                 {showInclude && <TableHead className="font-mono text-xs w-10">Inc</TableHead>}

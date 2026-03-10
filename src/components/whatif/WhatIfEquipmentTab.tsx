@@ -67,7 +67,7 @@ export function WhatIfEquipmentTab({ model, scenario }: { model: Model; scenario
       </div>
       <Card className="border-l-[3px] border-l-amber-400">
         <CardContent className="p-0 overflow-x-auto">
-          <Table>
+          <Table className="min-w-max">
             <TableHeader>
               <TableRow>
                 <TableHead className="font-mono text-xs">Name</TableHead>
