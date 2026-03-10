@@ -30,7 +30,7 @@ import {
   Plus, Play, Save, ArrowUpCircle, ArrowLeft, ArrowRight,
   FlaskConical, Pencil, Trash2, Copy, Eye, EyeOff, Lock,
   AlertTriangle, Circle, CircleAlert, CircleCheck,
-  Layers, ChevronDown, ChevronRight, GripVertical, ClipboardPaste,
+  Layers, ChevronDown, ChevronUp, ChevronRight, GripVertical, ClipboardPaste,
 } from 'lucide-react';
 import { getScenarioColor } from '@/lib/scenarioColors';
 import { toast } from 'sonner';
