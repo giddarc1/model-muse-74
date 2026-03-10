@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, LayoutGrid, List, Cpu, Info, ChevronDown, ChevronUp, FlaskConical, Save, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnsavedChangesGuard } from '@/components/UnsavedChangesGuard';
+import { DeptCodeSelect } from '@/components/DeptCodeSelect';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
