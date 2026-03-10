@@ -19,18 +19,21 @@ export type Database = {
           id: string
           is_default: boolean
           model_id: string
+          section: string
           value: string
         }
         Insert: {
           id?: string
           is_default?: boolean
           model_id: string
+          section?: string
           value: string
         }
         Update: {
           id?: string
           is_default?: boolean
           model_id?: string
+          section?: string
           value?: string
         }
         Relationships: [
