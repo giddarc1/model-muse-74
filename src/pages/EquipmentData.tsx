@@ -207,7 +207,7 @@ export default function EquipmentData() {
                     <TableCell><Input className="h-8 w-32" value={eq.comments} onChange={(e) => handleCellChange(eq.id, 'comments', e.target.value)} placeholder="Notes…" /></TableCell>
                     {showAdvanced && <>
                       <TableCell>
-                        <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} className="h-8 w-28" />
+                        <DeptCodeSelect modelId={model.id} value={eq.dept_code} onChange={(v) => handleCellChange(eq.id, 'dept_code', v)} section="equipment" className="h-8 w-28" />
                       </TableCell>
                       <TableCell>
                         <Checkbox checked={eq.out_of_area} onCheckedChange={(v) => handleCellChange(eq.id, 'out_of_area', !!v)} />
