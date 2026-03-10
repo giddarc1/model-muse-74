@@ -22,7 +22,7 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
-const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
 import { toast } from 'sonner';
 
@@ -316,9 +316,8 @@ export default function ProductData() {
                         <div className="grid grid-cols-4 gap-3 mt-1.5">
                           {(['prod1', 'prod2', 'prod3', 'prod4'] as const).map(key => (
                             <div key={key}>
-                              <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                              <Label className="text-xs flex items-center gap-1">{model.param_names[`${key}_name` as keyof typeof model.param_names]}<InfoTip text="Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder." /></Label>
                               <Input type="number" className="h-8 font-mono" value={p[key]} onChange={(e) => handleCellChange(p.id, key, +e.target.value)} />
-                              <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
                             </div>
                           ))}
                         </div>

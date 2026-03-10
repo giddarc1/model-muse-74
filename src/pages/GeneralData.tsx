@@ -239,9 +239,8 @@ export default function GeneralData() {
                 <div className="grid grid-cols-4 gap-4">
                   {(['gen1', 'gen2', 'gen3', 'gen4'] as const).map(key => (
                     <div key={key}>
-                      <Label className="text-xs flex items-center">{pn[`${key}_name` as keyof typeof pn]}<InfoTip text="Global variable for operation time formulas. Rename in Parameter Names." /></Label>
+                      <Label className="text-xs flex items-center">{pn[`${key}_name` as keyof typeof pn]}<InfoTip text="Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder." /></Label>
                       <Input type="number" className="h-8 font-mono" value={g[key]} onChange={(e) => update({ [key]: +e.target.value })} />
-                      <span className="text-[9px] text-muted-foreground">Custom variable. Rename in Parameter Names tab. Use in Formula Builder.</span>
                     </div>
                   ))}
                 </div>

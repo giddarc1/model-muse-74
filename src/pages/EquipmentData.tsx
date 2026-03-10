@@ -23,7 +23,7 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
-const CUSTOM_VAR_HINT = 'Custom variable. Rename in Parameter Names tab. Use in Formula Builder.';
+
 
 const FIELD_LABELS: Record<string, string> = {
   count: 'Count', equip_type: 'Type', mttf: 'MTTF', mttr: 'MTTR',
@@ -296,9 +296,8 @@ export default function EquipmentData() {
                       <div className="grid grid-cols-4 gap-3 mt-1.5">
                         {(['eq1', 'eq2', 'eq3', 'eq4'] as const).map((key, i) => (
                           <div key={key}>
-                            <Label className="text-xs">{model.param_names[`${key}_name` as keyof typeof model.param_names]}</Label>
+                            <Label className="text-xs flex items-center gap-1">{model.param_names[`${key}_name` as keyof typeof model.param_names]}<InfoTip text="Custom variable — rename using the Display Name field. The renamed label will appear throughout the app and can be used in the Formula Builder." /></Label>
                             <Input type="number" className="h-8 font-mono" value={eq[key]} onChange={(e) => handleCellChange(eq.id, key, +e.target.value)} />
-                            <span className="text-[9px] text-muted-foreground">{CUSTOM_VAR_HINT}</span>
                           </div>
                         ))}
                       </div>
