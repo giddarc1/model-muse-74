@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Model } from '@/stores/modelStore';
+import { useModelStore } from '@/stores/modelStore';
 import type { Scenario, ScenarioChange } from '@/stores/scenarioStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useUserLevelStore, isVisible } from '@/hooks/useUserLevel';
