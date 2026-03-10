@@ -415,7 +415,7 @@ export default function OperationsRouting() {
   // Calculate total columns for inline editor colSpan
   const baseColCount = 10; // lock/# + op# + name + equip + %assign + 4 times + routing
   const advancedColCount = showAdvancedTimes ? 12 : 0;
-  const formulaColCount = showFormulaBuilder && !showAdvancedTimes ? 1 : (showFormulaBuilder && showAdvancedTimes ? 1 : 0);
+  const formulaColCount = showFormulaBuilder && showAdvancedTimes ? 1 : 0;
   const deleteColCount = 1;
   const totalCols = baseColCount + advancedColCount + formulaColCount + deleteColCount;
 
