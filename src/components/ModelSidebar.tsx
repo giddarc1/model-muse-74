@@ -16,7 +16,7 @@ const navItems: { label: string; icon: typeof LayoutDashboard; path: string; fea
   { label: 'Equipment', icon: Cpu, path: 'equipment', feature: null },
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
-  { label: 'All Operations', icon: Grid3X3, path: 'all-operations', feature: 'all_operations' },
+  { label: 'Trooba Intelligence', icon: Sparkles, path: 'intelligence', feature: 'all_operations' },
   
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
