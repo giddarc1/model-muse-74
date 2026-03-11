@@ -239,17 +239,13 @@ export default function ModelLibrary() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">RapidMCT</h1>
-              <p className="text-sm text-muted-foreground mt-1">Manufacturing Cycle Time Analysis Platform</p>
+              <h1 className="text-2xl font-bold tracking-tight text-primary">Trooba Flow</h1>
+              <p className="text-sm text-muted-foreground mt-1">Factory Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => importRef.current?.click()} disabled={importing}>
-                <Upload className="h-4 w-4" /> {importing ? 'Importing…' : 'Import'}
-              </Button>
               <Button onClick={() => setShowCreate(true)} className="gap-2">
                 <Plus className="h-4 w-4" /> New Model
               </Button>
-              <UserLevelChip />
               <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
@@ -297,7 +293,7 @@ export default function ModelLibrary() {
             <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Model</Button>
-              <Button variant="outline" onClick={() => importRef.current?.click()} className="gap-1"><Upload className="h-4 w-4" /> Import</Button>
+              <Button variant="outline" onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Another</Button>
             </div>
           </div>
         ) : viewMode === 'grid' ? (

@@ -3,7 +3,7 @@ import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History, RefreshCw } from 'lucide-react';
+import { Save, CircleDot, FlaskConical, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
 import { UserLevelChip } from '@/components/UserLevelChip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -256,11 +256,12 @@ export function ModelContextBar() {
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors shrink-0"
+          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-          <span className="font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
+          Trooba Flow
         </button>
+        <span className="text-muted-foreground text-sm shrink-0">›</span>
+        <span className="text-sm font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
 
         <div className="h-4 w-px bg-sidebar-border" />
 
@@ -345,35 +346,6 @@ export function ModelContextBar() {
             </Popover>
           </div>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent" onClick={handleExport}>
-                <Download className="h-3.5 w-3.5 mr-1" /> Export
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{exportTooltip}</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" className="h-7 text-xs relative" onClick={handleRun} disabled={isRunning}>
-                {isRunning ? (
-                  <><span className="animate-spin h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full mr-1" /> Running…</>
-                ) : (
-                  <>
-                    {isResultsCurrent ? (
-                      <CheckCircle className="h-3.5 w-3.5 mr-1 text-success" />
-                    ) : (
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    <span className="hidden lg:inline">Recalculate</span>
-                    <span className="lg:hidden">Run</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{runTooltip}</TooltipContent>
-          </Tooltip>
         </div>
       </div>
 
