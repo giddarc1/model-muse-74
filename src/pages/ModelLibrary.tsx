@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Star, MoreVertical, Copy, Trash2, Archive,
-  LayoutGrid, List, Package, Cpu, Users, Pencil, RotateCcw, LogOut,
+  LayoutGrid, List, Package, Cpu, Users, Pencil, RotateCcw,
   Download, Upload, Settings,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
