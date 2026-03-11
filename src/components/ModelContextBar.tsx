@@ -256,11 +256,12 @@ export function ModelContextBar() {
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors shrink-0"
+          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-          <span className="font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
+          Trooba Flow
         </button>
+        <span className="text-muted-foreground text-sm shrink-0">›</span>
+        <span className="text-sm font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
 
         <div className="h-4 w-px bg-sidebar-border" />
 
