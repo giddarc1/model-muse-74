@@ -293,7 +293,7 @@ export default function ModelLibrary() {
             <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Model</Button>
-              <Button variant="outline" onClick={() => importRef.current?.click()} className="gap-1"><Upload className="h-4 w-4" /> Import</Button>
+              <Button variant="outline" onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Another</Button>
             </div>
           </div>
         ) : viewMode === 'grid' ? (

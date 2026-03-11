@@ -346,35 +346,6 @@ export function ModelContextBar() {
             </Popover>
           </div>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent" onClick={handleExport}>
-                <Download className="h-3.5 w-3.5 mr-1" /> Export
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{exportTooltip}</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" className="h-7 text-xs relative" onClick={handleRun} disabled={isRunning}>
-                {isRunning ? (
-                  <><span className="animate-spin h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full mr-1" /> Running…</>
-                ) : (
-                  <>
-                    {isResultsCurrent ? (
-                      <CheckCircle className="h-3.5 w-3.5 mr-1 text-success" />
-                    ) : (
-                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    <span className="hidden lg:inline">Recalculate</span>
-                    <span className="lg:hidden">Run</span>
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{runTooltip}</TooltipContent>
-          </Tooltip>
         </div>
       </div>
 
