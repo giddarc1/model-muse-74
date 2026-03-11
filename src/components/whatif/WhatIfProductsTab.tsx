@@ -34,6 +34,7 @@ function cc(scenario: Scenario, entityId: string, field: string): string {
 
 export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model; scenario: Scenario; userLevel: UserLevel }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [search, setSearch] = useState('');
   const updateProduct = useModelStore(s => s.updateProduct);
   const { applyScenarioChange, removeChange } = useScenarioStore();
   const showInclude = true;
@@ -63,21 +64,65 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
     }
   };
 
+  const filteredProducts = model.products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const includedCount = model.products.filter(p => !isExcluded(p.id)).length;
+  const totalCount = model.products.length;
+
+  const allChecked = model.products.every(p => !isExcluded(p.id));
+  const noneChecked = model.products.every(p => isExcluded(p.id));
+
+  const toggleAll = () => {
+    if (allChecked) {
+      // Uncheck all
+      model.products.forEach(p => {
+        if (!isExcluded(p.id)) {
+          applyScenarioChange(scenario.id, 'Product', p.id, p.name, 'included', 'Included', 'false');
+        }
+      });
+    } else {
+      // Check all
+      model.products.forEach(p => {
+        if (isExcluded(p.id)) {
+          const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === p.id && c.field === 'included');
+          if (change) removeChange(scenario.id, change.id);
+        }
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{model.products.length} products defined</p>
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
-          {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-        </Button>
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 w-48 text-xs"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{includedCount} of {totalCount} included</span>
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+          </Button>
+        </div>
       </div>
       <Card className="border-l-[3px] border-l-amber-400">
         <CardContent className="p-0 overflow-x-auto">
           <Table className="min-w-max">
             <TableHeader>
               <TableRow>
-                {showInclude && <TableHead className="font-mono text-xs w-10">Inc</TableHead>}
+                {showInclude && (
+                  <TableHead className="font-mono text-xs w-10">
+                    <Checkbox
+                      checked={allChecked ? true : noneChecked ? false : 'indeterminate'}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="font-mono text-xs">Name</TableHead>
                 <TableHead className="font-mono text-xs">
                   <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="cursor-help">End Demand</span></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs">Quantity shipped directly to customers.</TooltipContent></Tooltip></TooltipProvider>
@@ -100,7 +145,7 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
               </TableRow>
             </TableHeader>
             <TableBody>
-              {model.products.map((p) => {
+              {filteredProducts.map((p) => {
                 const excluded = isExcluded(p.id);
                 return (
                   <TableRow key={p.id} className={excluded ? 'opacity-50' : ''}>
