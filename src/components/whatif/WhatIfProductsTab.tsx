@@ -104,10 +104,11 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
         />
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{includedCount} of {totalCount} included</span>
-        <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
-          {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-        </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="gap-1 text-xs">
+            {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+          </Button>
+        </div>
       </div>
       <Card className="border-l-[3px] border-l-amber-400">
         <CardContent className="p-0 overflow-x-auto">
