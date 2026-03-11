@@ -16,9 +16,8 @@ const navItems: { label: string; icon: typeof LayoutDashboard; path: string; fea
   { label: 'Equipment', icon: Cpu, path: 'equipment', feature: null },
   { label: 'Products', icon: Package, path: 'products', feature: null },
   { label: 'Operations', icon: GitBranch, path: 'operations', feature: null },
-  { label: 'Trooba Intelligence', icon: Sparkles, path: 'intelligence', feature: 'all_operations' },
-  
   { label: 'IBOM', icon: Network, path: 'ibom', feature: null },
+  { label: 'Trooba Intelligence', icon: Sparkles, path: 'intelligence', feature: 'all_operations' },
   { label: 'Run & Results', icon: Play, path: 'run', feature: null },
   { label: 'What-If Studio', icon: FlaskConical, path: 'whatif', feature: null },
   { label: 'Reports', icon: FileText, path: 'reports', feature: null },
