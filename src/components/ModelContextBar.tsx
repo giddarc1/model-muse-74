@@ -3,7 +3,7 @@ import { useModelStore } from '@/stores/modelStore';
 import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Download, CircleDot, FlaskConical, CheckCircle, ChevronDown, RotateCcw, Clock, History, RefreshCw } from 'lucide-react';
+import { Save, CircleDot, FlaskConical, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
 import { UserLevelChip } from '@/components/UserLevelChip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
