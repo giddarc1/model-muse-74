@@ -144,7 +144,7 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
               </TableRow>
             </TableHeader>
             <TableBody>
-              {model.products.map((p) => {
+              {filteredProducts.map((p) => {
                 const excluded = isExcluded(p.id);
                 return (
                   <TableRow key={p.id} className={excluded ? 'opacity-50' : ''}>

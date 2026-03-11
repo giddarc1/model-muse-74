@@ -611,8 +611,8 @@ function ReadOnlyEquipmentTab({ model }: { model: Model }) {
 
 function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model; scenario?: Scenario | null; userLevel?: UserLevel }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [search, setSearch] = useState('');
   if (!model.products.length) return <p className="text-sm text-muted-foreground">No products.</p>;
-  const { applyScenarioChange, removeChange } = useScenarioStore();
   const showInclude = !!scenario && !!ul && isVisible('product_inclusion', ul);
 
   const isExcluded = (productId: string) => {
@@ -620,29 +620,55 @@ function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model;
     return scenario.changes.some(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included' && String(c.whatIfValue) === 'false');
   };
 
-  const toggleInclude = (productId: string, productName: string) => {
-    if (!scenario) return;
-    if (isExcluded(productId)) {
-      const change = scenario.changes.find(c => c.dataType === 'Product' && c.entityId === productId && c.field === 'included');
-      if (change) removeChange(scenario.id, change.id);
-    } else {
-      applyScenarioChange(scenario.id, 'Product', productId, productName, 'included', 'Included', 'false');
-    }
-  };
+  const filteredProducts = model.products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const includedCount = model.products.filter(p => !isExcluded(p.id)).length;
+  const totalCount = model.products.length;
+
+  const allChecked = model.products.every(p => !isExcluded(p.id));
+  const noneChecked = model.products.every(p => isExcluded(p.id));
 
   const baseHeaders = ['Name', 'Demand', 'Lot Size', 'TBatch', 'Dept'];
   const advHeaders = ['Demand Fac', 'Lot Fac', 'Var Fac', 'MTS', 'Gather', model.param_names.prod1_name, model.param_names.prod2_name, model.param_names.prod3_name, model.param_names.prod4_name];
   let headers = showAdvanced ? [...baseHeaders, ...advHeaders] : [...baseHeaders];
-  if (showInclude) headers.push('Include');
 
   return (
-    <div>
-      <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+          className="h-8 w-48 text-xs"
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{includedCount} of {totalCount} included</span>
+          <AdvancedToggle show={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+        </div>
+      </div>
       <div className="rounded-lg border border-border overflow-x-auto">
         <table className="min-w-max w-full text-xs">
-          <thead><tr className="bg-muted/50 text-muted-foreground">{headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}</tr></thead>
-          <tbody>{model.products.map(p => (
-            <tr key={p.id} className="border-t border-border">
+          <thead><tr className="bg-muted/50 text-muted-foreground">
+            {showInclude && (
+              <th className="text-left p-2 font-medium">
+                <Checkbox
+                  checked={allChecked ? true : noneChecked ? false : 'indeterminate'}
+                  disabled
+                  className="opacity-50"
+                />
+              </th>
+            )}
+            {headers.map(h => <th key={h} className="text-left p-2 font-medium">{h}</th>)}
+          </tr></thead>
+          <tbody>{filteredProducts.map(p => (
+            <tr key={p.id} className={`border-t border-border ${isExcluded(p.id) ? 'opacity-50' : ''}`}>
+              {showInclude && (
+                <td className="p-2">
+                  <Checkbox checked={!isExcluded(p.id)} disabled className="opacity-50" />
+                </td>
+              )}
               <td className="p-2 font-medium">{p.name}</td>
               <td className="p-2 text-muted-foreground font-mono">{p.demand}</td>
               <td className="p-2 text-muted-foreground font-mono">{p.lot_size}</td>
@@ -659,14 +685,6 @@ function ReadOnlyProductsTab({ model, scenario, userLevel: ul }: { model: Model;
                 <td className="p-2 text-muted-foreground font-mono">{p.prod3}</td>
                 <td className="p-2 text-muted-foreground font-mono">{p.prod4}</td>
               </>}
-              {showInclude && (
-                <td className="p-2">
-                  <Checkbox
-                    checked={!isExcluded(p.id)}
-                    onCheckedChange={() => toggleInclude(p.id, p.name)}
-                  />
-                </td>
-              )}
             </tr>
           ))}</tbody>
         </table>
