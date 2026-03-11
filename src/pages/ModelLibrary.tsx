@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useModelStore, type Model, defaultParamNames } from '@/stores/modelStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserLevelStore } from '@/hooks/useUserLevel';
-import { UserLevelChip } from '@/components/UserLevelChip';
+import { UserProfileDropdown } from '@/components/UserProfileDropdown';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { saveFullModelToDB } from '@/lib/supabaseData';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import {
   Plus, Search, Star, MoreVertical, Copy, Trash2, Archive,
-  LayoutGrid, List, Package, Cpu, Users, Pencil, RotateCcw, LogOut,
+  LayoutGrid, List, Package, Cpu, Users, Pencil, RotateCcw,
   Download, Upload, Settings,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -92,7 +92,6 @@ export default function ModelLibrary() {
     toast.success('Model renamed');
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/login'); };
   const openModel = (id: string) => navigate(`/models/${id}/overview`);
 
   const handleExportModel = (model: Model) => {
@@ -249,10 +248,7 @@ export default function ModelLibrary() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1 text-muted-foreground">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.email}</span>
-              </Button>
+              <UserProfileDropdown />
             </div>
           </div>
 
