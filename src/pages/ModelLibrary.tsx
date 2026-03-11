@@ -249,10 +249,7 @@ export default function ModelLibrary() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1 text-muted-foreground">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">{user?.email}</span>
-              </Button>
+              <UserProfileDropdown />
             </div>
           </div>
 
