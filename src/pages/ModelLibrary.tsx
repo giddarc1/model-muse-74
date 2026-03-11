@@ -92,7 +92,6 @@ export default function ModelLibrary() {
     toast.success('Model renamed');
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/login'); };
   const openModel = (id: string) => navigate(`/models/${id}/overview`);
 
   const handleExportModel = (model: Model) => {
