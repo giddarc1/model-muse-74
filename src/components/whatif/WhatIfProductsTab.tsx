@@ -114,7 +114,14 @@ export function WhatIfProductsTab({ model, scenario, userLevel }: { model: Model
           <Table className="min-w-max">
             <TableHeader>
               <TableRow>
-                {showInclude && <TableHead className="font-mono text-xs w-10">Inc</TableHead>}
+                {showInclude && (
+                  <TableHead className="font-mono text-xs w-10">
+                    <Checkbox
+                      checked={allChecked ? true : noneChecked ? false : 'indeterminate'}
+                      onCheckedChange={toggleAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="font-mono text-xs">Name</TableHead>
                 <TableHead className="font-mono text-xs">
                   <TooltipProvider delayDuration={400}><Tooltip><TooltipTrigger asChild><span className="cursor-help">End Demand</span></TooltipTrigger><TooltipContent className="max-w-[260px] text-xs">Quantity shipped directly to customers.</TooltipContent></Tooltip></TooltipProvider>
