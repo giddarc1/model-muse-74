@@ -42,8 +42,8 @@ export function ModelSidebar() {
   const sidebarContent = (
     <>
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <div className="font-mono text-[10px] text-muted-foreground uppercase" style={{ letterSpacing: '0.2em' }}>
-          Model Workspace
+         <div className="font-mono text-[9px] text-muted-foreground uppercase" style={{ letterSpacing: '0.2em' }}>
+           Model Workspace
         </div>
         <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-muted-foreground" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
@@ -59,8 +59,8 @@ export function ModelSidebar() {
               to={to}
               className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] transition-colors ${
                 isActive
-                  ? 'text-foreground font-medium border-l-[3px] border-primary bg-primary/[0.08]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border-l-[3px] border-transparent'
+                  ? 'text-primary font-medium border-l-[3px] border-primary bg-primary/[0.08]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background border-l-[3px] border-transparent'
               }`}
               activeClassName=""
             >
@@ -83,7 +83,7 @@ export function ModelSidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border"
+        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-surface border"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-4 w-4" />
@@ -92,8 +92,8 @@ export function ModelSidebar() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <aside
-            className="absolute left-0 top-0 bottom-0 w-64 bg-background border-r border-border flex flex-col z-50 animate-in slide-in-from-left duration-200"
+           <aside
+            className="absolute left-0 top-0 bottom-0 w-64 bg-surface border-r border-border flex flex-col z-50 animate-in slide-in-from-left duration-200"
             onClick={e => e.stopPropagation()}
           >
             {sidebarContent}
@@ -101,7 +101,7 @@ export function ModelSidebar() {
         </div>
       )}
 
-      <aside className="w-56 bg-background border-r border-border flex-col shrink-0 hidden md:flex">
+      <aside className="w-56 bg-surface border-r border-border flex-col shrink-0 hidden md:flex">
         {sidebarContent}
       </aside>
     </>

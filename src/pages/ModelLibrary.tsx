@@ -195,9 +195,9 @@ export default function ModelLibrary() {
   const modelActions = (model: Model) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <button className="p-1 rounded hover:bg-white/[0.04]"><MoreVertical className="h-4 w-4 text-muted-foreground" /></button>
+       <button className="p-1 rounded hover:bg-background"><MoreVertical className="h-4 w-4 text-muted-foreground" /></button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-surface border-border">
+      <DropdownMenuContent align="end" className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setRenameTarget(model); setRenameValue(model.name); }}>
           <Pencil className="h-4 w-4 mr-2" /> Rename
         </DropdownMenuItem>
@@ -233,12 +233,12 @@ export default function ModelLibrary() {
   return (
     <div className="min-h-screen bg-background">
       <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-      <header className="border-b border-border bg-background">
+      <header className="border-b border-border bg-surface">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-[20px] font-bold tracking-tight text-foreground">Trooba Flow</h1>
-              <p className="font-mono text-[11px] text-primary mt-1" style={{ letterSpacing: '0.2em' }}>Factory Flow Intelligence</p>
+               <p className="font-mono text-[10px] text-primary/80 mt-1" style={{ letterSpacing: '0.2em' }}>FLOW INTELLIGENCE</p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowCreate(true)} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/80 font-medium rounded-md">
@@ -294,7 +294,7 @@ export default function ModelLibrary() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((model, i) => (
               <motion.div key={model.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="group bg-card border border-border-subtle rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_hsl(175_100%_38%_/_0.3)] transition-all cursor-pointer"
+                className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-[0_2px_12px_rgba(0,196,180,0.12)] transition-all cursor-pointer"
                 onClick={() => openModel(model.id)}
               >
                 <div className="p-5">
@@ -304,7 +304,7 @@ export default function ModelLibrary() {
                       <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{model.description || 'No description'}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
-                      <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-white/[0.04]">
+                      <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-background">
                         <Star className={`h-4 w-4 ${model.is_starred ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`} />
                       </button>
                       {modelActions(model)}
@@ -327,10 +327,10 @@ export default function ModelLibrary() {
             ))}
           </div>
         ) : (
-          <div className="bg-background border border-border rounded-lg overflow-hidden">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-border bg-surface">
+                <tr className="border-b-2 border-border bg-background">
                   <th className="text-left px-4 py-2.5 text-table-header text-muted-foreground">Name</th>
                   <th className="text-left px-4 py-2.5 text-table-header text-muted-foreground">Products</th>
                   <th className="text-left px-4 py-2.5 text-table-header text-muted-foreground">Equipment</th>
@@ -341,7 +341,7 @@ export default function ModelLibrary() {
               </thead>
               <tbody>
                 {filtered.map((model, i) => (
-                  <tr key={model.id} className={`border-b border-border-subtle last:border-0 hover:bg-primary/[0.06] cursor-pointer ${i % 2 === 1 ? 'bg-card/30' : ''}`} onClick={() => openModel(model.id)}>
+                  <tr key={model.id} className={`border-b border-border-subtle last:border-0 hover:bg-primary/[0.05] cursor-pointer ${i % 2 === 1 ? 'bg-background' : ''}`} onClick={() => openModel(model.id)}>
                     <td className="px-4 py-3 font-medium text-foreground">{model.name}</td>
                     <td className="px-4 py-3 font-mono text-foreground">{model.products.length}</td>
                     <td className="px-4 py-3 font-mono text-foreground">{model.equipment.length}</td>
@@ -358,7 +358,7 @@ export default function ModelLibrary() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-[10px]">
+         <DialogContent className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
           <DialogHeader><DialogTitle className="text-foreground">Create New Model</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div>
@@ -379,7 +379,7 @@ export default function ModelLibrary() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(''); } }}>
-        <DialogContent className="bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-[10px]">
+         <DialogContent className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
           <DialogHeader>
             <DialogTitle className="text-foreground">Delete Model</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -399,7 +399,7 @@ export default function ModelLibrary() {
 
       {/* Rename Dialog */}
       <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
-        <DialogContent className="bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-[10px]">
+        <DialogContent className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
           <DialogHeader><DialogTitle className="text-foreground">Rename Model</DialogTitle></DialogHeader>
           <div>
             <label className="text-[13px] font-medium mb-1 block text-foreground">New Name</label>
