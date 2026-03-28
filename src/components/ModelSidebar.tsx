@@ -30,7 +30,6 @@ export function ModelSidebar() {
   const userLevel = useUserLevelStore((s) => s.userLevel);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
@@ -42,10 +41,11 @@ export function ModelSidebar() {
 
   const sidebarContent = (
     <>
-      <div className="px-4 py-3 border-b border-sidebar-border flex items-center justify-between">
-        <div className="text-xs font-mono text-sidebar-foreground/50 uppercase tracking-wider">Model Workspace</div>
-        {/* Close button on mobile */}
-        <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden" onClick={() => setMobileOpen(false)}>
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="font-mono text-[10px] text-muted-foreground uppercase" style={{ letterSpacing: '0.2em' }}>
+          Model Workspace
+        </div>
+        <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-muted-foreground" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -57,21 +57,21 @@ export function ModelSidebar() {
             <NavLink
               key={item.path}
               to={to}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+              className={`flex items-center gap-2.5 px-3 py-2 rounded text-[13px] transition-colors ${
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                  ? 'text-foreground font-medium border-l-[3px] border-primary bg-primary/[0.08]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04] border-l-[3px] border-transparent'
               }`}
               activeClassName=""
             >
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon className={`h-4 w-4 shrink-0 ${item.path === 'intelligence' ? 'text-primary' : ''}`} />
               <span>{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
-      <div className="px-4 py-3 border-t border-sidebar-border">
-        <div className="text-xs text-sidebar-foreground/40">
+      <div className="px-4 py-3 border-t border-border">
+        <div className="font-mono text-[10px] text-muted-foreground">
           {model.products.length} products · {model.equipment.length} equip · {model.labor.length} labor
         </div>
       </div>
@@ -80,22 +80,20 @@ export function ModelSidebar() {
 
   return (
     <>
-      {/* Mobile hamburger trigger */}
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border shadow-sm"
+        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-4 w-4" />
       </Button>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-black/60" />
           <aside
-            className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border flex flex-col z-50 animate-in slide-in-from-left duration-200"
+            className="absolute left-0 top-0 bottom-0 w-64 bg-background border-r border-border flex flex-col z-50 animate-in slide-in-from-left duration-200"
             onClick={e => e.stopPropagation()}
           >
             {sidebarContent}
@@ -103,8 +101,7 @@ export function ModelSidebar() {
         </div>
       )}
 
-      {/* Desktop sidebar */}
-      <aside className="w-56 bg-sidebar border-r border-sidebar-border flex-col shrink-0 hidden md:flex">
+      <aside className="w-56 bg-background border-r border-border flex-col shrink-0 hidden md:flex">
         {sidebarContent}
       </aside>
     </>
