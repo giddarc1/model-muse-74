@@ -59,9 +59,9 @@ export function ModelContextBar() {
   if (!model) return null;
 
   const statusConfig = {
-    never_run: { label: 'Never Run', className: 'bg-muted-foreground/[0.12] text-muted-foreground border-muted-foreground/30' },
-    current: { label: 'Results Current', className: 'bg-success/[0.12] text-success border-success/30' },
-    needs_recalc: { label: 'Recalc Needed', className: 'bg-warning/[0.12] text-warning border-warning/30' },
+    never_run: { label: 'Never Run', className: 'bg-muted text-muted-foreground' },
+    current: { label: 'Results Current', className: 'bg-success text-success-foreground' },
+    needs_recalc: { label: 'Recalc Needed', className: 'bg-warning text-warning-foreground' },
   };
 
   const status = statusConfig[model.run_status];
@@ -69,6 +69,7 @@ export function ModelContextBar() {
 
   const handleRun = () => sharedRun('full');
 
+  // ── Open checkpoint dialog ──────────────────────────────────────
   const handleOpenCheckpointDialog = () => {
     const now = new Date();
     const defaultName = `Checkpoint ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -76,6 +77,7 @@ export function ModelContextBar() {
     setShowCheckpointDialog(true);
   };
 
+  // ── Save Checkpoint ─────────────────────────────────────────────
   const handleSaveCheckpoint = async () => {
     if (!checkpointName.trim()) return;
     setIsSavingCheckpoint(true);
@@ -101,6 +103,7 @@ export function ModelContextBar() {
     }
   };
 
+  // ── Export Model as JSON ────────────────────────────────────────
   const handleExport = async () => {
     const { data: pn } = await supabase.from('model_param_names').select('*').eq('model_id', model.id).single();
     const exportData = {
@@ -120,6 +123,7 @@ export function ModelContextBar() {
     toast.success('Model exported as JSON');
   };
 
+  // ── Restore from dropdown ───────────────────────────────────────
   const handleRestore = async (versionId: string) => {
     setIsRestoring(true);
     try {
@@ -232,40 +236,44 @@ export function ModelContextBar() {
     }
   };
 
+  // ── Tooltip text ────────────────────────────────────────────────
   const scenarioLabel = activeScenario ? activeScenario.name : 'Basecase';
+  const runTooltip = `Quick recalculate — runs Full Calculate on ${scenarioLabel}`;
   const statusTooltip = model.run_status === 'current'
     ? `Last calculated: ${model.last_run_at ? new Date(model.last_run_at).toLocaleString() : 'unknown'}`
     : model.run_status === 'needs_recalc'
       ? `Results are stale — data changed${model.last_run_at ? ` since last run on ${new Date(model.last_run_at).toLocaleString()}` : ''}`
       : 'Model has never been run';
   const checkpointTooltip = 'Save a version checkpoint you can restore later';
+  const exportTooltip = 'Download this model as a JSON file';
 
   const restoreVersion = restoreVersionId ? recentVersions.find(v => v.id === restoreVersionId) : null;
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-11 bg-surface text-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-border shrink-0 overflow-x-auto">
+      <div className="h-11 bg-context-bar text-context-bar-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-sidebar-border shrink-0 overflow-x-auto">
+        {/* Spacer for mobile hamburger */}
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="text-[14px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
+          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
         >
           Trooba Flow
         </button>
-        <span className="text-border text-[13px] shrink-0">›</span>
-        <span className="text-[14px] font-medium text-foreground truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
+        <span className="text-muted-foreground text-sm shrink-0">›</span>
+        <span className="text-sm font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
 
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-sidebar-border" />
 
         {activeScenario ? (
           <button onClick={() => navigate(`/models/${model.id}/whatif`)} className="shrink-0 hidden sm:flex">
-            <Badge variant="outline" className="border-warning/60 bg-warning/10 text-warning font-mono text-[10px] cursor-pointer hover:bg-warning/20 transition-colors rounded" style={{ letterSpacing: '0.05em', padding: '2px 8px' }}>
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning mr-1.5" />
+            <Badge variant="outline" className="border-amber-400/60 bg-amber-500/10 text-amber-600 text-xs font-medium cursor-pointer hover:bg-amber-500/20 transition-colors">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
               What-if: {activeScenario.name}
             </Badge>
           </button>
         ) : (
-          <Badge variant="outline" className="border-border text-primary font-mono text-[11px] shrink-0 hidden sm:flex bg-muted rounded" style={{ letterSpacing: '0.05em', padding: '2px 8px' }}>
+          <Badge variant="outline" className="border-primary/40 text-primary text-xs font-mono shrink-0 hidden sm:flex">
             <CircleDot className="h-2.5 w-2.5 mr-1" />
             Basecase
           </Badge>
@@ -273,48 +281,49 @@ export function ModelContextBar() {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="outline" className={`font-mono text-[10px] cursor-default rounded ${status.className}`} style={{ letterSpacing: '0.05em', padding: '2px 8px' }}>
+            <Badge className={`text-xs cursor-default ${status.className}`}>
               {status.label}
             </Badge>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs text-[11px] bg-surface border-border">{statusTooltip}</TooltipContent>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">{statusTooltip}</TooltipContent>
         </Tooltip>
 
         <div className="flex-1" />
 
         <div className="flex items-center gap-1.5">
+          {/* Checkpoint button + dropdown */}
           <div className="flex items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-7 text-[13px] text-foreground border border-border hover:border-primary hover:text-primary rounded-r-none" onClick={handleOpenCheckpointDialog}>
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent rounded-r-none" onClick={handleOpenCheckpointDialog}>
                   <Save className="h-3.5 w-3.5 mr-1" /> Checkpoint
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-surface border-border text-[11px]">{checkpointTooltip}</TooltipContent>
+              <TooltipContent side="bottom">{checkpointTooltip}</TooltipContent>
             </Tooltip>
             <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-7 w-6 px-0 text-foreground border border-l-0 border-border hover:border-primary hover:text-primary rounded-l-none">
+                <Button size="sm" variant="ghost" className="h-7 w-6 px-0 text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent rounded-l-none border-l border-sidebar-border">
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-72 p-0 bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)]" align="end" sideOffset={6}>
-                <div className="px-3 py-2 border-b border-border-subtle">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase" style={{ letterSpacing: '0.04em' }}>Recent Checkpoints</p>
+              <PopoverContent className="w-72 p-0" align="end" sideOffset={6}>
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground">Recent Checkpoints</p>
                 </div>
                 {recentVersions.length === 0 ? (
-                  <p className="text-[13px] text-muted-foreground text-center py-4">No checkpoints yet</p>
+                  <p className="text-xs text-muted-foreground text-center py-4">No checkpoints yet</p>
                 ) : (
                   <div className="max-h-64 overflow-y-auto">
                     {recentVersions.map(v => (
-                      <div key={v.id} className="flex items-center justify-between px-3 py-2 hover:bg-background transition-colors group">
+                      <div key={v.id} className="flex items-center justify-between px-3 py-2 hover:bg-accent/50 transition-colors group">
                         <div className="min-w-0 flex-1 mr-2">
-                          <p className="text-[13px] font-medium text-foreground truncate">{v.label || 'Unnamed Checkpoint'}</p>
-                          <p className="font-mono text-[10px] text-muted-foreground">{new Date(v.created_at).toLocaleString()}</p>
+                          <p className="text-sm font-medium truncate">{v.label || 'Unnamed Checkpoint'}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(v.created_at).toLocaleString()}</p>
                         </div>
                         <Button
                           size="sm" variant="ghost"
-                          className="h-6 text-[10px] px-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-foreground hover:text-primary"
+                          className="h-6 text-[10px] px-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                           onClick={() => { setRestoreVersionId(v.id); }}
                         >
                           <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Restore
@@ -323,10 +332,10 @@ export function ModelContextBar() {
                     ))}
                   </div>
                 )}
-                <div className="border-t border-border-subtle px-3 py-2">
+                <div className="border-t border-border px-3 py-2">
                   <button
                     onClick={() => { setDropdownOpen(false); navigate(`/models/${model.id}/settings`); }}
-                    className="text-[13px] text-primary hover:underline flex items-center gap-1"
+                    className="text-xs text-primary hover:underline flex items-center gap-1"
                   >
                     <History className="h-3 w-3" /> View all checkpoints
                   </button>
@@ -334,55 +343,63 @@ export function ModelContextBar() {
               </PopoverContent>
             </Popover>
           </div>
+
         </div>
       </div>
 
+      {/* Checkpoint Name Dialog */}
       <Dialog open={showCheckpointDialog} onOpenChange={setShowCheckpointDialog}>
-        <DialogContent className="sm:max-w-md bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Save Checkpoint</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogTitle>Save Checkpoint</DialogTitle>
+            <DialogDescription>
               Save a snapshot of the current model state that you can restore later.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
-              <Label htmlFor="checkpoint-name" className="text-foreground">Checkpoint Name</Label>
+              <Label htmlFor="checkpoint-name">Checkpoint Name</Label>
               <Input
                 id="checkpoint-name"
                 value={checkpointName}
                 onChange={e => setCheckpointName(e.target.value)}
                 placeholder="e.g. Before lot size changes"
-                className="mt-1 bg-background border-border-subtle rounded"
+                className="mt-1"
                 autoFocus
-                onKeyDown={e => e.key === 'Enter' && handleSaveCheckpoint()}
+                onKeyDown={e => e.key === 'Enter' && checkpointName.trim() && handleSaveCheckpoint()}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 inline mr-1" />
+              {new Date().toLocaleString()}
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowCheckpointDialog(false)} className="border border-border text-foreground hover:border-primary hover:text-primary">Cancel</Button>
-            <Button onClick={handleSaveCheckpoint} disabled={!checkpointName.trim() || isSavingCheckpoint} className="bg-primary text-primary-foreground hover:bg-primary/80">
+            <Button variant="outline" onClick={() => setShowCheckpointDialog(false)} disabled={isSavingCheckpoint}>Cancel</Button>
+            <Button onClick={handleSaveCheckpoint} disabled={!checkpointName.trim() || isSavingCheckpoint}>
               {isSavingCheckpoint ? 'Saving…' : 'Save Checkpoint'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!restoreVersionId} onOpenChange={open => { if (!open) setRestoreVersionId(null); }}>
-        <AlertDialogContent className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
+      {/* Restore Confirmation from dropdown */}
+      <AlertDialog open={!!restoreVersionId} onOpenChange={(open) => !open && setRestoreVersionId(null)}>
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Restore Checkpoint?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              This will replace all current model data with the snapshot from{' '}
-              <strong className="text-foreground">{restoreVersion?.label}</strong>. This action cannot be undone.
+            <AlertDialogTitle>Restore Checkpoint</AlertDialogTitle>
+            <AlertDialogDescription>
+              Restore to checkpoint: <strong>"{restoreVersion?.label || 'Unnamed'}"</strong> — saved on{' '}
+              <strong>{restoreVersion ? new Date(restoreVersion.created_at).toLocaleString() : '...'}</strong>?
+              <br /><br />
+              This will replace all current model data. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRestoring} className="border border-border text-foreground hover:border-primary hover:text-primary bg-transparent">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
               disabled={isRestoring}
-              className="bg-primary text-primary-foreground hover:bg-primary/80"
+              onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
             >
               {isRestoring ? 'Restoring…' : 'Restore'}
             </AlertDialogAction>
