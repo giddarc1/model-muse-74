@@ -43,7 +43,7 @@ export function ModelSidebar() {
   const sidebarContent = (
     <>
       <div className="px-4 py-3 border-b border-sidebar-border flex items-center justify-between">
-        <div className="text-xs font-mono text-sidebar-foreground/50 uppercase tracking-wider">Model Workspace</div>
+        <div className="text-xs font-mono text-sidebar-foreground/50 uppercase tracking-[0.12em]">Model Workspace</div>
         {/* Close button on mobile */}
         <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
@@ -71,7 +71,7 @@ export function ModelSidebar() {
         })}
       </nav>
       <div className="px-4 py-3 border-t border-sidebar-border">
-        <div className="text-xs text-sidebar-foreground/40">
+        <div className="text-xs font-mono text-sidebar-foreground/40">
           {model.products.length} products · {model.equipment.length} equip · {model.labor.length} labor
         </div>
       </div>
