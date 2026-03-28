@@ -4,10 +4,6 @@ import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useModelStore } from '@/stores/modelStore';
 
-/**
- * Slim 28px context bar shown below sub-tabs on every results primary tab.
- * Shows which scenario's results are displayed + last run timestamp + stale warning.
- */
 export default function ScenarioContextBar() {
   const model = useModelStore(s => s.getActiveModel());
   const selectedRunScenarioId = useResultsStore(s => s.selectedRunScenarioId);
@@ -23,7 +19,7 @@ export default function ScenarioContextBar() {
   const lastRunAt = model?.last_run_at;
 
   return (
-    <div className="h-7 flex items-center justify-between px-6 bg-muted/30 border-b border-border text-xs shrink-0 -mx-6">
+    <div className="h-7 flex items-center justify-between px-6 bg-surface/30 border-b border-border-subtle text-[11px] shrink-0 -mx-6">
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground">Showing results for:</span>
         {isBasecase ? (
