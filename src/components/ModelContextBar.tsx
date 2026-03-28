@@ -244,15 +244,15 @@ export function ModelContextBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-11 bg-background text-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-border shrink-0 overflow-x-auto">
+      <div className="h-11 bg-surface text-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-border shrink-0 overflow-x-auto">
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="text-[15px] font-bold text-foreground hover:text-primary transition-colors shrink-0"
+          className="text-[14px] font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
         >
           Trooba Flow
         </button>
-        <span className="text-muted-foreground text-[13px] shrink-0">›</span>
+        <span className="text-border text-[13px] shrink-0">›</span>
         <span className="text-[14px] font-medium text-foreground truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
 
         <div className="h-4 w-px bg-border" />
@@ -265,7 +265,7 @@ export function ModelContextBar() {
             </Badge>
           </button>
         ) : (
-          <Badge variant="outline" className="border-primary/40 text-primary font-mono text-[11px] shrink-0 hidden sm:flex bg-card rounded" style={{ letterSpacing: '0.05em', padding: '2px 8px' }}>
+          <Badge variant="outline" className="border-border text-primary font-mono text-[11px] shrink-0 hidden sm:flex bg-muted rounded" style={{ letterSpacing: '0.05em', padding: '2px 8px' }}>
             <CircleDot className="h-2.5 w-2.5 mr-1" />
             Basecase
           </Badge>
@@ -298,7 +298,7 @@ export function ModelContextBar() {
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-72 p-0 bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)]" align="end" sideOffset={6}>
+              <PopoverContent className="w-72 p-0 bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)]" align="end" sideOffset={6}>
                 <div className="px-3 py-2 border-b border-border-subtle">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase" style={{ letterSpacing: '0.04em' }}>Recent Checkpoints</p>
                 </div>
@@ -307,7 +307,7 @@ export function ModelContextBar() {
                 ) : (
                   <div className="max-h-64 overflow-y-auto">
                     {recentVersions.map(v => (
-                      <div key={v.id} className="flex items-center justify-between px-3 py-2 hover:bg-white/[0.04] transition-colors group">
+                      <div key={v.id} className="flex items-center justify-between px-3 py-2 hover:bg-background transition-colors group">
                         <div className="min-w-0 flex-1 mr-2">
                           <p className="text-[13px] font-medium text-foreground truncate">{v.label || 'Unnamed Checkpoint'}</p>
                           <p className="font-mono text-[10px] text-muted-foreground">{new Date(v.created_at).toLocaleString()}</p>
@@ -338,7 +338,7 @@ export function ModelContextBar() {
       </div>
 
       <Dialog open={showCheckpointDialog} onOpenChange={setShowCheckpointDialog}>
-        <DialogContent className="sm:max-w-md bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-[10px]">
+        <DialogContent className="sm:max-w-md bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
           <DialogHeader>
             <DialogTitle className="text-foreground">Save Checkpoint</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -369,7 +369,7 @@ export function ModelContextBar() {
       </Dialog>
 
       <AlertDialog open={!!restoreVersionId} onOpenChange={open => { if (!open) setRestoreVersionId(null); }}>
-        <AlertDialogContent className="bg-surface border-border shadow-[0_8px_32px_rgba(0,0,0,0.6)] rounded-[10px]">
+        <AlertDialogContent className="bg-surface border-border shadow-[0_8px_24px_rgba(0,0,0,0.12)] rounded-[10px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">Restore Checkpoint?</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
