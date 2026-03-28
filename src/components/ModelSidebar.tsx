@@ -42,8 +42,8 @@ export function ModelSidebar() {
   const sidebarContent = (
     <>
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <div className="font-mono text-[10px] text-muted-foreground uppercase" style={{ letterSpacing: '0.2em' }}>
-          Model Workspace
+         <div className="font-mono text-[9px] text-muted-foreground uppercase" style={{ letterSpacing: '0.2em' }}>
+           Model Workspace
         </div>
         <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-muted-foreground" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
@@ -83,7 +83,7 @@ export function ModelSidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border"
+        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-surface border"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-4 w-4" />
