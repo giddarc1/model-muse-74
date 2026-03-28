@@ -239,7 +239,7 @@ export default function ModelLibrary() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-primary">Trooba Flow</h1>
-              <p className="text-sm text-muted-foreground mt-1">Factory Flow Intelligence</p>
+              <p className="text-sm font-mono text-muted-foreground mt-1 tracking-[0.2em] uppercase">Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowCreate(true)} className="gap-2">
@@ -321,7 +321,7 @@ export default function ModelLibrary() {
                     <span className="flex items-center gap-1"><Cpu className="h-3 w-3" />{model.equipment.length}</span>
                     <span className="flex items-center gap-1"><Users className="h-3 w-3" />{model.labor.length}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-3">Updated {timeAgo(model.updated_at)}</div>
+                  <div className="text-xs font-mono text-muted-foreground mt-3">Updated {timeAgo(model.updated_at)}</div>
                 </div>
               </motion.div>
             ))}
@@ -346,7 +346,7 @@ export default function ModelLibrary() {
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.products.length}</td>
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.equipment.length}</td>
                     <td className="px-4 py-3">{statusBadge(model.run_status)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{timeAgo(model.updated_at)}</td>
+                    <td className="px-4 py-3 font-mono text-muted-foreground">{timeAgo(model.updated_at)}</td>
                     <td className="px-2">{modelActions(model)}</td>
                   </tr>
                 ))}
