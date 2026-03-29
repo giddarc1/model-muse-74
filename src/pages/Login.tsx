@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
 
 export default function Login() {
   const { signIn, session, loading } = useAuth();
@@ -14,7 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { document.title = 'RapidMCT — Sign In'; return () => { document.title = 'RapidMCT'; }; }, []);
+  useEffect(() => { document.title = 'Trooba Flow — Sign In'; return () => { document.title = 'Trooba Flow'; }; }, []);
 
   const from = (location.state as any)?.from || '/library';
 
@@ -27,7 +28,6 @@ export default function Login() {
     const { error } = await signIn(email, password);
     setSubmitting(false);
     if (error) {
-      // Generic error message for security (don't distinguish wrong email vs wrong password)
       toast.error('Invalid email or password');
     }
   };
@@ -36,7 +36,7 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">RapidMCT</CardTitle>
+          <img src={troobaLogoDark} alt="Trooba Flow" className="h-8 mx-auto mb-2" />
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>

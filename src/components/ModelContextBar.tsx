@@ -4,6 +4,7 @@ import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
 import { Save, CircleDot, FlaskConical, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -256,9 +257,9 @@ export function ModelContextBar() {
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
-          className="text-sm font-bold text-primary hover:text-primary/80 transition-colors shrink-0"
+          className="shrink-0"
         >
-          Trooba Flow
+          <img src={troobaLogoDark} alt="Trooba Flow" className="h-6" />
         </button>
         <span className="text-muted-foreground text-sm shrink-0">›</span>
         <span className="text-sm font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>

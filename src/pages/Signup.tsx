@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { seedDemoModelToDB } from '@/lib/supabaseData';
 import { Check, X } from 'lucide-react';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
 
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
   return (
@@ -26,7 +27,7 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { document.title = 'RapidMCT — Create Account'; return () => { document.title = 'RapidMCT'; }; }, []);
+  useEffect(() => { document.title = 'Trooba Flow — Create Account'; return () => { document.title = 'Trooba Flow'; }; }, []);
 
   const pwChecks = useMemo(() => ({
     minLength: password.length >= 8,
@@ -63,12 +64,12 @@ export default function Signup() {
     if (data?.session) {
       try {
         await seedDemoModelToDB();
-        toast.success('Welcome to RapidMCT!');
+        toast.success('Welcome to Trooba Flow!');
         const { useModelStore } = await import('@/stores/modelStore');
         await useModelStore.getState().loadModels(true);
       } catch (err) {
         console.error('Demo seed error:', err);
-        toast.success('Welcome to RapidMCT!');
+        toast.success('Welcome to Trooba Flow!');
       }
       navigate('/library');
     }
@@ -79,8 +80,9 @@ export default function Signup() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold tracking-tight">Create Account</CardTitle>
-          <CardDescription>Get started with RapidMCT</CardDescription>
+          <img src={troobaLogoDark} alt="Trooba Flow" className="h-8 mx-auto mb-2" />
+          <CardTitle className="text-xl font-bold tracking-tight">Create Account</CardTitle>
+          <CardDescription>Get started with Trooba Flow</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
