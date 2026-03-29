@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GitMerge, ArrowRight, ArrowDown, Plus } from 'lucide-react';
-import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
+import troobaMarkLight from '@/assets/trooba-mark-light.svg';
 
 interface OperationsEmptyStateProps {
   productName: string;
@@ -11,7 +11,7 @@ interface OperationsEmptyStateProps {
 export function OperationsEmptyState({ productName, onAddOperations }: OperationsEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-      <img src={troobaMarkDark} alt="" className="h-12 w-12 mb-4 opacity-30" />
+      <img src={troobaMarkLight} alt="" className="h-12 w-12 mb-4 opacity-25" />
 
       <h2 className="text-[15px] font-medium mb-2">
         No operations defined for <span className="font-mono text-primary">{productName}</span>

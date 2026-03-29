@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
-import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
+import troobaLogoLight from '@/assets/trooba-logo-light.svg';
+import troobaMarkLight from '@/assets/trooba-mark-light.svg';
 
 type StatusFilter = 'all' | 'never_run' | 'current' | 'needs_recalc';
 
@@ -226,7 +226,7 @@ export default function ModelLibrary() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <img src={troobaMarkDark} alt="" className="h-12 w-12 mx-auto mb-3 animate-pulse-brand" />
+          <img src={troobaMarkLight} alt="" className="h-12 w-12 mx-auto mb-3 animate-pulse-brand" />
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -236,11 +236,11 @@ export default function ModelLibrary() {
   return (
     <div className="min-h-screen bg-background">
       <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-      <header className="border-b bg-card">
+      <header className="border-b border-border bg-background shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <img src={troobaLogoDark} alt="Trooba Flow" className="h-8" />
+              <img src={troobaLogoLight} alt="Trooba Flow" className="h-8" />
               <p className="subbrand-line mt-1.5">Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
