@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
+import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
 
 const navItems: { label: string; icon: typeof LayoutDashboard; path: string; feature: FeatureKey | null }[] = [
   { label: 'Overview', icon: LayoutDashboard, path: 'overview', feature: null },
@@ -43,7 +45,7 @@ export function ModelSidebar() {
   const sidebarContent = (
     <>
       <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
-        <div className="mono-label text-sidebar-muted">Model Workspace</div>
+        <img src={troobaLogoDark} alt="Trooba Flow" style={{ height: '26px', width: 'auto' }} />
         {/* Close button on mobile */}
         <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
