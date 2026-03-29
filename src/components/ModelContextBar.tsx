@@ -259,7 +259,7 @@ export function ModelContextBar() {
           onClick={() => navigate('/library')}
           className="shrink-0"
         >
-          <img src={troobaLogoDark} alt="Trooba Flow" className="h-7" />
+          <img src={troobaLogoDark} alt="Trooba Flow" style={{ height: '28px', width: 'auto' }} />
         </button>
         <span className="text-sidebar-muted text-sm shrink-0">›</span>
         <span className="text-sm font-medium text-context-bar-foreground truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
