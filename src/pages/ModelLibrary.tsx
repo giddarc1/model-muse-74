@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import troobaLogoLight from '@/assets/trooba-logo-light.svg';
-import troobaMarkLight from '@/assets/trooba-mark-light.svg';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
+import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
 
 type StatusFilter = 'all' | 'never_run' | 'current' | 'needs_recalc';
 
@@ -128,7 +128,6 @@ export default function ModelLibrary() {
       const idMap: Record<string, string> = {};
       const newUid = (old: string) => { const n = uid(); idMap[old] = n; return n; };
 
-      // Build imported model with new IDs
       const modelId = uid();
       const labor = (snap.labor || []).map((l: any) => ({ ...l, id: newUid(l.id) }));
       const equipment = (snap.equipment || []).map((e: any) => ({
@@ -178,7 +177,7 @@ export default function ModelLibrary() {
 
   const statusBadge = (status: Model['run_status']) => {
     const map = {
-      never_run: { label: 'Never Run', className: 'bg-muted text-muted-foreground' },
+      never_run: { label: 'Never Run', className: 'bg-muted/20 text-muted-foreground' },
       current: { label: 'Current', className: 'bg-success/15 text-success border-success/30' },
       needs_recalc: { label: 'Recalc Needed', className: 'bg-warning/15 text-warning border-warning/30' },
     };
@@ -198,7 +197,7 @@ export default function ModelLibrary() {
   const modelActions = (model: Model) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-        <button className="p-1 rounded hover:bg-muted"><MoreVertical className="h-4 w-4 text-muted-foreground" /></button>
+        <button className="p-1 rounded hover:bg-[#F3F4F6]"><MoreVertical className="h-4 w-4 text-[#9CA3AF]" /></button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setRenameTarget(model); setRenameValue(model.name); }}>
@@ -224,10 +223,10 @@ export default function ModelLibrary() {
 
   if (modelsLoading && !modelsLoaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-sidebar flex items-center justify-center">
         <div className="text-center">
-          <img src={troobaMarkLight} alt="" className="h-12 w-12 mx-auto mb-3 animate-pulse-brand" />
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Loading...</p>
+          <img src={troobaMarkDark} alt="" className="h-12 w-12 mx-auto mb-3 animate-pulse-brand" />
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-sidebar-muted">Loading...</p>
         </div>
       </div>
     );
@@ -236,18 +235,19 @@ export default function ModelLibrary() {
   return (
     <div className="min-h-screen bg-background">
       <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-      <header className="border-b border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      {/* Dark navy header */}
+      <header className="border-b border-[rgba(255,255,255,0.08)] bg-sidebar">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <img src={troobaLogoLight} alt="Trooba Flow" className="h-7" />
+              <img src={troobaLogoDark} alt="Trooba Flow" className="h-7" />
               <p className="subbrand-line mt-1.5">Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowCreate(true)} className="gap-2">
                 <Plus className="h-4 w-4" /> New Model
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} title="Settings">
+              <Button variant="ghost" size="icon" className="text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => navigate('/settings')} title="Settings">
                 <Settings className="h-4 w-4" />
               </Button>
               <UserProfileDropdown />
@@ -256,11 +256,11 @@ export default function ModelLibrary() {
 
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-muted" />
+              <Input placeholder="Search models..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)] text-sidebar-foreground placeholder:text-sidebar-muted focus-visible:border-primary" />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-40 h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40 h-9 text-xs bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)] text-sidebar-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="never_run">Never Run</SelectItem>
@@ -268,14 +268,14 @@ export default function ModelLibrary() {
                 <SelectItem value="needs_recalc">Recalc Needed</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant={showArchived ? 'secondary' : 'ghost'} size="sm" onClick={() => setShowArchived(!showArchived)}>
+            <Button variant="ghost" size="sm" className={`text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent ${showArchived ? 'bg-sidebar-accent text-sidebar-foreground' : ''}`} onClick={() => setShowArchived(!showArchived)}>
               <Archive className="h-4 w-4 mr-1" /> {showArchived ? 'Archived' : 'Active'}
             </Button>
-            <div className="flex border rounded-md overflow-hidden">
-              <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('grid')}>
+            <div className="flex border border-[rgba(255,255,255,0.12)] rounded-md overflow-hidden">
+              <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-none ${viewMode === 'grid' ? 'bg-sidebar-accent text-sidebar-foreground' : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent'}`} onClick={() => setViewMode('grid')}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
-              <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="icon" className="h-8 w-8 rounded-none" onClick={() => setViewMode('list')}>
+              <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-none ${viewMode === 'list' ? 'bg-sidebar-accent text-sidebar-foreground' : 'text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent'}`} onClick={() => setViewMode('list')}>
                 <List className="h-4 w-4" />
               </Button>
             </div>
@@ -283,32 +283,33 @@ export default function ModelLibrary() {
         </div>
       </header>
 
+      {/* Light content area */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         {filtered.length === 0 ? (
           <div className="text-center py-20">
-            <img src={troobaMarkLight} alt="" className="h-9 w-9 mx-auto mb-3 opacity-20" />
-            <p className="text-[14px] font-medium text-[#374151]">No models found</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
+            <img src={troobaMarkDark} alt="" className="h-9 w-9 mx-auto mb-3 opacity-20" />
+            <p className="text-[14px] font-medium text-foreground">No models found</p>
+            <p className="text-[13px] text-muted-foreground mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Model</Button>
-              <Button variant="outline" onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Another</Button>
+              <Button variant="outline" onClick={() => importRef.current?.click()} className="gap-1"><Upload className="h-4 w-4" /> Import JSON</Button>
             </div>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((model, i) => (
               <motion.div key={model.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="group bg-white border border-[#E5E7EB] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
+                className="group bg-card border border-border rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => openModel(model.id)}
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#111827] truncate">{model.name}</h3>
-                      <p className="text-xs text-[#4B5563] mt-1 line-clamp-2">{model.description || 'No description'}</p>
+                      <h3 className="font-medium text-foreground truncate">{model.name}</h3>
+                      <p className="text-xs text-[#6B7280] mt-1 line-clamp-2">{model.description || 'No description'}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
-                      <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-muted">
+                      <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-[#F3F4F6]">
                         <Star className={`h-4 w-4 ${model.is_starred ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`} />
                       </button>
                       {modelActions(model)}
@@ -329,27 +330,27 @@ export default function ModelLibrary() {
             ))}
           </div>
         ) : (
-          <div className="bg-card border rounded-lg overflow-hidden">
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Products</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Equipment</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Updated</th>
+                <tr className="border-b bg-[#F4F6F8]">
+                  <th className="text-left px-4 py-2.5 font-mono font-normal text-[10px] uppercase tracking-[0.1em] text-[#6B7280]">Name</th>
+                  <th className="text-left px-4 py-2.5 font-mono font-normal text-[10px] uppercase tracking-[0.1em] text-[#6B7280]">Products</th>
+                  <th className="text-left px-4 py-2.5 font-mono font-normal text-[10px] uppercase tracking-[0.1em] text-[#6B7280]">Equipment</th>
+                  <th className="text-left px-4 py-2.5 font-mono font-normal text-[10px] uppercase tracking-[0.1em] text-[#6B7280]">Status</th>
+                  <th className="text-left px-4 py-2.5 font-mono font-normal text-[10px] uppercase tracking-[0.1em] text-[#6B7280]">Updated</th>
                   <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((model) => (
-                  <tr key={model.id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer" onClick={() => openModel(model.id)}>
-                    <td className="px-4 py-3 font-medium">{model.name}</td>
+                  <tr key={model.id} className="border-b border-[#F0F2F5] last:border-0 hover:bg-[#F9FAFB] cursor-pointer" onClick={() => openModel(model.id)}>
+                    <td className="px-4 py-3 font-medium text-foreground">{model.name}</td>
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.products.length}</td>
                     <td className="px-4 py-3 font-mono text-muted-foreground">{model.equipment.length}</td>
                     <td className="px-4 py-3">{statusBadge(model.run_status)}</td>
-                    <td className="px-4 py-3 font-mono text-muted-foreground">{timeAgo(model.updated_at)}</td>
-                    <td className="px-2">{modelActions(model)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{timeAgo(model.updated_at)}</td>
+                    <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>{modelActions(model)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -358,59 +359,36 @@ export default function ModelLibrary() {
         )}
       </div>
 
-      {/* Create Dialog */}
+      {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create New Model</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Model Name</label>
-              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., Q4 Production Cell" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleCreate()} />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Description (optional)</label>
-              <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Brief description of this model" />
-            </div>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Create New Model</DialogTitle><DialogDescription>Start a new capacity model</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            <div><label className="text-sm font-medium">Name</label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Q4 Capacity Plan" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleCreate()} /></div>
+            <div><label className="text-sm font-medium">Description</label><Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Optional description" /></div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!newName.trim()}>Create Model</Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button><Button onClick={handleCreate} disabled={!newName.trim()}>Create</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(''); } }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Model</DialogTitle>
-            <DialogDescription>
-              This will permanently delete <strong>"{deleteTarget?.name}"</strong> and all its data. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <label className="text-sm font-medium mb-1.5 block">Type the model name to confirm:</label>
-            <Input value={deleteConfirmName} onChange={(e) => setDeleteConfirmName(e.target.value)} placeholder={deleteTarget?.name} autoFocus />
+      {/* Delete dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Delete Model</DialogTitle><DialogDescription>Type the model name to confirm permanent deletion.</DialogDescription></DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm">Model: <span className="font-semibold">{deleteTarget?.name}</span></p>
+            <Input value={deleteConfirmName} onChange={(e) => setDeleteConfirmName(e.target.value)} placeholder="Type model name to confirm" />
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => { setDeleteTarget(null); setDeleteConfirmName(''); }}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteConfirmName !== deleteTarget?.name}>Delete Permanently</Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button><Button variant="destructive" onClick={handleDelete} disabled={deleteConfirmName !== deleteTarget?.name}>Delete Permanently</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Rename Dialog */}
-      <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
-        <DialogContent>
+      {/* Rename dialog */}
+      <Dialog open={!!renameTarget} onOpenChange={() => setRenameTarget(null)}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Rename Model</DialogTitle></DialogHeader>
-          <div>
-            <label className="text-sm font-medium mb-1 block">New Name</label>
-            <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setRenameTarget(null)}>Cancel</Button>
-            <Button onClick={handleRename} disabled={!renameValue.trim()}>Rename</Button>
-          </DialogFooter>
+          <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder="New name" autoFocus onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
+          <DialogFooter><Button variant="outline" onClick={() => setRenameTarget(null)}>Cancel</Button><Button onClick={handleRename} disabled={!renameValue.trim()}>Rename</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

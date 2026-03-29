@@ -6,46 +6,51 @@
 
 @layer base {
   :root {
-    /* Neutral standard mode — Linear/Notion-style */
-    --background: 216 10% 95%;
-    --foreground: 221 39% 11%;
+    /* Dark chrome / light content — enterprise SaaS layout */
+    --background: 210 14% 96%;       /* #F4F6F8 — main content area */
+    --foreground: 221 39% 11%;       /* #111827 */
 
-    --card: 0 0% 100%;
+    --card: 0 0% 100%;               /* #FFFFFF */
     --card-foreground: 221 39% 11%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 221 39% 11%;
 
-    --primary: 175 100% 29%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 175 100% 38%;         /* #00C4B4 */
+    --primary-foreground: 220 47% 6%; /* #0C0F14 — navy text on teal */
 
-    --secondary: 210 6% 93%;
+    --secondary: 210 6% 93%;         /* subtle grey */
     --secondary-foreground: 221 39% 11%;
 
     --muted: 220 9% 46%;
-    --muted-foreground: 215 14% 34%;
+    --muted-foreground: 215 6% 57%;  /* #9CA3AF */
 
-    --accent: 175 100% 29%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 175 100% 38%;
+    --accent-foreground: 220 47% 6%;
 
-    --destructive: 0 84% 47%;
+    --destructive: 0 84% 47%;        /* #DC2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 216 12% 84%;
-    --input: 216 12% 84%;
-    --ring: 175 100% 29%;
+    --border: 214 14% 89%;           /* #E2E6EA */
+    --input: 216 12% 84%;            /* #D1D5DB */
+    --ring: 175 100% 38%;
 
-    --radius: 0.3125rem;
+    --radius: 0.375rem;
 
-    /* Sidebar — slightly darker grey */
-    --sidebar-background: 216 10% 92%;
-    --sidebar-foreground: 221 39% 11%;
-    --sidebar-primary: 175 100% 29%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 221 39% 11%;
-    --sidebar-border: 216 12% 84%;
-    --sidebar-ring: 175 100% 29%;
+    /* Sidebar — dark navy */
+    --sidebar-background: 220 47% 6%;    /* #0C0F14 */
+    --sidebar-foreground: 213 23% 90%;   /* #E8EDF2 */
+    --sidebar-primary: 175 100% 38%;
+    --sidebar-primary-foreground: 220 47% 6%;
+    --sidebar-accent: 213 44% 24%;       /* #1E3A5F */
+    --sidebar-accent-foreground: 213 23% 90%;
+    --sidebar-border: 0 0% 100% / 0.08;
+    --sidebar-ring: 175 100% 38%;
+    --sidebar-muted: 213 15% 31%;        /* #4A5868 */
+
+    /* Context bar — dark navy (same as sidebar) */
+    --context-bar: 220 47% 6%;
+    --context-bar-foreground: 213 23% 90%;
 
     /* Semantic */
     --success: 160 84% 30%;
@@ -55,11 +60,9 @@
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
 
-    --context-bar: 0 0% 100%;
-    --context-bar-foreground: 221 39% 11%;
-
+    /* Chart tokens */
     --chart-setup: 217 91% 60%;
-    --chart-run: 175 100% 29%;
+    --chart-run: 175 100% 38%;
     --chart-repair: 0 84% 47%;
     --chart-wait: 32 95% 44%;
     --chart-queue: 0 84% 47%;
@@ -110,15 +113,15 @@
   .mono-label {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #9CA3AF;
+    color: #4A5868;
   }
   .subbrand-line {
     font-family: 'DM Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: #009A8E;
+    color: #00C4B4;
   }
 }
