@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
 
 type StatusFilter = 'all' | 'never_run' | 'current' | 'needs_recalc';
 
@@ -224,8 +225,8 @@ export default function ModelLibrary() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading models…</p>
+          <img src={troobaMarkDark} alt="" className="h-12 w-12 mx-auto mb-3 animate-pulse-brand" />
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -238,8 +239,8 @@ export default function ModelLibrary() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-primary">Trooba Flow</h1>
-              <p className="text-sm font-mono text-muted-foreground mt-1 tracking-[0.2em] uppercase">Flow Intelligence</p>
+              <img src={troobaLogoDark} alt="Trooba Flow" className="h-8" />
+              <p className="subbrand-line mt-1.5">Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowCreate(true)} className="gap-2">
