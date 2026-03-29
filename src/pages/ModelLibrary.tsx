@@ -26,6 +26,7 @@ import {
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
+import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
 
 type StatusFilter = 'all' | 'never_run' | 'current' | 'needs_recalc';
 
