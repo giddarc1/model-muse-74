@@ -6,6 +6,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { useUserLevelStore, isVisible, type FeatureKey } from '@/hooks/useUserLevel';
 import { ModelContextBar } from './ModelContextBar';
 import { ModelSidebar } from './ModelSidebar';
+import troobaMarkDark from '@/assets/trooba-mark-dark.svg';
 
 import { toast } from 'sonner';
 
@@ -63,8 +64,9 @@ export function ModelWorkspaceLayout() {
 
   if (!modelsLoaded) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="h-screen flex flex-col items-center justify-center bg-background">
+        <img src={troobaMarkDark} alt="" className="h-12 w-12 mb-3 animate-pulse-brand" />
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Loading...</p>
       </div>
     );
   }
