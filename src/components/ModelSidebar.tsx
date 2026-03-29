@@ -42,10 +42,10 @@ export function ModelSidebar() {
 
   const sidebarContent = (
     <>
-      <div className="px-4 py-3 border-b border-[#D1D5DB] flex items-center justify-between">
-        <div className="mono-label">Model Workspace</div>
+      <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
+        <div className="mono-label text-sidebar-muted">Model Workspace</div>
         {/* Close button on mobile */}
-        <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden" onClick={() => setMobileOpen(false)}>
+        <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -59,8 +59,8 @@ export function ModelSidebar() {
               to={to}
               className={`flex items-center gap-2.5 mx-1.5 px-3 py-[7px] rounded-[5px] text-[13px] font-medium transition-colors ${
                 isActive
-                  ? 'bg-white text-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.08)] border-l-2 border-l-primary'
-                  : 'text-[#4B5563] hover:bg-[#DDE0E5] hover:text-[#111827]'
+                  ? 'bg-sidebar-accent text-sidebar-foreground border-l-[3px] border-l-primary'
+                  : 'text-[#9CA3AF] hover:bg-sidebar-accent hover:text-sidebar-foreground'
               }`}
               activeClassName=""
             >
@@ -70,8 +70,8 @@ export function ModelSidebar() {
           );
         })}
       </nav>
-      <div className="px-4 py-3 border-t border-[#D1D5DB]">
-        <div className="text-xs font-mono text-[#9CA3AF]">
+      <div className="px-4 py-3 border-t border-[rgba(255,255,255,0.08)]">
+        <div className="text-xs font-mono text-sidebar-muted">
           {model.products.length} products · {model.equipment.length} equip · {model.labor.length} labor
         </div>
       </div>
@@ -84,7 +84,7 @@ export function ModelSidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-background border shadow-sm"
+        className="fixed top-12 left-2 z-40 h-8 w-8 md:hidden bg-sidebar text-sidebar-foreground border border-[rgba(255,255,255,0.12)] shadow-sm"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-4 w-4" />
@@ -93,9 +93,9 @@ export function ModelSidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
-          <div className="absolute inset-0 bg-[rgba(17,24,39,0.4)]" />
+          <div className="absolute inset-0 bg-[rgba(0,0,0,0.6)]" />
           <aside
-            className="absolute left-0 top-0 bottom-0 w-64 bg-[#E8EBEF] border-r border-[#D1D5DB] flex flex-col z-50 animate-in slide-in-from-left duration-200"
+            className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar flex flex-col z-50 animate-in slide-in-from-left duration-200"
             onClick={e => e.stopPropagation()}
           >
             {sidebarContent}
@@ -104,7 +104,7 @@ export function ModelSidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="w-56 bg-[#E8EBEF] border-r border-[#D1D5DB] flex-col shrink-0 hidden md:flex">
+      <aside className="w-56 bg-sidebar border-r border-[rgba(255,255,255,0.08)] flex-col shrink-0 hidden md:flex">
         {sidebarContent}
       </aside>
     </>

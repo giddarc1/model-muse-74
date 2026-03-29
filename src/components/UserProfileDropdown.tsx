@@ -33,11 +33,11 @@ export function UserProfileDropdown() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted transition-colors">
+        <button className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-sidebar-accent transition-colors">
           <span className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
             {initial}
           </span>
-          <span className="text-sm text-muted-foreground hidden sm:inline truncate max-w-[160px]">{email}</span>
+          <span className="text-sm text-sidebar-muted hidden sm:inline truncate max-w-[160px]">{email}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-0" align="end" sideOffset={8}>
@@ -58,8 +58,8 @@ export function UserProfileDropdown() {
                 onClick={() => handleLevelChange(lvl.value)}
                 className={`w-full text-left rounded-[5px] border px-3 py-2 transition-colors ${
                   userLevel === lvl.value
-                    ? 'border-primary bg-[#F0FAFA] text-[#009A8E]'
-                    : 'border-[#E5E7EB] hover:border-[#9CA3AF] hover:bg-[#F9FAFB] text-[#374151]'
+                    ? 'border-primary bg-[#E6F7F6] text-[#009A8E]'
+                    : 'border-border hover:border-[#9CA3AF] hover:bg-[#F9FAFB] text-[#374151]'
                 }`}
               >
                 <span className="text-sm font-medium">{lvl.label}</span>

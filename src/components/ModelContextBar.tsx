@@ -4,7 +4,7 @@ import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
 import { Save, CircleDot, FlaskConical, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
-import troobaLogoLight from '@/assets/trooba-logo-light.svg';
+import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,9 +60,9 @@ export function ModelContextBar() {
   if (!model) return null;
 
   const statusConfig = {
-    never_run: { label: 'Never Run', className: 'bg-muted text-muted-foreground' },
-    current: { label: 'Results Current', className: 'bg-success text-success-foreground' },
-    needs_recalc: { label: 'Recalc Needed', className: 'bg-warning text-warning-foreground' },
+    never_run: { label: 'Never Run', className: 'bg-sidebar-muted/40 text-sidebar-foreground border-sidebar-muted/60' },
+    current: { label: 'Results Current', className: 'bg-success/20 text-[#34D399] border-success/40' },
+    needs_recalc: { label: 'Recalc Needed', className: 'bg-warning/20 text-[#FBBF24] border-warning/40' },
   };
 
   const status = statusConfig[model.run_status];
@@ -252,24 +252,24 @@ export function ModelContextBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-[52px] bg-white text-[#111827] flex items-center px-2 md:px-5 gap-1.5 md:gap-3 border-b border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0 overflow-x-auto">
+      <div className="h-[52px] bg-context-bar text-context-bar-foreground flex items-center px-2 md:px-5 gap-1.5 md:gap-3 border-b border-[rgba(255,255,255,0.08)] shrink-0 overflow-x-auto">
         {/* Spacer for mobile hamburger */}
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
           className="shrink-0"
         >
-          <img src={troobaLogoLight} alt="Trooba Flow" className="h-7" />
+          <img src={troobaLogoDark} alt="Trooba Flow" className="h-7" />
         </button>
-        <span className="text-[#9CA3AF] text-sm shrink-0">›</span>
-        <span className="text-sm font-medium text-[#111827] truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
+        <span className="text-sidebar-muted text-sm shrink-0">›</span>
+        <span className="text-sm font-medium text-context-bar-foreground truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
 
-        <div className="h-4 w-px bg-[#E5E7EB]" />
+        <div className="h-4 w-px bg-[rgba(255,255,255,0.12)]" />
 
         {activeScenario ? (
           <button onClick={() => navigate(`/models/${model.id}/whatif`)} className="shrink-0 hidden sm:flex">
-            <Badge variant="outline" className="border-amber-400/60 bg-amber-500/10 text-amber-600 text-xs font-medium cursor-pointer hover:bg-amber-500/20 transition-colors">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />
+            <Badge variant="outline" className="border-amber-400/60 bg-amber-500/10 text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-500/20 transition-colors">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5" />
               What-if: {activeScenario.name}
             </Badge>
           </button>
@@ -282,7 +282,7 @@ export function ModelContextBar() {
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge className={`text-xs cursor-default ${status.className}`}>
+            <Badge variant="outline" className={`text-xs cursor-default ${status.className}`}>
               {status.label}
             </Badge>
           </TooltipTrigger>
@@ -296,7 +296,7 @@ export function ModelContextBar() {
           <div className="flex items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-7 text-xs text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent rounded-r-none" onClick={handleOpenCheckpointDialog}>
+                <Button size="sm" variant="ghost" className="h-7 text-xs text-sidebar-muted hover:text-context-bar-foreground hover:bg-sidebar-accent rounded-r-none" onClick={handleOpenCheckpointDialog}>
                   <Save className="h-3.5 w-3.5 mr-1" /> Checkpoint
                 </Button>
               </TooltipTrigger>
@@ -304,7 +304,7 @@ export function ModelContextBar() {
             </Tooltip>
             <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <PopoverTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-7 w-6 px-0 text-context-bar-foreground hover:text-primary hover:bg-sidebar-accent rounded-l-none border-l border-sidebar-border">
+                <Button size="sm" variant="ghost" className="h-7 w-6 px-0 text-sidebar-muted hover:text-context-bar-foreground hover:bg-sidebar-accent rounded-l-none border-l border-[rgba(255,255,255,0.12)]">
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </PopoverTrigger>
@@ -367,40 +367,35 @@ export function ModelContextBar() {
                 placeholder="e.g. Before lot size changes"
                 className="mt-1"
                 autoFocus
-                onKeyDown={e => e.key === 'Enter' && checkpointName.trim() && handleSaveCheckpoint()}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveCheckpoint(); }}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              <Clock className="h-3 w-3 inline mr-1" />
-              {new Date().toLocaleString()}
-            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCheckpointDialog(false)} disabled={isSavingCheckpoint}>Cancel</Button>
-            <Button onClick={handleSaveCheckpoint} disabled={!checkpointName.trim() || isSavingCheckpoint}>
+            <Button variant="outline" onClick={() => setShowCheckpointDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveCheckpoint} disabled={isSavingCheckpoint || !checkpointName.trim()}>
               {isSavingCheckpoint ? 'Saving…' : 'Save Checkpoint'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Restore Confirmation from dropdown */}
-      <AlertDialog open={!!restoreVersionId} onOpenChange={(open) => !open && setRestoreVersionId(null)}>
+      {/* Restore confirmation */}
+      <AlertDialog open={!!restoreVersionId} onOpenChange={() => setRestoreVersionId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Restore Checkpoint</AlertDialogTitle>
             <AlertDialogDescription>
-              Restore to checkpoint: <strong>"{restoreVersion?.label || 'Unnamed'}"</strong> — saved on{' '}
-              <strong>{restoreVersion ? new Date(restoreVersion.created_at).toLocaleString() : '...'}</strong>?
-              <br /><br />
-              This will replace all current model data. This cannot be undone.
+              This will replace the current model data with the checkpoint
+              {restoreVersion ? ` "${restoreVersion.label}"` : ''}.
+              This action cannot be undone. Save a checkpoint first if you want to preserve your current state.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isRestoring}
               onClick={() => restoreVersionId && handleRestore(restoreVersionId)}
+              disabled={isRestoring}
             >
               {isRestoring ? 'Restoring…' : 'Restore'}
             </AlertDialogAction>
