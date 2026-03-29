@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from 'sonner';
 import { seedDemoModelToDB } from '@/lib/supabaseData';
 import { Check, X } from 'lucide-react';
-import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
+import troobaLogoLight from '@/assets/trooba-logo-light.svg';
 
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
   return (
@@ -80,7 +80,7 @@ export default function Signup() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <img src={troobaLogoDark} alt="Trooba Flow" className="h-8 mx-auto mb-2" />
+          <img src={troobaLogoLight} alt="Trooba Flow" className="h-8 mx-auto mb-2" />
           <CardTitle className="text-xl font-bold tracking-tight">Create Account</CardTitle>
           <CardDescription>Get started with Trooba Flow</CardDescription>
         </CardHeader>

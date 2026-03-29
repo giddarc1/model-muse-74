@@ -6,91 +6,68 @@
 
 @layer base {
   :root {
-    /* Brand colours */
-    --color-navy: #0C0F14;
-    --color-slate: #1E3A5F;
-    --color-teal: #00C4B4;
-    --color-teal-light: #009A8E;
-    --color-teal-hover: #00AFA1;
-    --color-off-white: #E8EDF2;
-    --color-mid: #4A5868;
-    --color-paper: #EEF2F5;
-    --color-border-dark: rgba(255,255,255,0.08);
-    --color-border-default: rgba(255,255,255,0.12);
-    --color-border-strong: rgba(255,255,255,0.2);
+    /* ── Light-mode brand tokens ── */
+    --background: 0 0% 100%;
+    --foreground: 220 20% 6%;
 
-    /* Product line */
-    --color-flow: #00C4B4;
-    --color-plan: #F59E0B;
-    --color-ai: #7C6FFF;
-    --color-twin: #22C55E;
+    --card: 210 14% 97%;
+    --card-foreground: 220 20% 6%;
 
-    /* Semantic HSL tokens for shadcn compatibility */
-    --background: 220 20% 5%;
-    --foreground: 216 25% 93%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 6%;
 
-    --card: 212 53% 24%;
-    --card-foreground: 216 25% 93%;
+    --primary: 175 100% 29%;
+    --primary-foreground: 0 0% 100%;
 
-    --popover: 220 20% 5%;
-    --popover-foreground: 216 25% 93%;
+    --secondary: 210 14% 97%;
+    --secondary-foreground: 220 20% 6%;
 
-    --primary: 175 100% 38%;
-    --primary-foreground: 220 20% 5%;
-
-    --secondary: 212 53% 24%;
-    --secondary-foreground: 216 25% 93%;
-
-    --muted: 212 53% 24%;
+    --muted: 210 14% 97%;
     --muted-foreground: 213 14% 32%;
 
-    --accent: 175 100% 38%;
-    --accent-foreground: 220 20% 5%;
+    --accent: 175 100% 29%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 86% 68%;
-    --destructive-foreground: 220 20% 5%;
+    --destructive: 0 84% 47%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.08;
-    --input: 0 0% 100% / 0.1;
-    --ring: 175 100% 38%;
+    --border: 216 14% 87%;
+    --input: 216 14% 87%;
+    --ring: 175 100% 29%;
 
     --radius: 0.375rem;
 
-    --sidebar-background: 220 20% 5%;
-    --sidebar-foreground: 216 25% 93%;
-    --sidebar-primary: 175 100% 38%;
-    --sidebar-primary-foreground: 220 20% 5%;
-    --sidebar-accent: 175 100% 38% / 0.08;
-    --sidebar-accent-foreground: 216 25% 93%;
-    --sidebar-border: 0 0% 100% / 0.08;
-    --sidebar-ring: 175 100% 38%;
+    /* Sidebar — light surface */
+    --sidebar-background: 210 14% 97%;
+    --sidebar-foreground: 220 20% 6%;
+    --sidebar-primary: 175 100% 29%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 56% 94%;
+    --sidebar-accent-foreground: 220 20% 6%;
+    --sidebar-border: 216 14% 87%;
+    --sidebar-ring: 175 100% 29%;
 
-    /* Custom tokens */
-    --success: 175 100% 38%;
-    --success-foreground: 220 20% 5%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 220 20% 5%;
-    --info: 216 25% 93%;
-    --info-foreground: 220 20% 5%;
+    /* Semantic */
+    --success: 162 87% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 0 0% 100%;
+    --info: 212 53% 24%;
+    --info-foreground: 0 0% 100%;
 
-    --context-bar: 220 20% 5%;
-    --context-bar-foreground: 216 25% 93%;
+    --context-bar: 0 0% 100%;
+    --context-bar-foreground: 220 20% 6%;
 
     --chart-setup: 217 91% 60%;
-    --chart-run: 175 100% 38%;
-    --chart-repair: 0 86% 68%;
-    --chart-wait: 38 92% 50%;
-    --chart-queue: 0 86% 68%;
+    --chart-run: 175 100% 29%;
+    --chart-repair: 0 84% 47%;
+    --chart-wait: 32 95% 44%;
+    --chart-queue: 0 84% 47%;
     --chart-lot: 270 50% 60%;
 
-    /* Focus ring */
-    --focus-ring: 0 0 0 2px #0C0F14, 0 0 0 4px #00C4B4;
-
-    /* Shadows */
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-    --shadow-teal: 0 0 24px rgba(0,196,180,0.18);
+    /* Teal tint for selected states */
+    --teal-tint: #E6F7F6;
+    --border-subtle: #EAEDF1;
   }
 }
 
@@ -101,12 +78,13 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'DM Sans', 'Aktiv Grotesk', 'Neue Haas Grotesk', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.6;
   }
   h1, h2, h3, h4 {
     font-weight: 700;
     letter-spacing: -0.01em;
+    color: hsl(220 20% 6%);
   }
 }
 
@@ -118,15 +96,15 @@
   .mono-label {
     font-family: 'DM Mono', monospace;
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--color-teal);
+    color: #4A5868;
   }
   .subbrand-line {
     font-family: 'DM Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--color-teal);
+    color: #009A8E;
   }
 }

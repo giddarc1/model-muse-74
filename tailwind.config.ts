@@ -77,15 +77,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Brand direct-access colors
-        trooba: {
-          teal: '#00C4B4',
-          'teal-hover': '#00AFA1',
-          navy: '#0C0F14',
-          slate: '#1E3A5F',
-          offwhite: '#E8EDF2',
-          mid: '#4A5868',
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -106,8 +97,8 @@ export default {
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "pulse-brand": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.4" },
+          "0%, 100%": { opacity: "0.8" },
+          "50%": { opacity: "0.3" },
         },
       },
       animation: {

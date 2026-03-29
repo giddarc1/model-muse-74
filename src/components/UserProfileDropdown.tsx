@@ -58,8 +58,8 @@ export function UserProfileDropdown() {
                 onClick={() => handleLevelChange(lvl.value)}
                 className={`w-full text-left rounded-md border px-3 py-2 transition-colors ${
                   userLevel === lvl.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-primary/40 hover:bg-accent/50 text-foreground'
+                    ? 'border-primary bg-[#E6F7F6] text-primary'
+                    : 'border-border hover:border-primary/40 hover:bg-card text-foreground'
                 }`}
               >
                 <span className="text-sm font-medium">{lvl.label}</span>

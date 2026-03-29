@@ -4,7 +4,7 @@ import { useScenarioStore } from '@/stores/scenarioStore';
 import { useResultsStore } from '@/stores/resultsStore';
 import { useNavigate } from 'react-router-dom';
 import { Save, CircleDot, FlaskConical, ChevronDown, RotateCcw, Clock, History } from 'lucide-react';
-import troobaLogoDark from '@/assets/trooba-logo-dark.svg';
+import troobaLogoLight from '@/assets/trooba-logo-light.svg';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -252,14 +252,14 @@ export function ModelContextBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="h-11 bg-context-bar text-context-bar-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-sidebar-border shrink-0 overflow-x-auto">
+      <div className="h-11 bg-background text-foreground flex items-center px-2 md:px-4 gap-1.5 md:gap-3 border-b border-border shadow-[0_1px_3px_rgba(0,0,0,0.06)] shrink-0 overflow-x-auto">
         {/* Spacer for mobile hamburger */}
         <div className="w-8 shrink-0 md:hidden" />
         <button
           onClick={() => navigate('/library')}
           className="shrink-0"
         >
-          <img src={troobaLogoDark} alt="Trooba Flow" className="h-6" />
+          <img src={troobaLogoLight} alt="Trooba Flow" className="h-6" />
         </button>
         <span className="text-muted-foreground text-sm shrink-0">›</span>
         <span className="text-sm font-medium truncate max-w-[120px] md:max-w-[200px]">{model.name}</span>
