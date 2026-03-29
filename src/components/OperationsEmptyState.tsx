@@ -11,16 +11,16 @@ interface OperationsEmptyStateProps {
 export function OperationsEmptyState({ productName, onAddOperations }: OperationsEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-      <img src={troobaMarkLight} alt="" className="h-12 w-12 mb-4 opacity-25" />
+      <img src={troobaMarkLight} alt="" className="h-9 w-9 mb-4 opacity-20" />
 
-      <h2 className="text-[15px] font-medium mb-2">
+      <h2 className="text-[14px] font-medium text-[#374151] mb-2">
         No operations defined for <span className="font-mono text-primary">{productName}</span>
       </h2>
 
-      <p className="text-[13px] text-muted-foreground max-w-md mb-1">
+      <p className="text-[13px] text-[#9CA3AF] max-w-md mb-1">
         Define the sequence of manufacturing operations this product goes through.
       </p>
-      <p className="text-[13px] text-muted-foreground max-w-md mb-6">
+      <p className="text-[13px] text-[#9CA3AF] max-w-md mb-6">
         Every routing must start at DOCK (entry point) and all paths must end at STOCK (completed) or SCRAP (defective losses).
       </p>
 

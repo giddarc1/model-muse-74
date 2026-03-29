@@ -236,11 +236,11 @@ export default function ModelLibrary() {
   return (
     <div className="min-h-screen bg-background">
       <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
-      <header className="border-b border-border bg-background shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+      <header className="border-b border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <img src={troobaLogoLight} alt="Trooba Flow" className="h-8" />
+              <img src={troobaLogoLight} alt="Trooba Flow" className="h-7" />
               <p className="subbrand-line mt-1.5">Flow Intelligence</p>
             </div>
             <div className="flex items-center gap-2">
@@ -285,10 +285,10 @@ export default function ModelLibrary() {
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         {filtered.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">No models found</p>
-            <p className="text-sm mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
+          <div className="text-center py-20">
+            <img src={troobaMarkLight} alt="" className="h-9 w-9 mx-auto mb-3 opacity-20" />
+            <p className="text-[14px] font-medium text-[#374151]">No models found</p>
+            <p className="text-[13px] text-[#9CA3AF] mt-1">{search ? 'Try a different search term' : 'Create a new model or import one to get started'}</p>
             <div className="flex gap-2 justify-center mt-4">
               <Button onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Model</Button>
               <Button variant="outline" onClick={() => setShowCreate(true)} className="gap-1"><Plus className="h-4 w-4" /> Create Another</Button>
@@ -298,14 +298,14 @@ export default function ModelLibrary() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((model, i) => (
               <motion.div key={model.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="group bg-card border rounded-lg hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
+                className="group bg-white border border-[#E5E7EB] rounded-md shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
                 onClick={() => openModel(model.id)}
               >
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{model.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{model.description || 'No description'}</p>
+                      <h3 className="font-medium text-[#111827] truncate">{model.name}</h3>
+                      <p className="text-xs text-[#4B5563] mt-1 line-clamp-2">{model.description || 'No description'}</p>
                     </div>
                     <div className="flex items-center gap-1 ml-2">
                       <button onClick={(e) => { e.stopPropagation(); toggleStar(model.id); }} className="p-1 rounded hover:bg-muted">
