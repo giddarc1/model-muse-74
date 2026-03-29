@@ -5,14 +5,14 @@ import { cn } from "@/lib/utils";
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
-      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table ref={ref} className={cn("w-full caption-bottom text-[13px]", className)} {...props} />
     </div>
   ),
 );
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />,
+  ({ className, ...props }, ref) => <thead ref={ref} className={cn("[&_tr]:border-b-2 [&_tr]:border-border", className)} {...props} />,
 );
 TableHeader.displayName = "TableHeader";
 
@@ -25,7 +25,7 @@ TableBody.displayName = "TableBody";
 
 const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <tfoot ref={ref} className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)} {...props} />
+    <tfoot ref={ref} className={cn("border-t bg-card font-medium [&>tr]:last:border-b-0", className)} {...props} />
   ),
 );
 TableFooter.displayName = "TableFooter";
@@ -34,7 +34,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b border-[rgba(255,255,255,0.06)] transition-colors data-[state=selected]:bg-[rgba(0,196,180,0.08)] data-[state=selected]:border-l-2 data-[state=selected]:border-l-primary hover:bg-[rgba(255,255,255,0.03)]", className)}
+      className={cn("border-b border-[#EAEDF1] transition-colors data-[state=selected]:bg-[#E6F7F6] data-[state=selected]:border-l-2 data-[state=selected]:border-l-primary hover:bg-card", className)}
       {...props}
     />
   ),
@@ -46,7 +46,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-10 px-4 text-left align-middle font-mono font-normal text-[10px] uppercase tracking-[0.16em] text-muted-foreground bg-[rgba(255,255,255,0.04)] [&:has([role=checkbox])]:pr-0",
+        "h-10 px-4 text-left align-middle font-mono font-normal text-[10px] uppercase tracking-[0.16em] text-muted-foreground bg-card [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
