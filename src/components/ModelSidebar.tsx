@@ -45,7 +45,7 @@ export function ModelSidebar() {
   const sidebarContent = (
     <>
       <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
-        <img src={troobaLogoDark} alt="Trooba Flow" style={{ height: '26px', width: 'auto' }} />
+        <div className="mono-label text-sidebar-muted">Model Workspace</div>
         {/* Close button on mobile */}
         <Button variant="ghost" size="icon" className="h-6 w-6 md:hidden text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setMobileOpen(false)}>
           <X className="h-4 w-4" />
